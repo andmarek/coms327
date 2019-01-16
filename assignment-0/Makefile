@@ -15,6 +15,7 @@ s:
 r:
 	./sobel.out motorcycle.pgm
 	xdg-open ./sobel.pgm
+
 d:
 	gdb ./sobel.out
 
