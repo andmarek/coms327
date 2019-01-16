@@ -7,12 +7,26 @@
 #define SIZE 1024	/* Image size */
 #define KSIZE 3		/* Kernel size */
 
+uint8_t clamp(double x) {
+	if (x > UINT8_MAX) {
+		return UINT8_MAX;
+	}
+
+	if (x < 0) {
+		return 0;
+	}
+
+	return (uint8_t)x;
+}
+
 /*
  * Apply sobel kernel using manually unrolled loop. Valid only for a 3x3 kernel.
  * Identical to implementation specified in assignment description.
  */
-int8_t apply_kernel(int8_t (*m)[SIZE], int8_t const (*k)[KSIZE], size_t const x, size_t const y) {
-	int acc = 0;
+int16_t apply_kernel(uint8_t (*m)[SIZE], int8_t const (*k)[KSIZE],
+	size_t const x, size_t const y) {
+
+	int16_t acc = 0;
 
 	acc += k[0][0] * m[x - 1][y + 1];
 	acc += k[0][1] * m[x + 0][y + 1];
@@ -24,16 +38,16 @@ int8_t apply_kernel(int8_t (*m)[SIZE], int8_t const (*k)[KSIZE], size_t const x,
 	acc += k[2][1] * m[x + 0][y - 1];
 	acc += k[2][2] * m[x + 1][y - 1];
 
-	return (int8_t)acc;
+	return acc;
 }
 
 /*
  * Apply sobel filter to SIZExSIZE filter using a KSIZExKSIZE kernel.
  */
-void sobel(int8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
-	int8_t const (*k_y)[KSIZE], int8_t (*out)[SIZE]) {
+void sobel(uint8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
+	int8_t const (*k_y)[KSIZE], uint8_t (*out)[SIZE]) {
 
-	int8_t acc_x, acc_y;
+	int16_t acc_x, acc_y;
 	size_t r, c;
 
 	for (r = 0; r < SIZE; ++r) {
@@ -46,7 +60,7 @@ void sobel(int8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
 			acc_x = apply_kernel(m, k_x, r, c);
 			acc_y = apply_kernel(m, k_y, r, c);
 
-			out[r][c] = (int8_t)sqrt((double)(acc_x * acc_x + acc_y * acc_y));
+			out[r][c] = clamp(sqrt(acc_x * acc_x + acc_y * acc_y));
 		}
 	}
 }
@@ -136,8 +150,8 @@ int read_pgm(char *file, void *image, uint32_t x, uint32_t y) {
 }
 
 int main(int argc, char *argv[]) {
-	int8_t image[SIZE][SIZE];
-	int8_t out[SIZE][SIZE];
+	uint8_t image[SIZE][SIZE];
+	uint8_t out[SIZE][SIZE];
 
 	int8_t const k_x[KSIZE][KSIZE] = {
 		{-1, 0, 1},
