@@ -6,25 +6,45 @@
 
 #define SIZE 1024	/* Image size */
 #define KSIZE 3		/* Kernel size */
-#define CEIL 2		/* ceil(KSIZE/2) */
 
-/* TODO: acc_x = ... and acc_y = ... depend on uninitialized values */
-void sobel(int8_t const m[][SIZE], int8_t const k_x[][KSIZE],
-	int8_t const k_y[][KSIZE], int8_t out[][SIZE]) {
+/*
+ * Apply sobel kernel using manually unrolled loop. Valid only for a 3x3 kernel.
+ * Identical to implementation specified in assignment description.
+ */
+int8_t apply_kernel(int8_t (*m)[SIZE], int8_t const (*k)[KSIZE], size_t const x, size_t const y) {
+	int acc = 0;
+
+	acc += k[0][0] * m[x - 1][y + 1];
+	acc += k[0][1] * m[x + 0][y + 1];
+	acc += k[0][2] * m[x + 1][y + 1];
+	acc += k[1][0] * m[x - 1][y + 0];
+	acc += k[1][1] * m[x + 0][y + 0];
+	acc += k[1][2] * m[x + 1][y + 0];
+	acc += k[2][0] * m[x - 1][y - 1];
+	acc += k[2][1] * m[x + 0][y - 1];
+	acc += k[2][2] * m[x + 1][y - 1];
+
+	return (int8_t)acc;
+}
+
+/*
+ * Apply sobel filter to SIZExSIZE filter using a KSIZExKSIZE kernel.
+ */
+void sobel(int8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
+	int8_t const (*k_y)[KSIZE], int8_t (*out)[SIZE]) {
 
 	int8_t acc_x, acc_y;
-	size_t r, c, j, i;
+	size_t r, c;
 
 	for (r = 0; r < SIZE; ++r) {
 		for (c = 0; c < SIZE; ++c) {
-			acc_x = acc_y = 0;
-
-			for (j = 0; j < KSIZE; ++j) {
-				for (i = 0; i < KSIZE; ++i) {
-					acc_x += m[r + j - CEIL][c + i - CEIL] * k_x[j][i];
-					acc_y += m[r + j - CEIL][c + i - CEIL] * k_y[j][i];
-				}
+			if (c == 0 || r == 0 || c == SIZE - 1 || r == SIZE - 1) {
+				out[r][c] = 0;
+				continue;
 			}
+
+			acc_x = apply_kernel(m, k_x, r, c);
+			acc_y = apply_kernel(m, k_y, r, c);
 
 			out[r][c] = (int8_t)sqrt((double)(acc_x * acc_x + acc_y * acc_y));
 		}
@@ -131,6 +151,8 @@ int main(int argc, char *argv[]) {
 		{1, 2, 1}
 	};
 
+	char const *const name = "sobel.pgm";
+
 	if (argc != 2) {
 		fprintf(stderr, "%s expects filename as only argument\n", argv[0]);
 		return EXIT_FAILURE;
@@ -146,7 +168,7 @@ int main(int argc, char *argv[]) {
 
 	/* After processing the image and storing your output in "out", write	*
 	 * to motorcycle.edge.pgm.												*/
-	if (write_pgm("sobel.pgm", out, SIZE, SIZE) == -1) {
+	if (write_pgm(name, out, SIZE, SIZE) == -1) {
 		return EXIT_FAILURE;
 	}
 
