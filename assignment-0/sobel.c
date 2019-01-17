@@ -7,7 +7,7 @@
 #define SIZE 1024	/* Image size */
 #define KSIZE 3		/* Kernel size */
 
-uint8_t clamp(double x) {
+static uint8_t clamp(double x) {
 	if (x > UINT8_MAX) {
 		return UINT8_MAX;
 	}
@@ -23,7 +23,7 @@ uint8_t clamp(double x) {
  * Apply sobel kernel using manually unrolled loop. Valid only for a 3x3 kernel.
  * Identical to implementation specified in assignment description.
  */
-int16_t apply_kernel(uint8_t (*m)[SIZE], int8_t const (*k)[KSIZE],
+static int16_t apply_kernel(uint8_t (*m)[SIZE], int8_t const (*k)[KSIZE],
 	size_t const x, size_t const y) {
 
 	int16_t acc = 0;
@@ -44,7 +44,7 @@ int16_t apply_kernel(uint8_t (*m)[SIZE], int8_t const (*k)[KSIZE],
 /*
  * Apply sobel filter to SIZExSIZE filter using a KSIZExKSIZE kernel.
  */
-void sobel(uint8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
+static void sobel(uint8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
 	int8_t const (*k_y)[KSIZE], uint8_t (*out)[SIZE]) {
 
 	int16_t acc_x, acc_y;
@@ -60,7 +60,7 @@ void sobel(uint8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
 			acc_x = apply_kernel(m, k_x, r, c);
 			acc_y = apply_kernel(m, k_y, r, c);
 
-			out[r][c] = clamp(sqrt(acc_x * acc_x + acc_y * acc_y));
+			out[r][c] = clamp(sqrt((double)(acc_x * acc_x + acc_y * acc_y)));
 		}
 	}
 }
