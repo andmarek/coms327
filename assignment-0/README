@@ -1,0 +1,2 @@
+Apply 3x3 sobel operator to 1024x1024 PGM image. Done through sobel() function.
+I've unrolled the kernel accumulation, but it's identical to the loop algorithm.

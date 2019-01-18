@@ -1,0 +1,7 @@
+b9d8a18 (HEAD -> master, origin/master) Avoid useless export of sobel functions, cast explicitly
+0d8d9da Clean up Makefile
+f600387 Use correct image type (uint8_t: 0..255) and clamp value
+faf6137 Whitespace
+a1c5ad0 Unroll loop, validate bounds before applying kernel
+53a764a Force pedantic c99, rm only output image, simpler max stackframe value
+6ac7145 Assignment 0
