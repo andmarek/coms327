@@ -26,6 +26,13 @@ dir="/tmp/$dirname"
 cp -r $assn $dir
 
 wd=`pwd`
-cd /tmp && tar -czf $wd/$dirname.tar.gz --exclude=".*" $dirname
+
+cd /tmp/$dirname
+
+make clean
+
+cd /tmp
+
+tar -czf $wd/$dirname.tar.gz --exclude=".*" $dirname
 
 rm -rf $dir
