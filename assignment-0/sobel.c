@@ -16,17 +16,17 @@ static uint8_t clamp(double x) {
 		return 0;
 	}
 
-	return (uint8_t)x;
+	return (uint8_t)round(x);
 }
 
 /*
  * Apply sobel kernel using manually unrolled loop. Valid only for a 3x3 kernel.
  * Identical to implementation specified in assignment description.
  */
-static int16_t apply_kernel(uint8_t (*m)[SIZE], int8_t const (*k)[KSIZE],
+static double apply_kernel(uint8_t (*m)[SIZE], int8_t const (*k)[KSIZE],
 	size_t const x, size_t const y) {
 
-	int16_t acc = 0;
+	double acc = 0;
 
 	acc += k[0][0] * m[x - 1][y + 1];
 	acc += k[0][1] * m[x + 0][y + 1];
@@ -47,7 +47,7 @@ static int16_t apply_kernel(uint8_t (*m)[SIZE], int8_t const (*k)[KSIZE],
 static void sobel(uint8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
 	int8_t const (*k_y)[KSIZE], uint8_t (*out)[SIZE]) {
 
-	int16_t acc_x, acc_y;
+	double acc_x, acc_y;
 	size_t r, c;
 
 	for (r = 0; r < SIZE; ++r) {
@@ -60,7 +60,7 @@ static void sobel(uint8_t (*m)[SIZE], int8_t const (*k_x)[KSIZE],
 			acc_x = apply_kernel(m, k_x, r, c);
 			acc_y = apply_kernel(m, k_y, r, c);
 
-			out[r][c] = clamp(sqrt((double)(acc_x * acc_x + acc_y * acc_y)));
+			out[r][c] = clamp(sqrt(acc_x * acc_x + acc_y * acc_y));
 		}
 	}
 }
