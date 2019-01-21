@@ -1,4 +1,6 @@
-b9d8a18 (HEAD -> master, origin/master) Avoid useless export of sobel functions, cast explicitly
+3e3cc4e (HEAD -> master, origin/master) Pass through round, use double instead of int16_t
+fe8d009 README & CHANGELOG
+b9d8a18 Avoid useless export of sobel functions, cast explicitly
 0d8d9da Clean up Makefile
 f600387 Use correct image type (uint8_t: 0..255) and clamp value
 faf6137 Whitespace
