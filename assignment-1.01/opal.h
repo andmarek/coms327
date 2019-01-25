@@ -1,11 +1,11 @@
 #ifndef OPAL_H
 #define OPAL_H
 
-#include<stdlib.h>
+#include <stdlib.h>
 
-unsigned int	hash(char *);
+unsigned int	hash(char const *);
 
-void	init_rand(char *);
+unsigned int	init_rand(char *);
 int		rrand(int, int);
 
 #endif /* OPAL_H */

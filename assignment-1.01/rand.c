@@ -1,12 +1,13 @@
 /* TODO:
-	avoid rand(): read from /dev/urandom
+	avoid rand(): read from /dev/urandom, or alternatively:
+	avoid time(): read from /dev/urandom
 */
 
-#include<time.h>
+#include <time.h>
 
 #include "opal.h"
 
-void
+unsigned int
 init_rand(char *str)
 {
 	unsigned int seed;
@@ -18,6 +19,8 @@ init_rand(char *str)
 	}
 
 	srand(seed);
+
+	return seed;
 }
 
 /* biased, range inclusive */
