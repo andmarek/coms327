@@ -1,4 +1,5 @@
 /* TODO:
+	seed from argument needs to be converted to uint
 	avoid rand(): read from /dev/urandom, or alternatively:
 	avoid time(): read from /dev/urandom
 */
