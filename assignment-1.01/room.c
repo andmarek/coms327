@@ -78,7 +78,7 @@ draw_corridor(WINDOW *const win, struct room const r1, struct room const r2)
 
 static bool
 valid_stair(WINDOW *const win, int x, int y) {
-	return mvwinch(win, y, x) == ROCK
+	return (mvwinch(win, y, x) == ROCK || mvwinch(win, y, x) == ROOM)
 		&& (mvwinch(win, y + 1, x) == CORRIDOR
 		|| mvwinch(win, y - 1, x) == CORRIDOR
 		|| mvwinch(win, y, x + 1) == CORRIDOR
