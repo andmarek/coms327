@@ -1,4 +1,6 @@
 /*
+#define FILL	45	// fill percentage
+
 void
 fill_floor(WINDOW *win)
 {

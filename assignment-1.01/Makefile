@@ -13,8 +13,14 @@ CFLAGS_END := -lncurses
 
 DIRTY = *.out vgcore.*
 
-opal: hash.c rand.c opal.c opal.h
-	$(CC) $(CFLAGS) -o opal.out hash.c rand.c opal.c $(CFLAGS_END)
+src = hash.c opal.c rand.c room.c
+hdr = hash.h rand.h room.h
+
+opal: $(src) $(hdr)
+	$(CC) $(CFLAGS) -o opal.out $(src) $(CFLAGS_END)
 
 clean:
 	rm -f $(DIRTY)
+
+val:
+	valgrind --track-origins=yes ./opal.out

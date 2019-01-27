@@ -4,12 +4,13 @@
 */
 
 #include <errno.h>
+#include <stdlib.h>
 #include <time.h>
 
-#include "opal.h"
+#include "hash.h"
 
 static unsigned int
-uint_or_hash(char *str)
+uint_or_hash(char const *const str)
 {
 	char *end;
 	unsigned int ret;
@@ -24,7 +25,7 @@ uint_or_hash(char *str)
 }
 
 unsigned int
-init_rand(char *str)
+init_rand(char const *const str)
 {
 	unsigned int seed;
 
@@ -41,7 +42,7 @@ init_rand(char *str)
 
 /* biased, range inclusive */
 int
-rrand(int min, int max)
+rrand(int const min, int const max)
 {
 	return rand() % (max + 1 - min) + min;
 }

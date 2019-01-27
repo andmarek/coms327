@@ -1,5 +1,3 @@
-#include "opal.h"
-
 /* djb2 hash algorithm */
 unsigned int
 hash(char const *str)
