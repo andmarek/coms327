@@ -45,17 +45,17 @@ draw_room(WINDOW *const win, struct room const r)
 static bool
 valid_corridor_x(WINDOW *const win, int x, int y)
 {
-	return mvwinch(win, x, y) == ROCK
-		&& mvwinch(win, x - 1, y) != CORRIDOR
-		&& mvwinch(win, x + 1, y) != CORRIDOR;
+	return mvwinch(win, y, x) == ROCK
+		&& mvwinch(win, y, x + 1) != CORRIDOR
+		&& mvwinch(win, y, x - 1) != CORRIDOR;
 }
 
 static bool
 valid_corridor_y(WINDOW *const win, int x, int y)
 {
-	return mvwinch(win, x, y) == ROCK
-		&& mvwinch(win, x, y + 1) != CORRIDOR
-		&& mvwinch(win, x, y - 1) != CORRIDOR;
+	return mvwinch(win, y, x) == ROCK
+		&& mvwinch(win, y + 1, x) != CORRIDOR
+		&& mvwinch(win, y - 1, x) != CORRIDOR;
 }
 
 void
@@ -64,13 +64,13 @@ draw_corridor(WINDOW *const win, struct room const r1, struct room const r2)
 	int i;
 
 	for (i = MIN(r1.x, r2.x); i <= MAX(r1.x, r2.x); ++i) {
-		if (valid_corridor_x(win, r1.y, i)) {
+		if (valid_corridor_y(win, i, r1.y)) {
 			mvwaddch(win, r1.y, i, CORRIDOR);
 		}
 	}
 
 	for (i = MIN(r1.y, r2.y); i <= MAX(r1.y, r2.y); ++i) {
-		if (valid_corridor_y(win, i, r2.x)) {
+		if (valid_corridor_x(win, r2.x, i)) {
 			mvwaddch(win, i, r2.x, CORRIDOR);
 		}
 	}
