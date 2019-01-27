@@ -5,7 +5,7 @@ CFLAGS += -std=c99 -pedantic
 CFLAGS += -Wextra -Wall -Wshadow -Wconversion
 
 CFLAGS += -ftrapv -fverbose-asm
-CFLAGS += -Wundef -Wcast-align -Wstrict-prototypes -Wstrict-overflow=5
+CFLAGS += -Wundef -Wcast-align=strict -Wstrict-prototypes -Wstrict-overflow=5
 CFLAGS += -Wwrite-strings -Waggregate-return -Wcast-qual -Wformat=2
 CFLAGS += -Wswitch-default -Wswitch-enum -Wunreachable-code
 

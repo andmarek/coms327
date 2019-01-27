@@ -18,8 +18,22 @@
 #define STAIR_UP	'<'
 #define STAIR_DOWN	'>'
 
+#define ROOMCOUNT	4
+
+#define MINROOMH	4
+#define MINROOMW	3
+#define MAXROOMH	8
+#define MAXROOMW	30
+
+struct room {
+	int x;
+	int y;
+	int size_x;
+	int size_y;
+};
+
 WINDOW *
-generate_screen(void)
+gen_screen(void)
 {
 	WINDOW *win;
 
@@ -33,46 +47,35 @@ generate_screen(void)
 }
 
 void
-fill_floor(WINDOW *win)
+gen_room(struct room *r)
 {
-	if (rrand(0, 100) < FILL) {
-		mvwaddch(win, RRANDH, RRANDW, ROOM);
-		wrefresh(win);
-	}
+	r->x = rrand(1, WIDTH - MAXROOMW - 2);
+	r->y = rrand(1, HEIGHT - MAXROOMH - 2);
+	r->size_x = rrand(MINROOMW, MAXROOMW);
+	r->size_y = rrand(MINROOMH, MAXROOMH);
 }
 
-size_t
-wall_count(WINDOW *win, int x, int y)
+bool
+draw_room(WINDOW *win, struct room r, chtype tile)
 {
 	int i, j;
-	size_t c = 0;
 
-	for (i = x - 1; i <= x + 1; ++i) {
-		for (j = y - 1; j <= y + 1; ++j) {
-			if (mvwinch(win, j, i) == ROOM) c++;
-		}
-	}
-
-	return c;
-}
-
-void
-smooth_floor(WINDOW *win)
-{
-	int i, j;
-	size_t wc;
-
-	for (i = 1; i < WIDTH - 1; ++i) {
-		for (j = 1; j < HEIGHT - 1; ++j) {
-			wc = wall_count(win, i, j);
-
-			if (wc < 4) {
-				mvwaddch(win, j, i, ROCK);
-			} else if (wc > 4) {
-				mvwaddch(win, j, i, ROOM);
+	for (i = r.x - 1; i <= r.x + r.size_x + 1; ++i) {
+		for (j = r.y - 1; j <= r.y + r.size_y + 1; ++j) {
+			if (mvwinch(win, j, i) != ROCK) {
+				return false;
 			}
 		}
 	}
+
+	for (i = r.x; i <= r.x + r.size_x; ++i) {
+		for (j = r.y; j <= r.y + r.size_y; ++j) {
+			mvwaddch(win, j, i, tile);
+			wrefresh(win);
+		}
+	}
+
+	return true;
 }
 
 int
@@ -80,7 +83,8 @@ main(int argc, char *argv[])
 {
 	WINDOW *win;
 	unsigned int seed;
-	int i;
+	struct room rooms[ROOMCOUNT];
+	size_t i;
 
 	seed = init_rand(argc >= 2 ? argv[1] : NULL);
 
@@ -89,18 +93,17 @@ main(int argc, char *argv[])
 
 	refresh();
 
-	win = generate_screen();
+	win = gen_screen();
 
-	for (i = 0; i < 1800; ++i) {
-		if (argc <= 2) usleep(100);
-		fill_floor(win);
+	for (i = 0; i < ROOMCOUNT; ++i) {
+		gen_room(&rooms[i]);
 	}
 
-	for (i = 0; i < 5; ++i) {
-		smooth_floor(win);
+	for (i = 0; i < ROOMCOUNT; ++i) {
+		if (!draw_room(win, rooms[i], ROOM)) {
+			gen_room(&rooms[i--]);
+		}
 	}
-
-	wrefresh(win);
 
 	getch();
 
