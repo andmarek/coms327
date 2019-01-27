@@ -38,3 +38,15 @@ draw_room(WINDOW *const win, struct room const r)
 
 	return true;
 }
+
+void
+draw_corridor(WINDOW *const win, struct room const r1, struct room const r2)
+{
+	int i;
+
+	int const distance = r2.x - r1.x / (int)abs(r2.x - r1.x);
+
+	for (i = r1.x; i <= r2.x - r1.x; ++i) {
+		mvwaddch(win, r1.y, i, CORRIDOR);
+	}
+}
