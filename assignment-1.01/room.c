@@ -8,6 +8,9 @@
 #define MAXROOMH	8
 #define MAXROOMW	15
 
+#define MIN(X,Y) (((X) < (Y)) ? (X) : (Y))
+#define MAX(X,Y) (((X) > (Y)) ? (X) : (Y))
+
 void
 gen_room(struct room *const r, int w, int h)
 {
@@ -39,14 +42,57 @@ draw_room(WINDOW *const win, struct room const r)
 	return true;
 }
 
+static bool
+valid_corridor_x(WINDOW *const win, int x, int y)
+{
+	return mvwinch(win, x, y) == ROCK
+		&& mvwinch(win, x - 1, y) != CORRIDOR
+		&& mvwinch(win, x + 1, y) != CORRIDOR;
+}
+
+static bool
+valid_corridor_y(WINDOW *const win, int x, int y)
+{
+	return mvwinch(win, x, y) == ROCK
+		&& mvwinch(win, x, y + 1) != CORRIDOR
+		&& mvwinch(win, x, y - 1) != CORRIDOR;
+}
+
 void
 draw_corridor(WINDOW *const win, struct room const r1, struct room const r2)
 {
 	int i;
 
-	int const distance = r2.x - r1.x / (int)abs(r2.x - r1.x);
-
-	for (i = r1.x; i <= r2.x - r1.x; ++i) {
-		mvwaddch(win, r1.y, i, CORRIDOR);
+	for (i = MIN(r1.x, r2.x); i <= MAX(r1.x, r2.x); ++i) {
+		if (valid_corridor_x(win, r1.y, i)) {
+			mvwaddch(win, r1.y, i, CORRIDOR);
+		}
 	}
+
+	for (i = MIN(r1.y, r2.y); i <= MAX(r1.y, r2.y); ++i) {
+		if (valid_corridor_y(win, i, r2.x)) {
+			mvwaddch(win, i, r2.x, CORRIDOR);
+		}
+	}
+}
+
+static bool
+valid_stair(WINDOW *const win, int x, int y) {
+	return mvwinch(win, y, x) == ROCK
+		&& (mvwinch(win, y + 1, x) == CORRIDOR
+		|| mvwinch(win, y - 1, x) == CORRIDOR
+		|| mvwinch(win, y, x + 1) == CORRIDOR
+		|| mvwinch(win, y, x - 1) == CORRIDOR);
+}
+
+void
+draw_stair(WINDOW *const win, int w, int h, bool up) {
+	int x, y;
+
+	do {
+		x = rrand(1, w - 2);
+		y = rrand(1, h - 2);
+	} while(!valid_stair(win, x, y));
+
+	mvwaddch(win, y, x, up ? STAIR_UP : STAIR_DOWN);
 }
