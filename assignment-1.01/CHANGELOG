@@ -1,0 +1,9 @@
+2019-01-27 2cf201c Allow stairs in rooms (HEAD -> master, origin/master)
+2019-01-27 b6ca186 Fix x,y ordering
+2019-01-27 c3ce939 Draw corridors and stairs
+2019-01-27 1a2673d Starting corridor work
+2019-01-27 ef09949 Split things into separate files
+2019-01-26 d6dd499 Use regular rooms instead of cellular automata for now
+2019-01-25 9f92380 Use cellular automata to generate rooms & smooth result x5
+2019-01-25 38d8a3f Formatting, print seed, fill with 15 '.' chars
+2019-01-24 869c648 Assignment 1.01
