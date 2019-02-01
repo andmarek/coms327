@@ -41,7 +41,7 @@ arrange_floor(WINDOW *const win, int const w, int const h,
 }
 
 int
-main(int argc, char *argv[])
+main(int const argc, char *const argv[])
 {
 	WINDOW *win;
 	struct room rooms[ROOMCOUNT];
@@ -50,6 +50,7 @@ main(int argc, char *argv[])
 
 	win = initscr();
 	box(win, 0, 0);
+	curs_set(0);
 	getmaxyx(win, h, w);
 	noecho();
 	raw();
