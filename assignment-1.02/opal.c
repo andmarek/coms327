@@ -21,7 +21,7 @@ arrange_floor(WINDOW *const win, int const w, int const h,
 	}
 
 	for (i = 0; i < ROOMCOUNT && retries < ROOMRETRIES; ++i) {
-		if (!draw_room(win, rooms[i])) {
+		if (!draw_room(win, &rooms[i])) {
 			retries++;
 			gen_room(&rooms[i--], w, h);
 		}

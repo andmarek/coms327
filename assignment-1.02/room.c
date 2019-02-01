@@ -21,20 +21,20 @@ gen_room(struct room *const r, int w, int h)
 }
 
 bool
-draw_room(WINDOW *const win, struct room const r)
+draw_room(WINDOW *const win, struct room const *const r)
 {
 	int i, j;
 
-	for (i = r.x - 1; i <= r.x + r.size_x + 1; ++i) {
-		for (j = r.y - 1; j <= r.y + r.size_y + 1; ++j) {
+	for (i = r->x - 1; i <= r->x + r->size_x + 1; ++i) {
+		for (j = r->y - 1; j <= r->y + r->size_y + 1; ++j) {
 			if (mvwinch(win, j, i) != ROCK) {
 				return false;
 			}
 		}
 	}
 
-	for (i = r.x; i <= r.x + r.size_x; ++i) {
-		for (j = r.y; j <= r.y + r.size_y; ++j) {
+	for (i = r->x; i <= r->x + r->size_x; ++i) {
+		for (j = r->y; j <= r->y + r->size_y; ++j) {
 			mvwaddch(win, j, i, ROOM);
 		}
 	}

@@ -18,7 +18,7 @@ struct room {
 };
 
 void	gen_room(struct room *const, int, int);
-bool	draw_room(WINDOW *const, struct room const);
+bool	draw_room(WINDOW *const, struct room const *const);
 void	draw_corridor(WINDOW *const, struct room const, struct room const);
 void	draw_stair(WINDOW *const, int, int, bool);
 
