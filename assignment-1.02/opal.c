@@ -55,13 +55,14 @@ main(int const argc, char *const argv[])
 	noecho();
 	raw();
 
-	mvprintw(h-2, 2, "Press 'q' to quit.");
+	mvprintw(h - 1, 2, "[Press 'q' to quit.]");
 
 	arrange_floor(win, w, h, rooms);
 
 	while ((ch = getch()) != 'q') {
 		if (ch == KEY_RESIZE) {
-			mvprintw(1, 1, "Resizing screen is undefined behavior");
+			mvprintw(0, 2,
+				"[Resizing the screen is undefined behavior.]");
 		}
 	}
 
