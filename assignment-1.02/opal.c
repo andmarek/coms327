@@ -56,6 +56,7 @@ main(int const argc, char *const argv[])
 	raw();
 
 	mvprintw(h - 1, 2, "[Press 'q' to quit.]");
+	mvprintw(h - 1, 26, "[Seed: %u]", seed);
 
 	arrange_floor(win, w, h, rooms);
 
