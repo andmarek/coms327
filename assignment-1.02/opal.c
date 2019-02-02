@@ -4,6 +4,8 @@
 #include "rand.h"
 #include "room.h"
 
+#undef FULLSCREEN
+
 #define ROOMCOUNT	8
 #define ROOMRETRIES	150
 
@@ -40,6 +42,11 @@ arrange_floor(WINDOW *const win, int const w, int const h,
 	}
 }
 
+struct tile {
+	uint8_t	h;	/* hardness */
+	chtype	c;	/* character */
+};
+
 int
 main(int const argc, char *const argv[])
 {
@@ -49,16 +56,29 @@ main(int const argc, char *const argv[])
 	unsigned int const seed = init_rand(argc >= 2 ? argv[1] : NULL);
 
 	win = initscr();
+
+#ifdef FULLSCREEN
+	getmaxyx(win, h, w);
+#else
+	refresh();
+	h = 21;
+	w = 80;
+	win = newwin(h, w, 0, 0);
+#endif
+
 	box(win, 0, 0);
 	curs_set(0);
-	getmaxyx(win, h, w);
 	noecho();
 	raw();
 
-	mvprintw(h - 1, 2, "[Press 'q' to quit.]");
-	mvprintw(h - 1, 26, "[Seed: %u]", seed);
+	mvwprintw(win, h - 1, 2, "[press 'q' to quit.]");
+	mvwprintw(win, h - 1, 26, "[seed: %u]", seed);
 
 	arrange_floor(win, w, h, rooms);
+
+#ifndef FULLSCREEN
+	wrefresh(win);
+#endif
 
 	while ((ch = getch()) != 'q') {
 		if (ch == KEY_RESIZE) {
@@ -66,6 +86,11 @@ main(int const argc, char *const argv[])
 				"[Resizing the screen is undefined behavior.]");
 		}
 	}
+
+#ifndef FULLSCREEN
+	delwin(win);
+	clear();
+#endif
 
 	endwin();
 
