@@ -13,7 +13,7 @@ CFLAGS_END := -lncurses
 
 DIRTY = *.out vgcore.*
 
-src = hash.c opal.c rand.c room.c
+src = hash.c opal.c io.c rand.c room.c
 hdr = hash.h rand.h room.h
 
 opal: $(src) $(hdr)

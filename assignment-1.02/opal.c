@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include <stdlib.h>
 
+#include "io.h"
 #include "rand.h"
 #include "room.h"
 
