@@ -20,7 +20,7 @@ gen_room(struct room *const r, int w, int h)
 	r->size_y = (uint8_t)rrand(MINROOMH, MAXROOMH);
 }
 
-bool
+int
 draw_room(WINDOW *const win, struct room const *const r)
 {
 	int i, j;
@@ -42,7 +42,7 @@ draw_room(WINDOW *const win, struct room const *const r)
 	return true;
 }
 
-static bool
+static int
 valid_corridor_x(WINDOW *const win, int x, int y)
 {
 	return mvwinch(win, y, x) == ROCK
@@ -50,7 +50,7 @@ valid_corridor_x(WINDOW *const win, int x, int y)
 		&& mvwinch(win, y, x - 1) != CORRIDOR;
 }
 
-static bool
+static int
 valid_corridor_y(WINDOW *const win, int x, int y)
 {
 	return mvwinch(win, y, x) == ROCK
@@ -76,7 +76,7 @@ draw_corridor(WINDOW *const win, struct room const r1, struct room const r2)
 	}
 }
 
-static bool
+static int
 valid_stair(WINDOW *const win, int x, int y)
 {
 	return (mvwinch(win, y, x) == ROCK || mvwinch(win, y, x) == ROOM)
@@ -87,7 +87,7 @@ valid_stair(WINDOW *const win, int x, int y)
 }
 
 void
-draw_stair(WINDOW *const win, int w, int h, bool up)
+draw_stair(WINDOW *const win, int w, int h, int up)
 {
 	int x, y;
 

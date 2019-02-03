@@ -2,7 +2,6 @@
 #define ROOM_H
 
 #include <ncurses.h>
-#include <stdbool.h>
 
 #define ROOM		'.'
 #define CORRIDOR	'#'
@@ -18,8 +17,8 @@ struct room {
 };
 
 void	gen_room(struct room *const, int, int);
-bool	draw_room(WINDOW *const, struct room const *const);
+int	draw_room(WINDOW *const, struct room const *const);
 void	draw_corridor(WINDOW *const, struct room const, struct room const);
-void	draw_stair(WINDOW *const, int, int, bool);
+void	draw_stair(WINDOW *const, int, int, int);
 
 #endif /* ROOM_H */
