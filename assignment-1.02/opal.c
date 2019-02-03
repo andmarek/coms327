@@ -1,20 +1,22 @@
 #include <ncurses.h>
 #include <stdlib.h>
 
-#include "floor.h"
 #include "io.h"
+#include "opal.h"
 #include "player.h"
 #include "rand.h"
 
 #undef FULLSCREEN
 
-#define ROOM_COUNT	8
 #define ROOM_RETRIES	150
 
-static size_t stair_up_count;
-static size_t stair_dn_count;
+struct player p;
 
 struct room rooms[ROOM_COUNT];
+
+size_t stair_up_count;
+size_t stair_dn_count;
+
 struct stair *stairs_up;
 struct stair *stairs_dn;
 
@@ -87,7 +89,7 @@ main(int const argc, char const *const argv[])
 
 	arrange_floor(win, w, h);
 
-	place_player(win, w, h);
+	place_player(win, &p, w, h);
 
 #ifndef FULLSCREEN
 	wrefresh(win);

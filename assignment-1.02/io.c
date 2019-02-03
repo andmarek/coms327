@@ -4,6 +4,9 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "player.h"
+#include "opal.h"
+
 #define DIRECTORY	"/.rlg327"
 #define FILEPATH	"/dungeon"
 #define DF_L		8
@@ -31,6 +34,9 @@ write_things(FILE *const f)
 	/* size */
 
 	/* player coords */
+	if (fwrite(&p, sizeof(struct player), 1, f) != 1) {
+		return -1;
+	}
 
 	/* hardness */
 

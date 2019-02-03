@@ -11,6 +11,6 @@ struct player {
 	uint8_t y;
 };
 
-void	place_player(WINDOW *const, int, int);
+void	place_player(WINDOW *const, struct player *const, int, int);
 
 #endif /* PLAYER_H */

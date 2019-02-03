@@ -13,7 +13,8 @@ valid_player(WINDOW *const win, int const y, int const x)
 }
 
 void
-place_player(WINDOW *const win, int const w, int const h)
+place_player(WINDOW *const win, struct player *const p, int const w,
+	int const h)
 {
 	int x, y;
 
@@ -23,4 +24,7 @@ place_player(WINDOW *const win, int const w, int const h)
 	} while (!valid_player(win, y, x));
 
 	mvwaddch(win, y, x, PLAYER);
+
+	p->x = (uint8_t)x;
+	p->y = (uint8_t)y;
 }
