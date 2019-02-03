@@ -6,7 +6,7 @@
 #include "rand.h"
 #include "room.h"
 
-#undef FULLSCREEN
+#undef	FULLSCREEN
 
 #define ROOMCOUNT	8
 #define ROOMRETRIES	150
@@ -50,7 +50,7 @@ struct tile {
 };
 
 int
-main(int const argc, char *const argv[])
+main(int const argc, char const *const argv[])
 {
 	WINDOW *win;
 	struct room rooms[ROOMCOUNT];

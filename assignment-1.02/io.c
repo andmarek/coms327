@@ -16,7 +16,7 @@ static size_t const VER_L = sizeof(uint32_t);
 
 // TODO endianess
 static int
-write_things(FILE *f)
+write_things(FILE *const f)
 {
 	/* type marker */
 	if (fwrite(MARK, MARK_L, 1, f) != 1) {
