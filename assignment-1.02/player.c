@@ -1,6 +1,6 @@
+#include "floor.h"
 #include "player.h"
 #include "rand.h"
-#include "room.h"
 
 static int
 valid_player(WINDOW *const win, int const y, int const x)

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
+#include "floor.h"
 #include "rand.h"
-#include "room.h"
 
 #define MINROOMH	4
 #define MINROOMW	3

@@ -1,10 +1,10 @@
 #include <ncurses.h>
 #include <stdlib.h>
 
+#include "floor.h"
 #include "io.h"
 #include "player.h"
 #include "rand.h"
-#include "room.h"
 
 #undef	FULLSCREEN
 
