@@ -13,8 +13,8 @@ CFLAGS_END := -lncurses
 
 DIRTY = *.out vgcore.*
 
-src = hash.c io.c opal.c rand.c room.c
-hdr = hash.h io.h rand.h room.h
+src = hash.c io.c opal.c player.c rand.c room.c
+hdr = hash.h io.h player.h rand.h room.h
 
 opal: $(src) $(hdr)
 	$(CC) $(CFLAGS) -o opal.out $(src) $(CFLAGS_END)

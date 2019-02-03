@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "io.h"
+#include "player.h"
 #include "rand.h"
 #include "room.h"
 
@@ -76,6 +77,8 @@ main(int const argc, char *const argv[])
 	mvwprintw(win, h - 1, 26, "[seed: %u]", seed);
 
 	arrange_floor(win, w, h, rooms);
+
+	place_player(win, w, h);
 
 #ifndef FULLSCREEN
 	wrefresh(win);
