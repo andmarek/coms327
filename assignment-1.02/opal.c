@@ -6,41 +6,44 @@
 #include "player.h"
 #include "rand.h"
 
-#undef	FULLSCREEN
+#undef FULLSCREEN
 
-#define ROOMCOUNT	8
-#define ROOMRETRIES	150
+#define ROOM_COUNT	8
+#define ROOM_RETRIES	150
 
-#define STAIR_UPCOUNT	rrand(1, (ROOMCOUNT / 4) + 1)
-#define STAIR_DOWNCOUNT	rrand(1, (ROOMCOUNT / 4) + 1)
+static size_t stair_up_count;
+static size_t stair_dn_count;
+
+struct room rooms[ROOM_COUNT];
+struct stair *stairs_up;
+struct stair *stairs_dn;
 
 static void
-arrange_floor(WINDOW *const win, int const w, int const h,
-	struct room *const rooms)
+arrange_floor(WINDOW *const win, int const w, int const h)
 {
 	size_t i, retries;
 
-	for (i = 0; i < ROOMCOUNT; ++i) {
+	for (i = 0; i < ROOM_COUNT; ++i) {
 		gen_room(&rooms[i], w, h);
 	}
 
-	for (i = 0; i < ROOMCOUNT && retries < ROOMRETRIES; ++i) {
+	for (i = 0; i < ROOM_COUNT && retries < ROOM_RETRIES; ++i) {
 		if (!draw_room(win, &rooms[i])) {
 			retries++;
 			gen_room(&rooms[i--], w, h);
 		}
 	}
 
-	for (i = 0; i < ROOMCOUNT - 1; ++i) {
+	for (i = 0; i < ROOM_COUNT - 1; ++i) {
 		draw_corridor(win, rooms[i], rooms[i+1]);
 	}
 
-	for (i = 0; i < (size_t)STAIR_UPCOUNT; ++i) {
-		draw_stair(win, w, h, true);
+	for (i = 0; i < stair_up_count; ++i) {
+		draw_stair(win, &stairs_up[i], w, h, true);
 	}
 
-	for (i = 0; i < (size_t)STAIR_DOWNCOUNT; ++i) {
-		draw_stair(win, w, h, false);
+	for (i = 0; i < stair_dn_count; ++i) {
+		draw_stair(win, &stairs_dn[i], w, h, false);
 	}
 }
 
@@ -52,10 +55,16 @@ struct tile {
 int
 main(int const argc, char const *const argv[])
 {
+	stair_up_count = (size_t)rrand(1, (ROOM_COUNT / 4) + 1);
+	stair_dn_count = (size_t)rrand(1, (ROOM_COUNT / 4) + 1);
+
+	stairs_up = malloc(sizeof(struct stair) * stair_up_count);
+	stairs_dn = malloc(sizeof(struct stair) * stair_dn_count);
+
 	WINDOW *win;
-	struct room rooms[ROOMCOUNT];
 	int h, w, ch;
 	unsigned int const seed = init_rand(argc >= 2 ? argv[1] : NULL);
+
 
 	win = initscr();
 
@@ -76,7 +85,7 @@ main(int const argc, char const *const argv[])
 	mvwprintw(win, h - 1, 2, "[press 'q' to quit]");
 	mvwprintw(win, h - 1, 26, "[seed: %u]", seed);
 
-	arrange_floor(win, w, h, rooms);
+	arrange_floor(win, w, h);
 
 	place_player(win, w, h);
 
@@ -97,6 +106,9 @@ main(int const argc, char const *const argv[])
 #endif
 
 	endwin();
+
+	free(stairs_up);
+	free(stairs_dn);
 
 	printf("seed: %u\n", seed);
 

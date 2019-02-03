@@ -7,7 +7,7 @@
 #define CORRIDOR	'#'
 #define ROCK		' '
 #define STAIR_UP	'<'
-#define STAIR_DOWN	'>'
+#define STAIR_DN	'>'
 
 struct room {
 	uint8_t x;
@@ -16,9 +16,14 @@ struct room {
 	uint8_t size_y;
 };
 
+struct stair {
+	uint8_t x;
+	uint8_t y;
+};
+
 void	gen_room(struct room *const, int, int);
 int	draw_room(WINDOW *const, struct room const *const);
 void	draw_corridor(WINDOW *const, struct room const, struct room const);
-void	draw_stair(WINDOW *const, int, int, int);
+void	draw_stair(WINDOW *const, struct stair *const, int, int, int);
 
 #endif /* ROOM_H */

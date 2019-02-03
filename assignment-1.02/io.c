@@ -38,13 +38,13 @@ write_things(FILE *const f)
 
 	/* room data */
 
-	/* stair_up num */
+	/* stairs_up num */
 
-	/* star_up coords */
+	/* stars_up coords */
 
-	/* stair_down num */
+	/* stairs_dn num */
 
-	/* stair_down coords */
+	/* stairs_dn coords */
 	return 0;
 }
 

@@ -87,7 +87,8 @@ valid_stair(WINDOW *const win, int const y, int const x)
 }
 
 void
-draw_stair(WINDOW *const win, int const w, int const h, int const up)
+draw_stair(WINDOW *const win, struct stair *const s, int const w, int const h,
+	int const up)
 {
 	int x, y;
 
@@ -96,5 +97,8 @@ draw_stair(WINDOW *const win, int const w, int const h, int const up)
 		y = rrand(1, h - 2);
 	} while(!valid_stair(win, y, x));
 
-	mvwaddch(win, y, x, up ? STAIR_UP : STAIR_DOWN);
+	mvwaddch(win, y, x, up ? STAIR_UP : STAIR_DN);
+
+	s->x = (uint8_t)x;
+	s->y = (uint8_t)y;
 }
