@@ -72,7 +72,7 @@ main(int const argc, char *const argv[])
 	noecho();
 	raw();
 
-	mvwprintw(win, h - 1, 2, "[press 'q' to quit.]");
+	mvwprintw(win, h - 1, 2, "[press 'q' to quit]");
 	mvwprintw(win, h - 1, 26, "[seed: %u]", seed);
 
 	arrange_floor(win, w, h, rooms);
@@ -84,7 +84,7 @@ main(int const argc, char *const argv[])
 	while ((ch = getch()) != 'q') {
 		if (ch == KEY_RESIZE) {
 			mvprintw(0, 2,
-				"[Resizing the screen is undefined behavior.]");
+				"[resizing the screen is undefined behavior]");
 		}
 	}
 
@@ -96,6 +96,10 @@ main(int const argc, char *const argv[])
 	endwin();
 
 	printf("seed: %u\n", seed);
+
+	if (save_dungeon() == -1) {
+		fprintf(stderr, "error saving dungeon");
+	}
 
 	return EXIT_SUCCESS;
 }
