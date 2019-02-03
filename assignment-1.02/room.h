@@ -11,10 +11,10 @@
 #define STAIR_DOWN	'>'
 
 struct room {
-	int x;
-	int y;
-	int size_x;
-	int size_y;
+	uint8_t x;
+	uint8_t y;
+	uint8_t size_x;
+	uint8_t size_y;
 };
 
 void	gen_room(struct room *const, int, int);

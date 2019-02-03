@@ -14,10 +14,10 @@
 void
 gen_room(struct room *const r, int w, int h)
 {
-	r->x = rrand(1, w - 2);
-	r->y = rrand(1, h - 2);
-	r->size_x = rrand(MINROOMW, MAXROOMW);
-	r->size_y = rrand(MINROOMH, MAXROOMH);
+	r->x = (uint8_t)rrand(1, w - 2);
+	r->y = (uint8_t)rrand(1, h - 2);
+	r->size_x = (uint8_t)rrand(MINROOMW, MAXROOMW);
+	r->size_y = (uint8_t)rrand(MINROOMH, MAXROOMH);
 }
 
 bool
