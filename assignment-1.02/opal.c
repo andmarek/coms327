@@ -9,8 +9,6 @@
 #include "player.h"
 #include "rand.h"
 
-#undef FULLSCREEN
-
 #define PROGRAM_NAME	"opal"
 
 #define ROOM_RETRIES	150
@@ -154,14 +152,10 @@ main(int const argc, char *const argv[])
 
 	win = initscr();
 
-#ifdef FULLSCREEN
-	getmaxyx(win, h, w);
-#else
 	refresh();
 	h = 21;
 	w = 80;
 	win = newwin(h, w, 0, 0);
-#endif
 
 	box(win, 0, 0);
 	curs_set(0);
@@ -175,9 +169,7 @@ main(int const argc, char *const argv[])
 
 	place_player(win, &p, w, h);
 
-#ifndef FULLSCREEN
 	wrefresh(win);
-#endif
 
 	while ((ch = getch()) != 'q') {
 		if (ch == KEY_RESIZE) {
@@ -186,10 +178,8 @@ main(int const argc, char *const argv[])
 		}
 	}
 
-#ifndef FULLSCREEN
 	delwin(win);
 	clear();
-#endif
 
 	endwin();
 
