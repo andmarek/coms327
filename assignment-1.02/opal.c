@@ -90,7 +90,7 @@ main(int const argc, char const *const argv[])
 	}
 
 	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
-		fputs("error allocating memory for stairs_up", stderr);
+		fputs("error allocating memory for stairs_dn", stderr);
 		return EXIT_FAILURE;
 	}
 
