@@ -1,3 +1,5 @@
+#include <getopt.h>
+#include <limits.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +11,17 @@
 
 #undef FULLSCREEN
 
+#define PROGRAM_NAME	"opal"
+
 #define ROOM_RETRIES	150
+
+static struct option const long_opts[] = {
+	{"help", no_argument, NULL, 'h'},
+	{"load", no_argument, NULL, 'l'},
+	{"save", no_argument, NULL, 's'},
+	{"seed", required_argument, NULL, 'z'},
+	{NULL, 0, NULL, 0}
+};
 
 struct player p;
 
@@ -21,6 +33,25 @@ uint8_t stair_dn_count;
 
 struct stair *stairs_up;
 struct stair *stairs_dn;
+
+static void
+usage(int const status, char const *const n)
+{
+	printf("Usage: %s [OPTION]... \n\n", n);
+
+	if (status != EXIT_SUCCESS) {
+		fprintf(stderr, "Try '%s --help' for more information.\n", n);
+	} {
+		puts("Generate a dungeon.\n");
+		puts("Options:\n\
+  -h, --help    display this help text and exit\n\
+  -l, --load    load dungeon file\n\
+  -s, --save    save dungeon file\n\
+  -z, --seed    set rand seed");
+	}
+
+	exit(status);
+}
 
 static void
 arrange_floor(WINDOW *const win, int const w, int const h)
@@ -70,11 +101,36 @@ wipe(void)
 }
 
 int
-main(int const argc, char const *const argv[])
+main(int const argc, char *const argv[])
 {
 	WINDOW *win;
 	int h, w, ch;
-	unsigned int const seed = init_rand(argc >= 2 ? argv[1] : NULL);
+	int load = 0, save = 0;
+	unsigned int seed = UINT_MAX;
+	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
+
+	while ((ch = getopt_long(argc, argv, "hlsz:", long_opts, NULL)) != -1) {
+		switch(ch) {
+		case 'h':
+			usage(EXIT_SUCCESS, name);
+			break;
+		case 'l':
+			load = 1;
+			break;
+		case 's':
+			save = 1;
+			break;
+		case 'z':
+			seed = init_rand(optarg);
+			break;
+		default:
+			usage(EXIT_FAILURE, name);
+		}
+	}
+
+	if (seed == UINT_MAX) {
+		seed = init_rand(NULL);
+	}
 
 	if (!(rooms = malloc(sizeof(struct room) * ROOM_COUNT))) {
 		fputs("error allocating memory for rooms", stderr);
