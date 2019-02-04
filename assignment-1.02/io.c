@@ -46,6 +46,9 @@ write_things(FILE *const f)
 	}
 
 	/* room data */
+	if (fwrite(rooms, sizeof(struct room), ROOM_COUNT, f) != ROOM_COUNT) {
+		return -1;
+	}
 
 	/* stairs_up num */
 	if (fwrite(&stair_up_count, sizeof(uint8_t), 1, f) != 1) {
