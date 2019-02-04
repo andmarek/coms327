@@ -140,7 +140,7 @@ main(int const argc, char const *const argv[])
 	printf("seed: %u\n", seed);
 
 	if (save_dungeon() == -1) {
-		fprintf(stderr, "error saving dungeon");
+		fprintf(stderr, "error saving dungeon\n");
 	}
 
 	return EXIT_SUCCESS;
