@@ -41,16 +41,32 @@ write_things(FILE *const f)
 	/* hardness */
 
 	/* room num */
+	if (fwrite(&ROOM_COUNT, sizeof(uint8_t), 1, f) != 1) {
+		return -1;
+	}
 
 	/* room data */
 
 	/* stairs_up num */
+	if (fwrite(&stair_up_count, sizeof(uint8_t), 1, f) != 1) {
+		return -1;
+	}
 
 	/* stars_up coords */
+	if (fwrite(stairs_up, sizeof(struct stair), stair_up_count, f) != stair_up_count) {
+		return -1;
+	}
 
 	/* stairs_dn num */
+	if (fwrite(&stair_dn_count, sizeof(uint8_t), 1, f) != 1) {
+		return -1;
+	}
 
 	/* stairs_dn coords */
+	if (fwrite(stairs_dn, sizeof(struct stair), stair_dn_count, f) != stair_dn_count) {
+		return -1;
+	}
+
 	return 0;
 }
 
