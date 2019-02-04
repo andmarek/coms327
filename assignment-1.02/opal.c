@@ -1,5 +1,6 @@
 #include <ncurses.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "io.h"
 #include "opal.h"
@@ -24,7 +25,7 @@ struct stair *stairs_dn;
 static void
 arrange_floor(WINDOW *const win, int const w, int const h)
 {
-	size_t i, retries;
+	size_t i, retries = 0;
 
 	for (i = 0; i < ROOM_COUNT; ++i) {
 		gen_room(&rooms[i], w, h);
@@ -55,23 +56,45 @@ struct tile {
 	chtype	c;	/* character */
 };
 
+static void
+wipe(void)
+{
+	// zero memory before freeing
+	memset(rooms, 0, sizeof(struct room) * ROOM_COUNT);
+	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
+	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
+
+	free(rooms);
+	free(stairs_up);
+	free(stairs_dn);
+}
+
 int
 main(int const argc, char const *const argv[])
 {
-	rooms = malloc(sizeof(struct room) * ROOM_COUNT);
-
-	stair_up_count = (uint8_t)rrand(1, (ROOM_COUNT / 4) + 1);
-	stair_dn_count = (uint8_t)rrand(1, (ROOM_COUNT / 4) + 1);
-
-	stairs_up = malloc(sizeof(struct stair) * stair_up_count);
-	stairs_dn = malloc(sizeof(struct stair) * stair_dn_count);
-
-	// TODO check result of malloc
-
 	WINDOW *win;
 	int h, w, ch;
 	unsigned int const seed = init_rand(argc >= 2 ? argv[1] : NULL);
 
+	if (!(rooms = malloc(sizeof(struct room) * ROOM_COUNT))) {
+		fputs("error allocating memory for rooms", stderr);
+		return EXIT_FAILURE;
+	}
+
+	stair_up_count = (uint8_t)rrand(1, (ROOM_COUNT / 4) + 1);
+	stair_dn_count = (uint8_t)rrand(1, (ROOM_COUNT / 4) + 1);
+
+	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
+		fputs("error allocating memory for stairs_up", stderr);
+		return EXIT_FAILURE;
+	}
+
+	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
+		fputs("error allocating memory for stairs_up", stderr);
+		return EXIT_FAILURE;
+	}
+
+	atexit(wipe);
 
 	win = initscr();
 
@@ -119,10 +142,6 @@ main(int const argc, char const *const argv[])
 	if (save_dungeon() == -1) {
 		fprintf(stderr, "error saving dungeon");
 	}
-
-	free(rooms);
-	free(stairs_up);
-	free(stairs_dn);
 
 	return EXIT_SUCCESS;
 }
