@@ -12,10 +12,11 @@
 
 struct player p;
 
-struct room rooms[ROOM_COUNT];
+uint8_t const ROOM_COUNT = 8;
+struct room *rooms;
 
-size_t stair_up_count;
-size_t stair_dn_count;
+uint8_t stair_up_count;
+uint8_t stair_dn_count;
 
 struct stair *stairs_up;
 struct stair *stairs_dn;
@@ -36,7 +37,7 @@ arrange_floor(WINDOW *const win, int const w, int const h)
 		}
 	}
 
-	for (i = 0; i < ROOM_COUNT - 1; ++i) {
+	for (i = 0; i < (size_t)ROOM_COUNT - 1; ++i) {
 		draw_corridor(win, rooms[i], rooms[i+1]);
 	}
 
@@ -57,11 +58,15 @@ struct tile {
 int
 main(int const argc, char const *const argv[])
 {
-	stair_up_count = (size_t)rrand(1, (ROOM_COUNT / 4) + 1);
-	stair_dn_count = (size_t)rrand(1, (ROOM_COUNT / 4) + 1);
+	rooms = malloc(sizeof(struct room) * ROOM_COUNT);
+
+	stair_up_count = (uint8_t)rrand(1, (ROOM_COUNT / 4) + 1);
+	stair_dn_count = (uint8_t)rrand(1, (ROOM_COUNT / 4) + 1);
 
 	stairs_up = malloc(sizeof(struct stair) * stair_up_count);
 	stairs_dn = malloc(sizeof(struct stair) * stair_dn_count);
+
+	// TODO check result of malloc
 
 	WINDOW *win;
 	int h, w, ch;
@@ -109,14 +114,15 @@ main(int const argc, char const *const argv[])
 
 	endwin();
 
-	free(stairs_up);
-	free(stairs_dn);
-
 	printf("seed: %u\n", seed);
 
 	if (save_dungeon() == -1) {
 		fprintf(stderr, "error saving dungeon");
 	}
+
+	free(rooms);
+	free(stairs_up);
+	free(stairs_dn);
 
 	return EXIT_SUCCESS;
 }
