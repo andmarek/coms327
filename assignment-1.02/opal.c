@@ -41,7 +41,7 @@ usage(int const status, char const *const n)
 
 	if (status != EXIT_SUCCESS) {
 		fprintf(stderr, "Try '%s --help' for more information.\n", n);
-	} {
+	} else {
 		puts("Generate a dungeon.\n");
 		puts("Options:\n\
   -h, --help    display this help text and exit\n\
