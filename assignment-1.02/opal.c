@@ -24,11 +24,11 @@ static struct option const long_opts[] = {
 
 struct player p;
 
-uint8_t room_count;
+uint16_t room_count;
 struct room *rooms;
 
-uint8_t stair_up_count;
-uint8_t stair_dn_count;
+uint16_t stair_up_count;
+uint16_t stair_dn_count;
 
 struct stair *stairs_up;
 struct stair *stairs_dn;
@@ -107,7 +107,7 @@ arrange_floor(WINDOW *const win, int const w, int const h)
 	}
 
 	if (i < room_count) {
-		room_count = (uint8_t)i;
+		room_count = (uint16_t)i;
 		rooms = realloc(rooms, sizeof(struct room) * room_count);
 
 		if (!rooms) {
@@ -177,8 +177,8 @@ main(int const argc, char *const argv[])
 		}
 	} else {
 		room_count = 8;
-		stair_up_count = (uint8_t)rrand(1, (room_count / 4) + 1);
-		stair_dn_count = (uint8_t)rrand(1, (room_count / 4) + 1);
+		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
+		stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 
 		if (gen() == -1 || arrange_floor(win, width, height) == -1) {
 			fputs("error generating dungeon\n", stderr);

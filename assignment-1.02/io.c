@@ -51,7 +51,7 @@ write_things(FILE *const f)
 	}
 
 	/* room num */
-	if (fwrite(&room_count, sizeof(uint8_t), 1, f) != 1) {
+	if (fwrite(&room_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
 
@@ -61,7 +61,7 @@ write_things(FILE *const f)
 	}
 
 	/* stairs_up num */
-	if (fwrite(&stair_up_count, sizeof(uint8_t), 1, f) != 1) {
+	if (fwrite(&stair_up_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
 
@@ -71,7 +71,7 @@ write_things(FILE *const f)
 	}
 
 	/* stairs_dn num */
-	if (fwrite(&stair_dn_count, sizeof(uint8_t), 1, f) != 1) {
+	if (fwrite(&stair_dn_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
 
