@@ -168,7 +168,7 @@ int
 main(int const argc, char *const argv[])
 {
 	WINDOW *win;
-	int ch;
+	int ch, ok = EXIT_SUCCESS;
 	int load = 0, save = 0;
 	unsigned int seed = UINT_MAX;
 	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
@@ -207,6 +207,7 @@ main(int const argc, char *const argv[])
 	if (load) {
 		if (load_dungeon() == -1) {
 			fputs("error loading dungeon\n", stderr);
+			ok = EXIT_FAILURE;
 			goto exit;
 		}
 
@@ -220,11 +221,13 @@ main(int const argc, char *const argv[])
 
 		if (gen() == -1 || arrange_new(win, width, height) == -1) {
 			fputs("error generating dungeon\n", stderr);
+			ok = EXIT_FAILURE;
 			goto exit;
 		}
 
 		if (register_tiles(win, width, height) == -1) {
 			fputs("error registering tiles\n", stderr);
+			ok = EXIT_FAILURE;
 			goto exit;
 		}
 
@@ -252,6 +255,7 @@ main(int const argc, char *const argv[])
 
 	if (save && save_dungeon() == -1) {
 		fprintf(stderr, "error saving dungeon\n");
+		ok = EXIT_FAILURE;
 	}
 
 	exit:
@@ -272,5 +276,5 @@ main(int const argc, char *const argv[])
 		free(tiles);
 	}
 
-	return EXIT_SUCCESS;
+	return ok;
 }
