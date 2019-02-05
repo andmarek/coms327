@@ -120,6 +120,7 @@ load_dungeon(void)
 {
 	FILE *f;
 	char *path;
+	uint32_t size;
 
 #ifdef _GNU_SOURCE
 	path = secure_getenv("HOME");
@@ -135,6 +136,15 @@ load_dungeon(void)
 	strncat(path, FILEPATH, DF_L + 1);
 
 	if (!(f = fopen(path, "r"))) {
+		return -1;
+	}
+
+	/* skip file marker and version */
+	if (fseek(f, MARK_L + sizeof(uint32_t), SEEK_SET) == -1) {
+		return -1;
+	}
+
+	if (fread(&size, sizeof(uint32_t), 1, f) != 1) {
 		return -1;
 	}
 
