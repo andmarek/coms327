@@ -23,7 +23,7 @@ static struct option const long_opts[] = {
 
 struct player p;
 
-uint8_t const ROOM_COUNT = 8;
+uint8_t room_count;
 struct room *rooms;
 
 uint8_t stair_up_count;
@@ -51,51 +51,82 @@ usage(int const status, char const *const n)
 	exit(status);
 }
 
-static void
+static int
 arrange_floor(WINDOW *const win, int const w, int const h)
 {
 	size_t i, retries = 0;
 
-	for (i = 0; i < ROOM_COUNT; ++i) {
+	for (i = 0; i < room_count; ++i) {
 		gen_room(&rooms[i], w, h);
 	}
 
-	for (i = 0; i < ROOM_COUNT && retries < ROOM_RETRIES; ++i) {
+	for (i = 0; i < room_count && retries < ROOM_RETRIES; ++i) {
 		if (!draw_room(win, &rooms[i])) {
 			retries++;
 			gen_room(&rooms[i--], w, h);
 		}
 	}
 
-	for (i = 0; i < (size_t)ROOM_COUNT - 1; ++i) {
+	if (i < room_count) {
+		room_count = (uint8_t)i;
+		rooms = realloc(rooms, sizeof(struct room) * room_count);
+
+		if (!rooms) {
+			return -1;
+		}
+	}
+
+	for (i = 0; i < room_count - 1U; ++i) {
 		draw_corridor(win, rooms[i], rooms[i+1]);
 	}
 
 	for (i = 0; i < stair_up_count; ++i) {
-		draw_stair(win, &stairs_up[i], w, h, true);
+		gen_draw_stair(win, &stairs_up[i], w, h, true);
 	}
 
 	for (i = 0; i < stair_dn_count; ++i) {
-		draw_stair(win, &stairs_dn[i], w, h, false);
+		gen_draw_stair(win, &stairs_dn[i], w, h, false);
 	}
-}
 
-struct tile {
-	uint8_t	h;	/* hardness */
-	chtype	c;	/* character */
-};
+	return 0;
+}
 
 static void
 wipe(void)
 {
 	// zero memory before freeing
-	memset(rooms, 0, sizeof(struct room) * ROOM_COUNT);
+	memset(rooms, 0, sizeof(struct room) * room_count);
 	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
 	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
 
 	free(rooms);
 	free(stairs_up);
 	free(stairs_dn);
+}
+
+static int
+gen(void)
+{
+	room_count = 8;
+
+	if (!(rooms = malloc(sizeof(struct room) * room_count))) {
+		return -1;
+	}
+
+	stair_up_count = (uint8_t)rrand(1, (room_count / 4) + 1);
+	stair_dn_count = (uint8_t)rrand(1, (room_count / 4) + 1);
+
+	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
+		return -1;
+	}
+
+	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
+		return -1;
+	}
+
+	atexit(wipe);
+
+	return 0;
 }
 
 int
@@ -130,26 +161,6 @@ main(int const argc, char *const argv[])
 		seed = init_rand(NULL);
 	}
 
-	if (!(rooms = malloc(sizeof(struct room) * ROOM_COUNT))) {
-		fputs("error allocating memory for rooms", stderr);
-		return EXIT_FAILURE;
-	}
-
-	stair_up_count = (uint8_t)rrand(1, (ROOM_COUNT / 4) + 1);
-	stair_dn_count = (uint8_t)rrand(1, (ROOM_COUNT / 4) + 1);
-
-	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
-		fputs("error allocating memory for stairs_up", stderr);
-		return EXIT_FAILURE;
-	}
-
-	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
-		fputs("error allocating memory for stairs_dn", stderr);
-		return EXIT_FAILURE;
-	}
-
-	atexit(wipe);
-
 	win = initscr();
 
 	refresh();
@@ -162,12 +173,17 @@ main(int const argc, char *const argv[])
 	noecho();
 	raw();
 
+	if (!load) {
+		if (gen() == -1 || arrange_floor(win, w, h) == -1) {
+			fputs("error generating dungeon", stderr);
+			return EXIT_FAILURE;
+		}
+
+		place_player(win, &p, w, h);
+	}
+
 	mvwprintw(win, h - 1, 2, "[press 'q' to quit]");
 	mvwprintw(win, h - 1, 26, "[seed: %u]", seed);
-
-	arrange_floor(win, w, h);
-
-	place_player(win, &p, w, h);
 
 	wrefresh(win);
 

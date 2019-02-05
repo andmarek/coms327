@@ -87,7 +87,7 @@ valid_stair(WINDOW *const win, int const y, int const x)
 }
 
 void
-draw_stair(WINDOW *const win, struct stair *const s, int const w, int const h,
+gen_draw_stair(WINDOW *const win, struct stair *const s, int const w, int const h,
 	int const up)
 {
 	int x, y;

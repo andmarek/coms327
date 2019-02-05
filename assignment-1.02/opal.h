@@ -5,7 +5,7 @@
 
 extern struct player p;
 
-extern uint8_t const ROOM_COUNT;
+extern uint8_t room_count;
 extern struct room *rooms;
 
 extern uint8_t stair_up_count;

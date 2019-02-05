@@ -41,12 +41,12 @@ write_things(FILE *const f)
 	/* hardness */
 
 	/* room num */
-	if (fwrite(&ROOM_COUNT, sizeof(uint8_t), 1, f) != 1) {
+	if (fwrite(&room_count, sizeof(uint8_t), 1, f) != 1) {
 		return -1;
 	}
 
 	/* room data */
-	if (fwrite(rooms, sizeof(struct room), ROOM_COUNT, f) != ROOM_COUNT) {
+	if (fwrite(rooms, sizeof(struct room), room_count, f) != room_count) {
 		return -1;
 	}
 
