@@ -19,7 +19,7 @@ static int
 write_things(FILE *const f)
 {
 	uint32_t const VER = 0;
-	uint32_t const filesize = (uint32_t)(1705 + (room_count * 4)
+	uint32_t const filesize = (uint32_t)(1708 + (room_count * 4)
 		+ (stair_up_count * 2) + (stair_dn_count * 2));
 	int i;
 
@@ -115,12 +115,88 @@ save_dungeon(void)
 	return write_things(f) || fclose(f) ? -1 : 0;
 }
 
+static int
+load_things(FILE *const f) {
+	uint32_t size;
+	int i;
+
+	/* skip type marker and version */
+	if (fseek(f, MARK_L + sizeof(uint32_t), SEEK_SET) == -1) {
+		return -1;
+	}
+
+	/* size */
+	if (fread(&size, sizeof(uint32_t), 1, f) != 1) {
+		return -1;
+	}
+
+	/* player coords */
+	if (fread(&p, sizeof(struct player), 1, f) != 1) {
+		return -1;
+	}
+
+	/* TODO organize mallocs */
+	if (!(tiles = malloc(sizeof(struct tile) * (size_t)width * (size_t)height))) {
+		return -1;
+	}
+
+	/* hardness */
+	for (i = 0; i < width * height; ++i) {
+		if (fread(&tiles[i].h, sizeof(uint8_t), 1, f) != 1) {
+			return -1;
+		}
+	}
+
+	/* room num */
+	if (fread(&room_count, sizeof(uint16_t), 1, f) != 1) {
+		return -1;
+	}
+
+	if (!(rooms = malloc(sizeof(struct room) * room_count))) {
+		return -1;
+	}
+
+	/* room data */
+	if (fread(rooms, sizeof(struct room), room_count, f) != room_count) {
+		return -1;
+	}
+
+	/* stair_up num */
+	if (fread(&stair_up_count, sizeof(uint16_t), 1, f) != 1) {
+		return -1;
+	}
+
+	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
+		return -1;
+	}
+
+	/* stair_up coords */
+	if (fread(stairs_up, sizeof(struct stair), stair_up_count, f) != stair_up_count) {
+		return -1;
+	}
+
+	/* stair_dn num */
+	if (fread(&stair_dn_count, sizeof(uint16_t), 1, f) != 1) {
+		return -1;
+	}
+
+	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
+		return -1;
+	}
+
+	/* stair_dn_coords */
+	if (fread(stairs_dn, sizeof(struct stair), stair_dn_count, f) != stair_dn_count) {
+		return -1;
+	}
+
+	return 0;
+}
+
 int
 load_dungeon(void)
 {
 	FILE *f;
 	char *path;
-	uint32_t size;
 
 #ifdef _GNU_SOURCE
 	path = secure_getenv("HOME");
@@ -139,14 +215,5 @@ load_dungeon(void)
 		return -1;
 	}
 
-	/* skip file marker and version */
-	if (fseek(f, MARK_L + sizeof(uint32_t), SEEK_SET) == -1) {
-		return -1;
-	}
-
-	if (fread(&size, sizeof(uint32_t), 1, f) != 1) {
-		return -1;
-	}
-
-	return fclose(f) ? -1 : 0;
+	return load_things(f) || fclose(f) ? -1 : 0;
 }
