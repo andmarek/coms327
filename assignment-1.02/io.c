@@ -102,5 +102,31 @@ save_dungeon(void)
 		return -1;
 	}
 
-	return write_things(f);
+	return write_things(f) || fclose(f) ? -1 : 0;
+}
+
+int
+load_dungeon(void)
+{
+	FILE *f;
+	char *path;
+
+#ifdef _GNU_SOURCE
+	path = secure_getenv("HOME");
+#else
+	path = getenv("HOME");
+#endif
+
+	if (!path) {
+		return -1;
+	}
+
+	strncat(path, DIRECTORY, DF_L + 1);
+	strncat(path, FILEPATH, DF_L + 1);
+
+	if (!(f = fopen(path, "r"))) {
+		return -1;
+	}
+
+	return fclose(f) ? -1 : 0;
 }

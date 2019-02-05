@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gen.h"
 #include "io.h"
 #include "opal.h"
 #include "player.h"
@@ -91,49 +92,13 @@ arrange_floor(WINDOW *const win, int const w, int const h)
 	return 0;
 }
 
-static void
-wipe(void)
-{
-	// zero memory before freeing
-	memset(rooms, 0, sizeof(struct room) * room_count);
-	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
-	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
-
-	free(rooms);
-	free(stairs_up);
-	free(stairs_dn);
-}
-
-static int
-gen(void)
-{
-	room_count = 8;
-
-	if (!(rooms = malloc(sizeof(struct room) * room_count))) {
-		return -1;
-	}
-
-	stair_up_count = (uint8_t)rrand(1, (room_count / 4) + 1);
-	stair_dn_count = (uint8_t)rrand(1, (room_count / 4) + 1);
-
-	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
-		return -1;
-	}
-
-	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
-		return -1;
-	}
-
-	atexit(wipe);
-
-	return 0;
-}
-
 int
 main(int const argc, char *const argv[])
 {
 	WINDOW *win;
-	int h, w, ch;
+	int const h = 21;
+	int const w = 80;
+	int ch;
 	int load = 0, save = 0;
 	unsigned int seed = UINT_MAX;
 	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
@@ -161,22 +126,27 @@ main(int const argc, char *const argv[])
 		seed = init_rand(NULL);
 	}
 
-	win = initscr();
-
+	initscr();
 	refresh();
-	h = 21;
-	w = 80;
 	win = newwin(h, w, 0, 0);
-
 	box(win, 0, 0);
 	curs_set(0);
 	noecho();
 	raw();
 
-	if (!load) {
+	if (load) {
+		if (load_dungeon() == -1) {
+			fputs("error loading dungeon\n", stderr);
+			goto exit;
+		}
+	} else {
+		room_count = 8;
+		stair_up_count = (uint8_t)rrand(1, (room_count / 4) + 1);
+		stair_dn_count = (uint8_t)rrand(1, (room_count / 4) + 1);
+
 		if (gen() == -1 || arrange_floor(win, w, h) == -1) {
-			fputs("error generating dungeon", stderr);
-			return EXIT_FAILURE;
+			fputs("error generating dungeon\n", stderr);
+			goto exit;
 		}
 
 		place_player(win, &p, w, h);
@@ -194,16 +164,27 @@ main(int const argc, char *const argv[])
 		}
 	}
 
-	delwin(win);
-	clear();
+	if (!load) {
+		printf("seed: %u\n", seed);
+	}
 
-	endwin();
-
-	printf("seed: %u\n", seed);
-
-	if (save_dungeon() == -1) {
+	if (save && save_dungeon() == -1) {
 		fprintf(stderr, "error saving dungeon\n");
 	}
+
+	exit:
+
+	delwin(win);
+	endwin();
+
+	// zero memory before freeing
+	memset(rooms, 0, sizeof(struct room) * room_count);
+	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
+	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
+
+	free(rooms);
+	free(stairs_up);
+	free(stairs_dn);
 
 	return EXIT_SUCCESS;
 }
