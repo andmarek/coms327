@@ -57,7 +57,7 @@ usage(int const status, char const *const n)
 	exit(status);
 }
 
-static void
+static int
 register_tiles(WINDOW *const win, int const w, int const h)
 {
 	int i, j;
@@ -72,17 +72,22 @@ register_tiles(WINDOW *const win, int const w, int const h)
 			}
 
 			switch(tiles[i*j].c) {
-				case ROOM: // fallthrough
-				case CORRIDOR: // fallthrough
-				case STAIR_UP: // fallthrough
+				case ROOM:
+				case CORRIDOR:
+				case STAIR_UP:
 				case STAIR_DN:
 					tiles[i*j].h = 0;
 					break;
+				case PLAYER:
+					/* call before player is placed */
+					return -1;
 				default:
 					tiles[i*j].h = (uint8_t)rrand(1, UINT8_MAX - 1U);
 			}
 		}
 	}
+
+	return 0;
 }
 
 static int
@@ -180,7 +185,10 @@ main(int const argc, char *const argv[])
 			goto exit;
 		}
 
-		register_tiles(win, width, height);
+		if (register_tiles(win, width, height) == -1) {
+			fputs("error registering tiles\n", stderr);
+			goto exit;
+		}
 
 		place_player(win, &p, width, height);
 	}
@@ -210,7 +218,7 @@ main(int const argc, char *const argv[])
 	delwin(win);
 	endwin();
 
-	// zero memory before freeing
+	/* zero memory before freeing */
 	memset(rooms, 0, sizeof(struct room) * room_count);
 	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
 	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);

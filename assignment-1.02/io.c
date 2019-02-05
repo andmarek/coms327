@@ -17,7 +17,7 @@
 static uint32_t const VER = 0;
 static size_t const VER_L = sizeof(uint32_t);
 
-// TODO endianess
+/* TODO endianess */
 static int
 write_things(FILE *const f)
 {
