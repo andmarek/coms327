@@ -22,7 +22,8 @@ struct stair {
 };
 
 void	gen_room(struct room *const, int, int);
-int	draw_room(WINDOW *const, struct room const *const);
+int	valid_room(WINDOW *const, struct room const *const);
+void	draw_room(WINDOW *const, struct room const *const);
 void	draw_corridor(WINDOW *const, struct room const, struct room const);
 void	gen_draw_stair(WINDOW *const, struct stair *const, int, int, int);
 

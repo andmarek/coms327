@@ -100,9 +100,11 @@ arrange_floor(WINDOW *const win, int const w, int const h)
 	}
 
 	for (i = 0; i < room_count && retries < ROOM_RETRIES; ++i) {
-		if (!draw_room(win, &rooms[i])) {
+		if (valid_room(win, &rooms[i]) == -1) {
 			retries++;
 			gen_room(&rooms[i--], w, h);
+		} else {
+			draw_room(win, &rooms[i]);
 		}
 	}
 
