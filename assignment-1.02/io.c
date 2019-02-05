@@ -14,13 +14,13 @@
 #define MARK	"RLG327-S2019"
 #define MARK_L	12
 
-static uint32_t const VER = 0;
-static size_t const VER_L = sizeof(uint32_t);
-
 /* TODO endianess */
 static int
 write_things(FILE *const f)
 {
+	uint32_t const VER = 0;
+	uint32_t const filesize = (uint32_t)(1705 + (room_count * 4)
+		+ (stair_up_count * 2) + (stair_dn_count * 2));
 	int i;
 
 	/* type marker */
@@ -29,11 +29,14 @@ write_things(FILE *const f)
 	}
 
 	/* version */
-	if (fwrite(&VER, VER_L, 1, f) != 1) {
+	if (fwrite(&VER, sizeof(uint32_t), 1, f) != 1) {
 		return -1;
 	}
 
 	/* size */
+	if (fwrite(&filesize, sizeof(uint32_t), 1, f) != 1) {
+		return -1;
+	}
 
 	/* player coords */
 	if (fwrite(&p, sizeof(struct player), 1, f) != 1) {
