@@ -18,8 +18,8 @@ extern int const width;
 extern int const height;
 
 struct tile {
-	uint8_t		h; /* hardness */
-	unsigned char	c; /* character */
+	uint8_t	h; /* hardness */
+	chtype	c; /* character */
 };
 
 extern struct tile *tiles;

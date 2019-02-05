@@ -64,25 +64,25 @@ register_tiles(WINDOW *const win, int const w, int const h)
 
 	for (i = 0; i < w; ++i) {
 		for (j = 0; j < h; ++j) {
-			tiles[i*j].c = (unsigned char)mvwinch(win, j, i);
+			tiles[i * h + j].c = mvwinch(win, j, i);
 
 			if (i == 0 || j == 0 || i == w - 1 || j == h - 1) {
-				tiles[i*j].h = UINT8_MAX;
+				tiles[i * h + j].h = UINT8_MAX;
 				continue;
 			}
 
-			switch(tiles[i*j].c) {
+			switch(tiles[i * h + j].c) {
 				case ROOM:
 				case CORRIDOR:
 				case STAIR_UP:
 				case STAIR_DN:
-					tiles[i*j].h = 0;
+					tiles[i * h + j].h = 0;
 					break;
 				case PLAYER:
 					/* call before player is placed */
 					return -1;
 				default:
-					tiles[i*j].h = (uint8_t)rrand(1, UINT8_MAX - 1U);
+					tiles[i * h + j].h = (uint8_t)rrand(1, UINT8_MAX - 1U);
 			}
 		}
 	}
@@ -91,7 +91,7 @@ register_tiles(WINDOW *const win, int const w, int const h)
 }
 
 static int
-arrange_floor(WINDOW *const win, int const w, int const h)
+arrange_new(WINDOW *const win, int const w, int const h)
 {
 	size_t i, retries = 0;
 
@@ -130,6 +130,38 @@ arrange_floor(WINDOW *const win, int const w, int const h)
 	}
 
 	return 0;
+}
+
+static void
+arrange_loaded(WINDOW *const win, int const w, int const h)
+{
+	chtype ch;
+	int i, j;
+
+	for (i = 0; i < room_count; ++i) {
+		draw_room(win, &rooms[i]);
+	}
+
+	for (i = 0; i < stair_up_count; ++i) {
+		mvwaddch(win, stairs_up[i].y, stairs_up[i].x, STAIR_UP);
+	}
+
+	for (i = 0; i < stair_dn_count; ++i) {
+		mvwaddch(win, stairs_dn[i].y, stairs_dn[i].x, STAIR_DN);
+	}
+
+	for (i = 1; i < w - 1; ++i) {
+		for (j = 1; j < h - 1; ++j) {
+			ch = mvwinch(win, j, i);
+
+			if (tiles[i * h + j].h == 0 && ch == ROCK) {
+				mvwaddch(win, j, i, CORRIDOR);
+				ch = mvwinch(win, j, i);
+			}
+
+			tiles[i * h + j].c = (unsigned char)ch;
+		}
+	}
 }
 
 int
@@ -177,12 +209,16 @@ main(int const argc, char *const argv[])
 			fputs("error loading dungeon\n", stderr);
 			goto exit;
 		}
+
+		arrange_loaded(win, width, height);
+
+		mvwaddch(win, p.y, p.x, PLAYER);
 	} else {
 		room_count = 8;
 		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 		stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 
-		if (gen() == -1 || arrange_floor(win, width, height) == -1) {
+		if (gen() == -1 || arrange_new(win, width, height) == -1) {
 			fputs("error generating dungeon\n", stderr);
 			goto exit;
 		}
@@ -196,7 +232,10 @@ main(int const argc, char *const argv[])
 	}
 
 	mvwprintw(win, height - 1, 2, "[press 'q' to quit]");
-	mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
+
+	if (!load) {
+		mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
+	}
 
 	wrefresh(win);
 
