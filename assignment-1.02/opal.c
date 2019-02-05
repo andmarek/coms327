@@ -57,6 +57,34 @@ usage(int const status, char const *const n)
 	exit(status);
 }
 
+static void
+register_tiles(WINDOW *const win, int const w, int const h)
+{
+	int i, j;
+
+	for (i = 0; i < w; ++i) {
+		for (j = 0; j < h; ++j) {
+			tiles[i*j].c = (unsigned char)mvwinch(win, j, i);
+
+			if (i == 0 || j == 0 || i == w - 1 || j == h - 1) {
+				tiles[i*j].h = UINT8_MAX;
+				continue;
+			}
+
+			switch(tiles[i*j].c) {
+				case ROOM: // fallthrough
+				case CORRIDOR: // fallthrough
+				case STAIR_UP: // fallthrough
+				case STAIR_DN:
+					tiles[i*j].h = 0;
+					break;
+				default:
+					tiles[i*j].h = (uint8_t)rrand(1, UINT8_MAX - 1U);
+			}
+		}
+	}
+}
+
 static int
 arrange_floor(WINDOW *const win, int const w, int const h)
 {
@@ -151,6 +179,8 @@ main(int const argc, char *const argv[])
 			fputs("error generating dungeon\n", stderr);
 			goto exit;
 		}
+
+		register_tiles(win, width, height);
 
 		place_player(win, &p, width, height);
 	}

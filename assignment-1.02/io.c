@@ -21,6 +21,8 @@ static size_t const VER_L = sizeof(uint32_t);
 static int
 write_things(FILE *const f)
 {
+	int i;
+
 	/* type marker */
 	if (fwrite(MARK, MARK_L, 1, f) != 1) {
 		return -1;
@@ -39,6 +41,11 @@ write_things(FILE *const f)
 	}
 
 	/* hardness */
+	for (i = 0; i < width * height; ++i) {
+		if (fwrite(&tiles[i].h, sizeof(uint8_t), 1, f) != 1) {
+			return -1;
+		}
+	}
 
 	/* room num */
 	if (fwrite(&room_count, sizeof(uint8_t), 1, f) != 1) {
