@@ -33,6 +33,11 @@ uint8_t stair_dn_count;
 struct stair *stairs_up;
 struct stair *stairs_dn;
 
+int const width = 80;
+int const height = 21;
+
+struct tile *tiles;
+
 static void
 usage(int const status, char const *const n)
 {
@@ -96,8 +101,6 @@ int
 main(int const argc, char *const argv[])
 {
 	WINDOW *win;
-	int const h = 21;
-	int const w = 80;
 	int ch;
 	int load = 0, save = 0;
 	unsigned int seed = UINT_MAX;
@@ -128,7 +131,7 @@ main(int const argc, char *const argv[])
 
 	initscr();
 	refresh();
-	win = newwin(h, w, 0, 0);
+	win = newwin(height, width, 0, 0);
 	box(win, 0, 0);
 	curs_set(0);
 	noecho();
@@ -144,16 +147,16 @@ main(int const argc, char *const argv[])
 		stair_up_count = (uint8_t)rrand(1, (room_count / 4) + 1);
 		stair_dn_count = (uint8_t)rrand(1, (room_count / 4) + 1);
 
-		if (gen() == -1 || arrange_floor(win, w, h) == -1) {
+		if (gen() == -1 || arrange_floor(win, width, height) == -1) {
 			fputs("error generating dungeon\n", stderr);
 			goto exit;
 		}
 
-		place_player(win, &p, w, h);
+		place_player(win, &p, width, height);
 	}
 
-	mvwprintw(win, h - 1, 2, "[press 'q' to quit]");
-	mvwprintw(win, h - 1, 26, "[seed: %u]", seed);
+	mvwprintw(win, height - 1, 2, "[press 'q' to quit]");
+	mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
 
 	wrefresh(win);
 
@@ -181,10 +184,12 @@ main(int const argc, char *const argv[])
 	memset(rooms, 0, sizeof(struct room) * room_count);
 	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
 	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
+	memset(tiles, 0, sizeof(struct tile) * (size_t)width * (size_t)height);
 
 	free(rooms);
 	free(stairs_up);
 	free(stairs_dn);
+	free(tiles);
 
 	return EXIT_SUCCESS;
 }

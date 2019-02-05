@@ -17,5 +17,9 @@ gen(void)
 		return -1;
 	}
 
+	if (!(tiles = malloc(sizeof(struct tile) * (size_t)width * (size_t)height))) {
+		return -1;
+	}
+
 	return 0;
 }
