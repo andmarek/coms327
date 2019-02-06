@@ -64,25 +64,25 @@ register_tiles(WINDOW *const win, int const w, int const h)
 
 	for (i = 0; i < w; ++i) {
 		for (j = 0; j < h; ++j) {
-			tiles[i * h + j].c = mvwinch(win, j, i);
+			tiles[j * w + i].c = mvwinch(win, j, i);
 
 			if (i == 0 || j == 0 || i == w - 1 || j == h - 1) {
-				tiles[i * h + j].h = UINT8_MAX;
+				tiles[j * w + i].h = UINT8_MAX;
 				continue;
 			}
 
-			switch(tiles[i * h + j].c) {
+			switch(tiles[j * w + i].c) {
 				case ROOM:
 				case CORRIDOR:
 				case STAIR_UP:
 				case STAIR_DN:
-					tiles[i * h + j].h = 0;
+					tiles[j * w + i].h = 0;
 					break;
 				case PLAYER:
 					/* call before player is placed */
 					return -1;
 				default:
-					tiles[i * h + j].h = (uint8_t)rrand(1, UINT8_MAX - 1U);
+					tiles[j * w + i].h = (uint8_t)rrand(1, UINT8_MAX - 1U);
 			}
 		}
 	}
@@ -154,12 +154,12 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 		for (j = 1; j < h - 1; ++j) {
 			ch = mvwinch(win, j, i);
 
-			if (tiles[i * h + j].h == 0 && ch == ROCK) {
+			if (tiles[j * w + i].h == 0 && ch == ROCK) {
 				mvwaddch(win, j, i, CORRIDOR);
 				ch = mvwinch(win, j, i);
 			}
 
-			tiles[i * h + j].c = (unsigned char)ch;
+			tiles[j * w + i].c = (unsigned char)ch;
 		}
 	}
 }
