@@ -264,17 +264,15 @@ main(int const argc, char *const argv[])
 	endwin();
 
 	/* zero memory before freeing */
-	if (!load) {
-		memset(rooms, 0, sizeof(struct room) * room_count);
-		memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
-		memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
-		memset(tiles, 0, sizeof(struct tile) * (size_t)width * (size_t)height);
+	memset(rooms, 0, sizeof(struct room) * room_count);
+	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
+	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
+	memset(tiles, 0, sizeof(struct tile) * (size_t)width * (size_t)height);
 
-		free(rooms);
-		free(stairs_up);
-		free(stairs_dn);
-		free(tiles);
-	}
+	free(rooms);
+	free(stairs_up);
+	free(stairs_dn);
+	free(tiles);
 
 	return ok;
 }
