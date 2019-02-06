@@ -72,17 +72,17 @@ register_tiles(WINDOW *const win, int const w, int const h)
 			}
 
 			switch(tiles[j * w + i].c) {
-				case ROOM:
-				case CORRIDOR:
-				case STAIR_UP:
-				case STAIR_DN:
-					tiles[j * w + i].h = 0;
-					break;
-				case PLAYER:
-					/* call before player is placed */
-					return -1;
-				default:
-					tiles[j * w + i].h = (uint8_t)rrand(1, UINT8_MAX - 1U);
+			case ROOM:
+			case CORRIDOR:
+			case STAIR_UP:
+			case STAIR_DN:
+				tiles[j * w + i].h = 0;
+				break;
+			case PLAYER:
+				/* call before player is placed */
+				return -1;
+			default:
+				tiles[j * w + i].h = (uint8_t)rrand(1, UINT8_MAX - 1U);
 			}
 		}
 	}
