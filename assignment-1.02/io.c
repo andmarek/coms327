@@ -1,3 +1,8 @@
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#include <endian.h>
+#undef _BSD_SOURCE
+#undef _DEFAULT_SOURCE
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,13 +19,12 @@
 #define MARK	"RLG327-S2019"
 #define MARK_L	12
 
-/* TODO endianess */
 static int
 write_things(FILE *const f)
 {
-	uint32_t const VER = 0;
-	uint32_t const filesize = (uint32_t)(1708 + (room_count * 4)
-		+ (stair_up_count * 2) + (stair_dn_count * 2));
+	uint32_t const ver = htobe32(0);
+	uint32_t const filesize = htobe32((uint32_t)(1708 + (room_count * 4)
+		+ (stair_up_count * 2) + (stair_dn_count * 2)));
 	int i;
 
 	/* type marker */
@@ -29,7 +33,7 @@ write_things(FILE *const f)
 	}
 
 	/* version */
-	if (fwrite(&VER, sizeof(uint32_t), 1, f) != 1) {
+	if (fwrite(&ver, sizeof(uint32_t), 1, f) != 1) {
 		return -1;
 	}
 
@@ -51,9 +55,12 @@ write_things(FILE *const f)
 	}
 
 	/* room num */
+	room_count = htobe16(room_count);
 	if (fwrite(&room_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
+	room_count = be16toh(room_count);
+
 
 	/* room data */
 	if (fwrite(rooms, sizeof(struct room), room_count, f) != room_count) {
@@ -61,9 +68,11 @@ write_things(FILE *const f)
 	}
 
 	/* stairs_up num */
+	stair_up_count = htobe16(stair_up_count);
 	if (fwrite(&stair_up_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
+	stair_up_count = be16toh(stair_up_count);
 
 	/* stars_up coords */
 	if (fwrite(stairs_up, sizeof(struct stair), stair_up_count, f) != stair_up_count) {
@@ -71,9 +80,11 @@ write_things(FILE *const f)
 	}
 
 	/* stairs_dn num */
+	stair_dn_count = htobe16(stair_dn_count);
 	if (fwrite(&stair_dn_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
+	stair_dn_count = be16toh(stair_dn_count);
 
 	/* stairs_dn coords */
 	if (fwrite(stairs_dn, sizeof(struct stair), stair_dn_count, f) != stair_dn_count) {
@@ -112,21 +123,20 @@ save_dungeon(void)
 		return -1;
 	}
 
-	return write_things(f) || fclose(f) ? -1 : 0;
+	if (write_things(f) == -1) {
+		(void)fclose(f);
+		return -1;
+	}
+
+	return fclose(f) ? -1 : 0;
 }
 
 static int
 load_things(FILE *const f) {
-	uint32_t size;
 	int i;
 
-	/* skip type marker and version */
-	if (fseek(f, MARK_L + sizeof(uint32_t), SEEK_SET) == -1) {
-		return -1;
-	}
-
-	/* size */
-	if (fread(&size, sizeof(uint32_t), 1, f) != 1) {
+	/* skip type marker, version, and size */
+	if (fseek(f, MARK_L + 2 * sizeof(uint32_t), SEEK_SET) == -1) {
 		return -1;
 	}
 
@@ -151,6 +161,7 @@ load_things(FILE *const f) {
 	if (fread(&room_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
+	room_count = be16toh(room_count);
 
 	if (!(rooms = malloc(sizeof(struct room) * room_count))) {
 		return -1;
@@ -165,6 +176,7 @@ load_things(FILE *const f) {
 	if (fread(&stair_up_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
+	stair_up_count = be16toh(stair_up_count);
 
 	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
 		return -1;
@@ -179,6 +191,7 @@ load_things(FILE *const f) {
 	if (fread(&stair_dn_count, sizeof(uint16_t), 1, f) != 1) {
 		return -1;
 	}
+	stair_dn_count = be16toh(stair_dn_count);
 
 	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
 		return -1;
@@ -215,5 +228,10 @@ load_dungeon(void)
 		return -1;
 	}
 
-	return load_things(f) || fclose(f) ? -1 : 0;
+	if (load_things(f) == -1) {
+		(void)fclose(f);
+		return -1;
+	}
+
+	return fclose(f) ? -1 : 0;
 }
