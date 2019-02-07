@@ -48,10 +48,10 @@ usage(int const status, char const *const n)
 	} else {
 		puts("Generate a dungeon.\n");
 		puts("Options:\n\
-  -h, --help    display this help text and exit\n\
-  -l, --load    load dungeon file\n\
-  -s, --save    save dungeon file\n\
-  -z, --seed    set rand seed");
+  -h, --help           display this help text and exit\n\
+  -l, --load           load dungeon file\n\
+  -s, --save           save dungeon file\n\
+  -z, --seed=[SEED]    set rand seed, takes integer or string");
 	}
 
 	exit(status);
