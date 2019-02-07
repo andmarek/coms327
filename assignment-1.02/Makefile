@@ -11,7 +11,7 @@ CFLAGS += -Wswitch-default -Wswitch-enum -Wunreachable-code
 
 CFLAGS_END := -lncurses
 
-DIRTY = *.out vgcore.*
+DIRTY = *.out vgcore.* error
 
 src = floor.c gen.c hash.c io.c opal.c player.c rand.c
 hdr = floor.h gen.h hash.h io.h opal.h player.h rand.h
