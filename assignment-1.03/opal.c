@@ -4,14 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gen.h"
 #include "io.h"
 #include "opal.h"
 #include "player.h"
 #include "rand.h"
 
 #define PROGRAM_NAME	"opal"
-
 #define ROOM_RETRIES	150
 
 static struct option const long_opts[] = {
@@ -37,6 +35,125 @@ int const width = 80;
 int const height = 21;
 
 struct tile *tiles;
+
+static void	usage(int const, char const *const);
+static int	register_tiles(WINDOW *const, int const, int const);
+static int	arrange_new(WINDOW *const, int const, int const);
+static void	arrange_loaded(WINDOW *const, int const, int const);
+static int	gen(void);
+
+int
+main(int const argc, char *const argv[])
+{
+	WINDOW *win;
+	int ch, ok = EXIT_SUCCESS;
+	int load = 0, save = 0;
+	unsigned int seed = UINT_MAX;
+	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
+
+	while ((ch = getopt_long(argc, argv, "hlsz:", long_opts, NULL)) != -1) {
+		switch(ch) {
+		case 'h':
+			usage(EXIT_SUCCESS, name);
+			break;
+		case 'l':
+			load = 1;
+			break;
+		case 's':
+			save = 1;
+			break;
+		case 'z':
+			seed = init_rand(optarg);
+			break;
+		default:
+			usage(EXIT_FAILURE, name);
+		}
+	}
+
+	if (seed == UINT_MAX) {
+		seed = init_rand(NULL);
+	}
+
+	initscr();
+	refresh();
+	win = newwin(height, width, 0, 0);
+	box(win, 0, 0);
+	curs_set(0);
+	noecho();
+	raw();
+
+	if (load) {
+		if (load_dungeon(width, height) == -1) {
+			fputs("error loading dungeon\n", stderr);
+			ok = EXIT_FAILURE;
+			goto exit;
+		}
+
+		arrange_loaded(win, width, height);
+
+		mvwaddch(win, p.y, p.x, PLAYER);
+	} else {
+		room_count = 8;
+		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
+		stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
+
+		if (gen() == -1 || arrange_new(win, width, height) == -1) {
+			fputs("error generating dungeon\n", stderr);
+			ok = EXIT_FAILURE;
+			goto exit;
+		}
+
+		if (register_tiles(win, width, height) == -1) {
+			fputs("error registering tiles\n", stderr);
+			ok = EXIT_FAILURE;
+			goto exit;
+		}
+
+		place_player(win, &p, width, height);
+	}
+
+	mvwprintw(win, height - 1, 2, "[press 'q' to quit]");
+
+	if (!load) {
+		mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
+	}
+
+	wrefresh(win);
+
+	while ((ch = getch()) != 'q') {
+		if (ch == KEY_RESIZE) {
+			mvprintw(0, 2,
+				"[resizing the screen is undefined behavior]");
+		}
+	}
+
+	if (!load) {
+		printf("seed: %u\n", seed);
+	}
+
+	if (save && save_dungeon(width, height) == -1) {
+		fprintf(stderr, "error saving dungeon\n");
+		ok = EXIT_FAILURE;
+	}
+
+	exit:
+
+	delwin(win);
+	endwin();
+
+	/* zero memory before freeing */
+	memset(rooms, 0, sizeof(struct room) * room_count);
+	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
+	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
+	memset(tiles, 0, sizeof(struct tile) * (size_t)width * (size_t)height);
+
+	free(rooms);
+	free(stairs_up);
+	free(stairs_dn);
+	free(tiles);
+
+	return ok;
+}
 
 static void
 usage(int const status, char const *const n)
@@ -159,120 +276,29 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 				ch = mvwinch(win, j, i);
 			}
 
-			tiles[j * w + i].c = (unsigned char)ch;
+			tiles[j * w + i].c = ch;
 		}
 	}
 }
 
-int
-main(int const argc, char *const argv[])
+static int
+gen(void)
 {
-	WINDOW *win;
-	int ch, ok = EXIT_SUCCESS;
-	int load = 0, save = 0;
-	unsigned int seed = UINT_MAX;
-	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
-
-	while ((ch = getopt_long(argc, argv, "hlsz:", long_opts, NULL)) != -1) {
-		switch(ch) {
-		case 'h':
-			usage(EXIT_SUCCESS, name);
-			break;
-		case 'l':
-			load = 1;
-			break;
-		case 's':
-			save = 1;
-			break;
-		case 'z':
-			seed = init_rand(optarg);
-			break;
-		default:
-			usage(EXIT_FAILURE, name);
-		}
+	if (!(rooms = malloc(sizeof(struct room) * room_count))) {
+		return -1;
 	}
 
-	if (seed == UINT_MAX) {
-		seed = init_rand(NULL);
+	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
+		return -1;
 	}
 
-	initscr();
-	refresh();
-	win = newwin(height, width, 0, 0);
-	box(win, 0, 0);
-	curs_set(0);
-	noecho();
-	raw();
-
-	if (load) {
-		if (load_dungeon() == -1) {
-			fputs("error loading dungeon\n", stderr);
-			ok = EXIT_FAILURE;
-			goto exit;
-		}
-
-		arrange_loaded(win, width, height);
-
-		mvwaddch(win, p.y, p.x, PLAYER);
-	} else {
-		room_count = 8;
-		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
-		stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
-
-		if (gen() == -1 || arrange_new(win, width, height) == -1) {
-			fputs("error generating dungeon\n", stderr);
-			ok = EXIT_FAILURE;
-			goto exit;
-		}
-
-		if (register_tiles(win, width, height) == -1) {
-			fputs("error registering tiles\n", stderr);
-			ok = EXIT_FAILURE;
-			goto exit;
-		}
-
-		place_player(win, &p, width, height);
+	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
+		return -1;
 	}
 
-	mvwprintw(win, height - 1, 2, "[press 'q' to quit]");
-
-	if (!load) {
-		mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
+	if (!(tiles = malloc(sizeof(struct tile) * (size_t)width * (size_t)height))) {
+		return -1;
 	}
 
-	wrefresh(win);
-
-	while ((ch = getch()) != 'q') {
-		if (ch == KEY_RESIZE) {
-			mvprintw(0, 2,
-				"[resizing the screen is undefined behavior]");
-		}
-	}
-
-	if (!load) {
-		printf("seed: %u\n", seed);
-	}
-
-	if (save && save_dungeon() == -1) {
-		fprintf(stderr, "error saving dungeon\n");
-		ok = EXIT_FAILURE;
-	}
-
-	exit:
-
-	delwin(win);
-	endwin();
-
-	/* zero memory before freeing */
-	memset(rooms, 0, sizeof(struct room) * room_count);
-	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
-	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
-	memset(tiles, 0, sizeof(struct tile) * (size_t)width * (size_t)height);
-
-	free(rooms);
-	free(stairs_up);
-	free(stairs_dn);
-	free(tiles);
-
-	return ok;
+	return 0;
 }

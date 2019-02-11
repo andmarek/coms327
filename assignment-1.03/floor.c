@@ -43,7 +43,6 @@ draw_room(WINDOW *const win, struct room const *const r)
 
 	for (i = r->x; i <= r->x + r->size_x; ++i) {
 		for (j = r->y; j <= r->y + r->size_y; ++j) {
-			/* TODO check return of related functions */
 			mvwaddch(win, j, i, ROOM);
 		}
 	}
@@ -94,8 +93,8 @@ valid_stair(WINDOW *const win, int const y, int const x)
 }
 
 void
-gen_draw_stair(WINDOW *const win, struct stair *const s, int const w, int const h,
-	int const up)
+gen_draw_stair(WINDOW *const win, struct stair *const s, int const w,
+	int const h, int const up)
 {
 	int x, y;
 

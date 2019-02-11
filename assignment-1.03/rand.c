@@ -7,7 +7,19 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "hash.h"
+/* djb2 xor hash algorithm */
+static unsigned int
+hash(char const *str)
+{
+	unsigned int hash = 5381;
+	char c;
+
+	while ((c = *str++)) {
+		hash = ((hash << 5) + hash) ^ (unsigned char)c;
+	}
+
+	return hash;
+}
 
 static unsigned int
 uint_or_hash(char const *const str)

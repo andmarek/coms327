@@ -20,7 +20,7 @@
 #define MARK_L	12
 
 static int
-write_things(FILE *const f)
+write_things(FILE *const f, int const w, int const h)
 {
 	uint32_t const ver = htobe32(0);
 	uint32_t const filesize = htobe32((uint32_t)(1708 + (room_count * 4)
@@ -48,7 +48,7 @@ write_things(FILE *const f)
 	}
 
 	/* hardness */
-	for (i = 0; i < width * height; ++i) {
+	for (i = 0; i < w * h; ++i) {
 		if (fwrite(&tiles[i].h, sizeof(uint8_t), 1, f) != 1) {
 			return -1;
 		}
@@ -95,7 +95,7 @@ write_things(FILE *const f)
 }
 
 int
-save_dungeon(void)
+save_dungeon(int const w, int const h)
 {
 	struct stat st;
 	FILE *f;
@@ -123,7 +123,7 @@ save_dungeon(void)
 		return -1;
 	}
 
-	if (write_things(f) == -1) {
+	if (write_things(f, w, h) == -1) {
 		(void)fclose(f);
 		return -1;
 	}
@@ -132,7 +132,7 @@ save_dungeon(void)
 }
 
 static int
-load_things(FILE *const f) {
+load_things(FILE *const f, int const w, int const h) {
 	int i;
 
 	/* skip type marker, version, and size */
@@ -146,12 +146,12 @@ load_things(FILE *const f) {
 	}
 
 	/* TODO organize mallocs */
-	if (!(tiles = malloc(sizeof(struct tile) * (size_t)width * (size_t)height))) {
+	if (!(tiles = malloc(sizeof(struct tile) * (size_t)w * (size_t)h))) {
 		return -1;
 	}
 
 	/* hardness */
-	for (i = 0; i < width * height; ++i) {
+	for (i = 0; i < w * h; ++i) {
 		if (fread(&tiles[i].h, sizeof(uint8_t), 1, f) != 1) {
 			return -1;
 		}
@@ -206,7 +206,7 @@ load_things(FILE *const f) {
 }
 
 int
-load_dungeon(void)
+load_dungeon(int const w, int const h)
 {
 	FILE *f;
 	char *path;
@@ -228,7 +228,7 @@ load_dungeon(void)
 		return -1;
 	}
 
-	if (load_things(f) == -1) {
+	if (load_things(f, w, h) == -1) {
 		(void)fclose(f);
 		return -1;
 	}
