@@ -41,8 +41,8 @@ draw_room(WINDOW *const win, struct room const *const r)
 {
 	int i, j;
 
-	for (i = r->x; i <= r->x + r->size_x; ++i) {
-		for (j = r->y; j <= r->y + r->size_y; ++j) {
+	for (i = r->x; i <= r->x + r->size_x - 1; ++i) {
+		for (j = r->y; j <= r->y + r->size_y - 1; ++j) {
 			mvwaddch(win, j, i, ROOM);
 		}
 	}
