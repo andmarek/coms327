@@ -99,18 +99,23 @@ save_dungeon(int const w, int const h)
 {
 	struct stat st;
 	FILE *f;
-	char *path;
+	char *home, *path;
 
 #ifdef _GNU_SOURCE
-	path = secure_getenv("HOME");
+	home = secure_getenv("HOME");
 #else
-	path = getenv("HOME");
+	home = getenv("HOME");
 #endif
 
-	if (!path) {
+	if (!home) {
 		return -1;
 	}
 
+	if (!(path = malloc(sizeof(char) * (strlen(home) + 2*DF_L)))) {
+		return -1;
+	}
+
+	strncpy(path, home, strlen(home));
 	strncat(path, DIRECTORY, DF_L + 1);
 
 	if (stat(path, &st) == -1 && mkdir(path, 0700) == -1) {
@@ -145,7 +150,6 @@ load_things(FILE *const f, int const w, int const h) {
 		return -1;
 	}
 
-	/* TODO organize mallocs */
 	if (!(tiles = malloc(sizeof(struct tile) * (size_t)w * (size_t)h))) {
 		return -1;
 	}
@@ -209,18 +213,23 @@ int
 load_dungeon(int const w, int const h)
 {
 	FILE *f;
-	char *path;
+	char *home, *path;
 
 #ifdef _GNU_SOURCE
-	path = secure_getenv("HOME");
+	home = secure_getenv("HOME");
 #else
-	path = getenv("HOME");
+	home = getenv("HOME");
 #endif
 
-	if (!path) {
+	if (!home) {
 		return -1;
 	}
 
+	if (!(path = malloc(sizeof(char) * (strlen(home) + 2*DF_L)))) {
+		return -1;
+	}
+
+	strncpy(path, home, strlen(home));
 	strncat(path, DIRECTORY, DF_L + 1);
 	strncat(path, FILEPATH, DF_L + 1);
 
