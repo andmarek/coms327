@@ -1,7 +1,7 @@
 #ifndef HEAP_H
 #define HEAP_H
 
-# include <stdint.h>
+#include <stdint.h>
 
 struct heap_node {
 	struct heap_node	*next;
@@ -12,7 +12,6 @@ struct heap_node {
 	uint32_t		degree;
 	uint32_t		mark;
 };
-
 
 struct heap {
 	struct heap_node	*min;
