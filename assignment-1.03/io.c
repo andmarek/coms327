@@ -119,19 +119,24 @@ save_dungeon(int const w, int const h)
 	strncat(path, DIRECTORY, DF_L + 1);
 
 	if (stat(path, &st) == -1 && mkdir(path, 0700) == -1) {
+		free(path);
 		return -1;
 	}
 
 	strncat(path, FILEPATH, DF_L + 1);
 
 	if (!(f = fopen(path, "w"))) {
+		free(path);
 		return -1;
 	}
 
 	if (write_things(f, w, h) == -1) {
 		(void)fclose(f);
+		free(path);
 		return -1;
 	}
+
+	free(path);
 
 	return fclose(f) ? -1 : 0;
 }
@@ -234,13 +239,17 @@ load_dungeon(int const w, int const h)
 	strncat(path, FILEPATH, DF_L + 1);
 
 	if (!(f = fopen(path, "r"))) {
+		free(path);
 		return -1;
 	}
 
 	if (load_things(f, w, h) == -1) {
+		free(path);
 		(void)fclose(f);
 		return -1;
 	}
+
+	free(path);
 
 	return fclose(f) ? -1 : 0;
 }
