@@ -97,14 +97,6 @@ heap_insert(struct heap *const h, void *const v)
 	return n;
 }
 
-/*
-void *
-heap_peek_min(struct heap *h)
-{
-	return h->min ? h->min->datum : NULL;
-}
-*/
-
 static void
 heap_link(struct heap_node *const node, struct heap_node *const root)
 {
@@ -207,37 +199,6 @@ heap_remove_min(struct heap *const h)
 	return v;
 }
 
-/*
-int
-heap_combine(struct heap *h, struct heap *h1, struct heap *h2)
-{
-	if (h1->compare != h2->compare ||
-			h1->datum_delete != h2->datum_delete) {
-		return 1;
-	}
-
-	h->compare = h1->compare;
-	h->datum_delete = h1->datum_delete;
-
-	if (!h1->min) {
-		h->min = h2->min;
-		h->size = h2->size;
-	} else if (!h2->min) {
-		h->min = h1->min;
-		h->size = h1->size;
-	} else {
-		h->min = ((h->compare(h1->min->datum, h2->min->datum) < 0)
-			? h1->min : h2->min);
-		SPLICE_LISTS(h1->min, h2->min);
-	}
-
-	memset(h1, 0, sizeof(*h1));
-	memset(h2, 0, sizeof(*h2));
-
-	return 0;
-}
-*/
-
 static void
 heap_cut(struct heap *const h, struct heap_node *const n,
 	struct heap_node *const p)
@@ -289,20 +250,3 @@ heap_decrease_key_no_replace(struct heap *const h, struct heap_node *const n)
 
 	return 0;
 }
-
-/*
-int
-heap_decrease_key(struct heap *const h, struct heap_node *n, void *const v)
-{
-	if (h->compare(n->datum, v) <= 0) {
-		return 1;
-	}
-
-	if (h->datum_delete) {
-		h->datum_delete(n->datum);
-	}
-	n->datum = v;
-
-	return heap_decrease_key_no_replace(h, n);
-}
-*/
