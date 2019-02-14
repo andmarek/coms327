@@ -41,6 +41,9 @@ static int	register_tiles(WINDOW *const, int const, int const);
 static int	arrange_new(WINDOW *const, int const, int const);
 static void	arrange_loaded(WINDOW *const, int const, int const);
 static int	gen(void);
+static int32_t	compare(void const *, void const *);
+static void	calc_cost(struct heap *, struct tile const *const, int const);
+static void	dijstra(int const, int const);
 
 int
 main(int const argc, char *const argv[])
@@ -126,6 +129,8 @@ main(int const argc, char *const argv[])
 				"[resizing the screen is undefined behavior]");
 		}
 	}
+
+	dijstra(width, height);
 
 	if (!load) {
 		printf("seed: %u\n", seed);
@@ -301,4 +306,79 @@ gen(void)
 	}
 
 	return 0;
+}
+
+static int32_t
+compare(void const *const key, void const *const with)
+{
+	return ((struct tile const *const) key)->d - ((struct tile const *const) with)->d;
+}
+
+static void
+calc_cost(struct heap *const h, struct tile const *const t, int const index)
+{
+	if (tiles[index].h != UINT8_MAX && tiles[index].hn != NULL && tiles[index].d > t->d) {
+		tiles[index].d = t->d + 1;
+		heap_decrease_key_no_replace(h, tiles[index].hn);
+	}
+}
+
+static void
+dijstra(int const w, int const h)
+{
+	struct heap heap;
+	struct tile *t;
+	int i, j;
+
+	tiles[p.y * w + p.x].d = 0;
+
+	heap_init(&heap, compare, NULL);
+
+	for (i = 0; i < w; ++i) {
+		for (j = 0; j < h; ++j) {
+			if ((j * w + i) != (p.y * w + p.x)) {
+				tiles[j * w + i].d = INT_MAX;
+			}
+
+			tiles[j * w + i].x = (uint8_t)i;
+			tiles[j * w + i].y = (uint8_t)j;
+
+			if (tiles[j * w + i].h != 0) {
+				tiles[j * w + i].hn = NULL;
+			} else {
+				tiles[j * w + i].hn = heap_insert(&heap, &tiles[j * w + i]);
+			}
+		}
+	}
+
+	while((t = heap_remove_min(&heap))) {
+		calc_cost(&heap, t, (t->y - 1) * w + (t->x + 0));
+		calc_cost(&heap, t, (t->y + 1) * w + (t->x + 0));
+
+		calc_cost(&heap, t, (t->y + 0) * w + (t->x - 1));
+		calc_cost(&heap, t, (t->y + 0) * w + (t->x + 1));
+
+		calc_cost(&heap, t, (t->y + 1) * w + (t->x + 1));
+		calc_cost(&heap, t, (t->y - 1) * w + (t->x - 1));
+
+		calc_cost(&heap, t, (t->y - 1) * w + (t->x + 1));
+		calc_cost(&heap, t, (t->y + 1) * w + (t->x - 1));
+	}
+
+	for (i = 0; i < h; ++i) {
+		for (j = 0; j < w; ++j) {
+			if (tiles[i * w + j].h == 0) {
+				if (i == 0 || j == 0 || i == h - 1 || j == w - 1) {
+					fprintf(stderr, "X");
+					continue;
+				}
+				fprintf(stderr, "%d", tiles[i * w + j].d % 10);
+			} else {
+				fprintf(stderr, " ");
+			}
+		}
+		fprintf(stderr, "\n");
+	}
+
+	heap_delete(&heap);
 }
