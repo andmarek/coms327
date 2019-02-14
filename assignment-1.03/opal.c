@@ -130,8 +130,6 @@ main(int const argc, char *const argv[])
 		}
 	}
 
-	dijstra(width, height);
-
 	if (!load) {
 		printf("seed: %u\n", seed);
 	}
@@ -145,6 +143,8 @@ main(int const argc, char *const argv[])
 
 	delwin(win);
 	endwin();
+
+	dijstra(width, height);
 
 	/* zero memory before freeing */
 	memset(rooms, 0, sizeof(struct room) * room_count);
@@ -369,15 +369,15 @@ dijstra(int const w, int const h)
 		for (j = 0; j < w; ++j) {
 			if (tiles[i * w + j].h == 0) {
 				if (i == 0 || j == 0 || i == h - 1 || j == w - 1) {
-					fprintf(stderr, "X");
+					putchar('X');
 					continue;
 				}
-				fprintf(stderr, "%d", tiles[i * w + j].d % 10);
+				printf("%d", tiles[i * w + j].d % 10);
 			} else {
-				fprintf(stderr, " ");
+				putchar(' ');
 			}
 		}
-		fprintf(stderr, "\n");
+		putchar('\n');
 	}
 
 	heap_delete(&heap);
