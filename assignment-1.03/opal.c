@@ -31,8 +31,8 @@ uint16_t stair_dn_count;
 struct stair *stairs_up;
 struct stair *stairs_dn;
 
-int const width = 80;
-int const height = 21;
+#define WIDTH	80
+#define HEIGHT	21
 
 struct tile *tiles;
 
@@ -40,7 +40,7 @@ static void	usage(int const, char const *const);
 static int	register_tiles(WINDOW *const, int const, int const);
 static int	arrange_new(WINDOW *const, int const, int const);
 static void	arrange_loaded(WINDOW *const, int const, int const);
-static int	gen(void);
+static int	gen(int const, int const);
 static int32_t	compare(void const *, void const *);
 static void	calc_cost(struct heap *, struct heap_node **, struct tile const *const, int const);
 static int	dijstra(int const, int const, int const);
@@ -55,6 +55,8 @@ main(int const argc, char *const argv[])
 	int load = 0, save = 0;
 	unsigned int seed = UINT_MAX;
 	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
+
+	int const width = WIDTH, height = HEIGHT;
 
 	while ((ch = getopt_long(argc, argv, "hlsz:", long_opts, NULL)) != -1) {
 		switch(ch) {
@@ -102,7 +104,7 @@ main(int const argc, char *const argv[])
 		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 		stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 
-		if (gen() == -1 || arrange_new(win, width, height) == -1) {
+		if (gen(width, height) == -1 || arrange_new(win, width, height) == -1) {
 			fputs("error generating dungeon\n", stderr);
 			ok = EXIT_FAILURE;
 			goto exit;
@@ -308,7 +310,7 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 }
 
 static int
-gen(void)
+gen(int const w, int const h)
 {
 	if (!(rooms = malloc(sizeof(struct room) * room_count))) {
 		return -1;
@@ -322,7 +324,7 @@ gen(void)
 		return -1;
 	}
 
-	if (!(tiles = malloc(sizeof(struct tile) * (size_t)width * (size_t)height))) {
+	if (!(tiles = malloc(sizeof(struct tile) * (size_t)w * (size_t)h))) {
 		return -1;
 	}
 
