@@ -45,8 +45,8 @@ static int	gen(void);
 static int32_t	compare_nontunnel(void const *, void const *);
 static int32_t	compare_tunnel(void const *, void const *);
 
-static void	calc_cost_nontunnel(struct heap *const, struct heap_node *(*)[WIDTH], struct tile const *const, struct tile *const);
-static void	calc_cost_tunnel(struct heap *const, struct heap_node *(*)[WIDTH], struct tile const *const, struct tile *const);
+static void	calc_cost_nontunnel(struct heap *const, struct heap_node *(*const)[WIDTH], struct tile const *const, struct tile *const);
+static void	calc_cost_tunnel(struct heap *const, struct heap_node *(*const)[WIDTH], struct tile const *const, struct tile *const);
 
 static int	dijstra(int const, int const);
 
@@ -338,7 +338,7 @@ compare_tunnel(void const *const key, void const *const with)
 }
 
 static void
-calc_cost_nontunnel(struct heap *const h, struct heap_node *(*n)[WIDTH],
+calc_cost_nontunnel(struct heap *const h, struct heap_node *(*const n)[WIDTH],
 	struct tile const *const t1, struct tile *const t2)
 {
 	if (n[t2->y][t2->x] != NULL && t2->d > t1->d) {
@@ -348,7 +348,7 @@ calc_cost_nontunnel(struct heap *const h, struct heap_node *(*n)[WIDTH],
 }
 
 static void
-calc_cost_tunnel(struct heap *const h, struct heap_node *(*n)[WIDTH],
+calc_cost_tunnel(struct heap *const h, struct heap_node *(*const n)[WIDTH],
 	struct tile const *const t1, struct tile *const t2)
 {
 	if (n[t2->y][t2->x] != NULL && t2->dt > t1->dt + t1->h/85) {
