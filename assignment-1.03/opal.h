@@ -25,6 +25,9 @@ struct tile {
 	uint8_t	y; /* y position */
 };
 
-extern struct tile *tiles;
+#define WIDTH	80
+#define HEIGHT	21
+
+extern struct tile tiles[HEIGHT][WIDTH];
 
 #endif /* OPAL_H */
