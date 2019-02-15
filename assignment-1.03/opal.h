@@ -23,12 +23,9 @@ struct tile {
 	chtype	c; /* character */
 
 	/* dijstra */
-	int32_t	d; /* distance cost to player */
-
+	int32_t	d;  /* non-tunneling distance cost */
 	uint8_t	x; /* x position */
 	uint8_t	y; /* y position */
-
-	struct heap_node	*hn; /* next heap node, lower scope in future */
 };
 
 extern struct tile *tiles;

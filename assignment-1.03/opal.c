@@ -42,8 +42,10 @@ static int	arrange_new(WINDOW *const, int const, int const);
 static void	arrange_loaded(WINDOW *const, int const, int const);
 static int	gen(void);
 static int32_t	compare(void const *, void const *);
-static void	calc_cost(struct heap *, struct tile const *const, int const);
-static void	dijstra(int const, int const);
+static void	calc_cost(struct heap *, struct heap_node **, struct tile const *const, int const);
+static int	dijstra(int const, int const, int const);
+static void	print_nontunneling(int const, int const);
+static void	print_tunneling(int const, int const);
 
 int
 main(int const argc, char *const argv[])
@@ -130,6 +132,10 @@ main(int const argc, char *const argv[])
 		}
 	}
 
+	delwin(win);
+	endwin();
+	win = NULL;
+
 	if (!load) {
 		printf("seed: %u\n", seed);
 	}
@@ -137,14 +143,29 @@ main(int const argc, char *const argv[])
 	if (save && save_dungeon(width, height) == -1) {
 		fprintf(stderr, "error saving dungeon\n");
 		ok = EXIT_FAILURE;
+		goto exit;
 	}
+
+	if (dijstra(width, height, false) == -1) {
+		fprintf(stderr, "error in non-tunneling dijstra\n");
+		ok = EXIT_FAILURE;
+		goto exit;
+	}
+	print_nontunneling(width, height);
+
+	if (dijstra(width, height, true) == -1) {
+		fprintf(stderr, "error in tunneling dijstra\n");
+		ok = EXIT_FAILURE;
+		goto exit;
+	}
+	print_tunneling(width, height);
 
 	exit:
 
-	delwin(win);
-	endwin();
-
-	dijstra(width, height);
+	if (win != NULL) {
+		delwin(win);
+		endwin();
+	}
 
 	/* zero memory before freeing */
 	memset(rooms, 0, sizeof(struct room) * room_count);
@@ -315,63 +336,82 @@ compare(void const *const key, void const *const with)
 }
 
 static void
-calc_cost(struct heap *const h, struct tile const *const t, int const index)
+calc_cost(struct heap *const h, struct heap_node **nodes,
+	struct tile const *const t, int const index)
 {
-	if (tiles[index].h != UINT8_MAX && tiles[index].hn != NULL && tiles[index].d > t->d) {
-		tiles[index].d = t->d + 1;
-		heap_decrease_key_no_replace(h, tiles[index].hn);
+	if (nodes[index] != NULL && tiles[index].d > t->d + t->h/85) {
+		tiles[index].d = t->d + 1 + t->h/85;
+		heap_decrease_key_no_replace(h, nodes[index]);
 	}
 }
 
-static void
-dijstra(int const w, int const h)
+static int
+dijstra(int const w, int const h, int const tunnel)
 {
+	struct heap_node **nodes;
 	struct heap heap;
 	struct tile *t;
 	int i, j;
 
-	tiles[p.y * w + p.x].d = 0;
+	nodes = malloc(sizeof(struct heap_node) * (size_t)w * (size_t)h);
+
+	if (nodes == NULL) {
+		return -1;
+	}
 
 	heap_init(&heap, compare, NULL);
 
+	tiles[p.y * w + p.x].d = 0;
+
 	for (i = 0; i < w; ++i) {
 		for (j = 0; j < h; ++j) {
-			if ((j * w + i) != (p.y * w + p.x)) {
-				tiles[j * w + i].d = INT_MAX;
+			if (i != p.x || j != p.y) {
+				tiles[j * w + i].d = INT32_MAX;
 			}
 
 			tiles[j * w + i].x = (uint8_t)i;
 			tiles[j * w + i].y = (uint8_t)j;
 
-			if (tiles[j * w + i].h != 0) {
-				tiles[j * w + i].hn = NULL;
+			if ((tunnel && tiles[j * w + i].h == UINT8_MAX)
+				|| (!tunnel && tiles[j * w + i].h != 0)) {
+				nodes[j * w + i] = NULL;
 			} else {
-				tiles[j * w + i].hn = heap_insert(&heap, &tiles[j * w + i]);
+				nodes[j * w + i] = heap_insert(&heap, &tiles[j * w + i]);
 			}
 		}
 	}
 
 	while((t = heap_remove_min(&heap))) {
-		calc_cost(&heap, t, (t->y - 1) * w + (t->x + 0));
-		calc_cost(&heap, t, (t->y + 1) * w + (t->x + 0));
+		calc_cost(&heap, nodes, t, (t->y - 1) * w + (t->x + 0));
+		calc_cost(&heap, nodes, t, (t->y + 1) * w + (t->x + 0));
 
-		calc_cost(&heap, t, (t->y + 0) * w + (t->x - 1));
-		calc_cost(&heap, t, (t->y + 0) * w + (t->x + 1));
+		calc_cost(&heap, nodes, t, (t->y + 0) * w + (t->x - 1));
+		calc_cost(&heap, nodes, t, (t->y + 0) * w + (t->x + 1));
 
-		calc_cost(&heap, t, (t->y + 1) * w + (t->x + 1));
-		calc_cost(&heap, t, (t->y - 1) * w + (t->x - 1));
+		calc_cost(&heap, nodes, t, (t->y + 1) * w + (t->x + 1));
+		calc_cost(&heap, nodes, t, (t->y - 1) * w + (t->x - 1));
 
-		calc_cost(&heap, t, (t->y - 1) * w + (t->x + 1));
-		calc_cost(&heap, t, (t->y + 1) * w + (t->x - 1));
+		calc_cost(&heap, nodes, t, (t->y - 1) * w + (t->x + 1));
+		calc_cost(&heap, nodes, t, (t->y + 1) * w + (t->x - 1));
 	}
+
+	free(nodes);
+
+	heap_delete(&heap);
+
+	return 0;
+}
+
+static void
+print_nontunneling(int const w, int const h)
+{
+	int i, j;
 
 	for (i = 0; i < h; ++i) {
 		for (j = 0; j < w; ++j) {
-			if (tiles[i * w + j].h == 0) {
-				if (i == 0 || j == 0 || i == h - 1 || j == w - 1) {
-					putchar('X');
-					continue;
-				}
+			if (i == p.y && j == p.x) {
+				putchar('@');
+			} else if (tiles[i * w + j].h == 0) {
 				printf("%d", tiles[i * w + j].d % 10);
 			} else {
 				putchar(' ');
@@ -379,6 +419,23 @@ dijstra(int const w, int const h)
 		}
 		putchar('\n');
 	}
+}
 
-	heap_delete(&heap);
+static void
+print_tunneling(int const w, int const h)
+{
+	int i, j;
+
+	for (i = 0; i < h; ++i) {
+		for (j = 0; j < w; ++j) {
+			if (i == 0 || j == 0 || i == h - 1 || j == w - 1) {
+				putchar('X');
+			} else if (i == p.y && j == p.x) {
+				putchar('@');
+			} else {
+				printf("%d", tiles[i * w + j].d % 10);
+			}
+		}
+		putchar('\n');
+	}
 }
