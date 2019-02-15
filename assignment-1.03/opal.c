@@ -194,7 +194,7 @@ usage(int const status, char const *const n)
 static int
 register_tiles(WINDOW *const win, int const w, int const h)
 {
-	int i, j;
+	uint8_t i, j;
 
 	for (i = 0; i < h; ++i) {
 		for (j = 0; j < w; ++j) {
@@ -205,8 +205,8 @@ register_tiles(WINDOW *const win, int const w, int const h)
 				continue;
 			}
 
-			tiles[i][j].y = (uint8_t)i;
-			tiles[i][j].x = (uint8_t)j;
+			tiles[i][j].y = i;
+			tiles[i][j].x = j;
 
 			switch(tiles[i][j].c) {
 			case PLAYER:
@@ -272,7 +272,7 @@ static void
 arrange_loaded(WINDOW *const win, int const w, int const h)
 {
 	chtype ch;
-	int i, j;
+	uint8_t i, j;
 
 	for (i = 0; i < room_count; ++i) {
 		draw_room(win, &rooms[i]);
@@ -290,8 +290,8 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 		for (j = 1; j < w - 1; ++j) {
 			ch = mvwinch(win, i, j);
 
-			tiles[i][j].y = (uint8_t)i;
-			tiles[i][j].x = (uint8_t)j;
+			tiles[i][j].y = i;
+			tiles[i][j].x = j;
 
 			if (tiles[i][j].h == 0 && ch == ROCK) {
 				mvwaddch(win, i, j, CORRIDOR);
