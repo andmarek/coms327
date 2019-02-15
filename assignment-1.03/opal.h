@@ -2,7 +2,6 @@
 #define OPAL_H
 
 #include "floor.h"
-#include "heap.h"
 
 extern struct player p;
 
