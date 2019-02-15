@@ -205,6 +205,9 @@ register_tiles(WINDOW *const win, int const w, int const h)
 				continue;
 			}
 
+			tiles[i][j].y = (uint8_t)i;
+			tiles[i][j].x = (uint8_t)j;
+
 			switch(tiles[i][j].c) {
 			case PLAYER:
 				return -1;
@@ -286,6 +289,9 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 	for (i = 1; i < h - 1; ++i) {
 		for (j = 1; j < w - 1; ++j) {
 			ch = mvwinch(win, i, j);
+
+			tiles[i][j].y = (uint8_t)i;
+			tiles[i][j].x = (uint8_t)j;
 
 			if (tiles[i][j].h == 0 && ch == ROCK) {
 				mvwaddch(win, i, j, CORRIDOR);

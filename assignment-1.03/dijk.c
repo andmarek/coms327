@@ -27,9 +27,6 @@ dijkstra(int const w, int const h, int const py, int const px)
 				tiles[i][j].dt = INT32_MAX;
 			}
 
-			tiles[i][j].y = (uint8_t)i;
-			tiles[i][j].x = (uint8_t)j;
-
 			if (tiles[i][j].h != 0) {
 				nodes[i][j] = NULL;
 			} else {
