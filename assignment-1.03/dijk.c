@@ -4,8 +4,8 @@
 static int32_t	compare_nontunnel(void const *const, void const *const);
 static int32_t	compare_tunnel(void const *const, void const *const);
 
-static void	calc_cost_nontunnel(struct heap *const, struct heap_node *(*const)[WIDTH], struct tile const *const, struct tile *const);
-static void	calc_cost_tunnel(struct heap *const, struct heap_node *(*const)[WIDTH], struct tile const *const, struct tile *const);
+static void	calc_cost_nontunnel(struct heap *const, struct heap_node *const, struct tile const *const, struct tile *const);
+static void	calc_cost_tunnel(struct heap *const, struct heap_node *const, struct tile const *const, struct tile *const);
 
 int
 dijkstra(int const w, int const h, int const py, int const px)
@@ -35,18 +35,20 @@ dijkstra(int const w, int const h, int const py, int const px)
 		}
 	}
 
+#define CALC_NONTUNNEL(y,x)	calc_cost_nontunnel(&heap, nodes[(y)][(x)], t, &tiles[(y)][(x)])
+
 	while((t = heap_remove_min(&heap))) {
-		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y-1][t->x+0]);
-		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+1][t->x+0]);
+		CALC_NONTUNNEL(t->y-1, t->x+0);
+		CALC_NONTUNNEL(t->y+1, t->x+0);
 
-		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+0][t->x-1]);
-		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+0][t->x+1]);
+		CALC_NONTUNNEL(t->y+0, t->x-1);
+		CALC_NONTUNNEL(t->y+0, t->x+1);
 
-		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+1][t->x+1]);
-		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y-1][t->x-1]);
+		CALC_NONTUNNEL(t->y+1, t->x+1);
+		CALC_NONTUNNEL(t->y-1, t->x-1);
 
-		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y-1][t->x+1]);
-		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+1][t->x-1]);
+		CALC_NONTUNNEL(t->y-1, t->x+1);
+		CALC_NONTUNNEL(t->y+1, t->x-1);
 	}
 
 	heap_delete(&heap);
@@ -63,18 +65,20 @@ dijkstra(int const w, int const h, int const py, int const px)
 		}
 	}
 
+#define CALC_TUNNEL(y,x)	calc_cost_tunnel(&heap, nodes[y][x], t, &tiles[y][x])
+
 	while((t = heap_remove_min(&heap))) {
-		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y-1][t->x+0]);
-		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+1][t->x+0]);
+		CALC_TUNNEL(t->y-1, t->x+0);
+		CALC_TUNNEL(t->y+1, t->x+0);
 
-		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+0][t->x-1]);
-		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+0][t->x+1]);
+		CALC_TUNNEL(t->y+0, t->x-1);
+		CALC_TUNNEL(t->y+0, t->x+1);
 
-		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+1][t->x+1]);
-		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y-1][t->x-1]);
+		CALC_TUNNEL(t->y+1, t->x+1);
+		CALC_TUNNEL(t->y-1, t->x-1);
 
-		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y-1][t->x+1]);
-		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+1][t->x-1]);
+		CALC_TUNNEL(t->y-1, t->x+1);
+		CALC_TUNNEL(t->y+1, t->x-1);
 	}
 
 	return 0;
@@ -131,22 +135,22 @@ compare_tunnel(void const *const key, void const *const with)
 }
 
 static void
-calc_cost_nontunnel(struct heap *const h, struct heap_node *(*const n)[WIDTH],
+calc_cost_nontunnel(struct heap *const h, struct heap_node *const n,
 	struct tile const *const t1, struct tile *const t2)
 {
-	if (n[t2->y][t2->x] != NULL && t2->d > t1->d) {
+	if (n != NULL && t2->d > t1->d) {
 		t2->d = t1->d + 1;
-		heap_decrease_key_no_replace(h, n[t2->y][t2->x]);
+		heap_decrease_key_no_replace(h, n);
 	}
 }
 
 static void
-calc_cost_tunnel(struct heap *const h, struct heap_node *(*const n)[WIDTH],
+calc_cost_tunnel(struct heap *const h, struct heap_node *const n,
 	struct tile const *const t1, struct tile *const t2)
 {
-	if (n[t2->y][t2->x] != NULL && t2->dt > t1->dt + t1->h/85) {
+	if (n != NULL && t2->dt > t1->dt + t1->h/85) {
 		t2->dt = t1->dt + 1 + t1->h/85;
-		heap_decrease_key_no_replace(h, n[t2->y][t2->x]);
+		heap_decrease_key_no_replace(h, n);
 	}
 }
 
