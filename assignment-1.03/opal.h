@@ -20,7 +20,8 @@ struct tile {
 	chtype	c; /* character */
 
 	/* dijstra */
-	int32_t	d;  /* non-tunneling distance cost */
+	int32_t	d; /* non-tunneling distance cost */
+	int32_t dt; /* tunneling distance cost */
 	uint8_t	x; /* x position */
 	uint8_t	y; /* y position */
 };

@@ -34,13 +34,22 @@ struct stair *stairs_dn;
 struct tile tiles[HEIGHT][WIDTH];
 
 static void	usage(int const, char const *const);
+
 static int	register_tiles(WINDOW *const, int const, int const);
+
 static int	arrange_new(WINDOW *const, int const, int const);
 static void	arrange_loaded(WINDOW *const, int const, int const);
+
 static int	gen(void);
-static int32_t	compare(void const *, void const *);
-static void	calc_cost(struct heap *const, struct heap_node *(*)[WIDTH], struct tile const *const, struct tile *const);
-static int	dijstra(int const, int const, int const);
+
+static int32_t	compare_nontunnel(void const *, void const *);
+static int32_t	compare_tunnel(void const *, void const *);
+
+static void	calc_cost_nontunnel(struct heap *const, struct heap_node *(*)[WIDTH], struct tile const *const, struct tile *const);
+static void	calc_cost_tunnel(struct heap *const, struct heap_node *(*)[WIDTH], struct tile const *const, struct tile *const);
+
+static int	dijstra(int const, int const);
+
 static void	print_nontunneling(int const, int const);
 static void	print_tunneling(int const, int const);
 
@@ -145,18 +154,13 @@ main(int const argc, char *const argv[])
 		goto exit;
 	}
 
-	if (dijstra(width, height, false) == -1) {
-		fprintf(stderr, "error in non-tunneling dijstra\n");
+	if (dijstra(width, height) == -1) {
+		fprintf(stderr, "error in dijstra\n");
 		ok = EXIT_FAILURE;
 		goto exit;
 	}
-	print_nontunneling(width, height);
 
-	if (dijstra(width, height, true) == -1) {
-		fprintf(stderr, "error in tunneling dijstra\n");
-		ok = EXIT_FAILURE;
-		goto exit;
-	}
+	print_nontunneling(width, height);
 	print_tunneling(width, height);
 
 	exit:
@@ -322,44 +326,61 @@ gen(void)
 }
 
 static int32_t
-compare(void const *const key, void const *const with)
+compare_nontunnel(void const *const key, void const *const with)
 {
 	return ((struct tile const *const) key)->d - ((struct tile const *const) with)->d;
 }
 
+static int32_t
+compare_tunnel(void const *const key, void const *const with)
+{
+	return ((struct tile const *const) key)->dt - ((struct tile const *const) with)->dt;
+}
+
 static void
-calc_cost(struct heap *const h, struct heap_node *(*n)[WIDTH],
+calc_cost_nontunnel(struct heap *const h, struct heap_node *(*n)[WIDTH],
 	struct tile const *const t1, struct tile *const t2)
 {
-	if (n[t2->y][t2->x] != NULL && t2->d > t1->d + t1->h/85) {
-		t2->d = t1->d + 1 + t1->h/85;
+	if (n[t2->y][t2->x] != NULL && t2->d > t1->d) {
+		t2->d = t1->d + 1;
+		heap_decrease_key_no_replace(h, n[t2->y][t2->x]);
+	}
+}
+
+static void
+calc_cost_tunnel(struct heap *const h, struct heap_node *(*n)[WIDTH],
+	struct tile const *const t1, struct tile *const t2)
+{
+	if (n[t2->y][t2->x] != NULL && t2->dt > t1->dt + t1->h/85) {
+		t2->dt = t1->dt + 1 + t1->h/85;
 		heap_decrease_key_no_replace(h, n[t2->y][t2->x]);
 	}
 }
 
 static int
-dijstra(int const w, int const h, int const tunnel)
+dijstra(int const w, int const h)
 {
 	struct heap_node *nodes[HEIGHT][WIDTH];
 	struct heap heap;
 	struct tile *t;
 	int i, j;
 
-	heap_init(&heap, compare, NULL);
-
 	tiles[p.y][p.x].d = 0;
+	tiles[p.y][p.x].dt = 0;
+
+	heap_init(&heap, compare_nontunnel, NULL);
 
 	for (i = 0; i < h; ++i) {
 		for (j = 0; j < w; ++j) {
 			if (i != p.y || j != p.x) {
 				tiles[i][j].d = INT32_MAX;
+				tiles[i][j].dt = INT32_MAX;
 			}
 
 			tiles[i][j].y = (uint8_t)i;
 			tiles[i][j].x = (uint8_t)j;
 
-			if ((tunnel && tiles[i][j].h == UINT8_MAX)
-				|| (!tunnel && tiles[i][j].h != 0)) {
+			if (tiles[i][j].h != 0) {
 				nodes[i][j] = NULL;
 			} else {
 				nodes[i][j] = heap_insert(&heap, &tiles[i][j]);
@@ -368,20 +389,46 @@ dijstra(int const w, int const h, int const tunnel)
 	}
 
 	while((t = heap_remove_min(&heap))) {
-		calc_cost(&heap, nodes, t, &tiles[t->y-1][t->x+0]);
-		calc_cost(&heap, nodes, t, &tiles[t->y+1][t->x+0]);
+		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y-1][t->x+0]);
+		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+1][t->x+0]);
 
-		calc_cost(&heap, nodes, t, &tiles[t->y+0][t->x-1]);
-		calc_cost(&heap, nodes, t, &tiles[t->y+0][t->x+1]);
+		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+0][t->x-1]);
+		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+0][t->x+1]);
 
-		calc_cost(&heap, nodes, t, &tiles[t->y+1][t->x+1]);
-		calc_cost(&heap, nodes, t, &tiles[t->y-1][t->x-1]);
+		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+1][t->x+1]);
+		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y-1][t->x-1]);
 
-		calc_cost(&heap, nodes, t, &tiles[t->y-1][t->x+1]);
-		calc_cost(&heap, nodes, t, &tiles[t->y+1][t->x-1]);
+		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y-1][t->x+1]);
+		calc_cost_nontunnel(&heap, nodes, t, &tiles[t->y+1][t->x-1]);
 	}
 
 	heap_delete(&heap);
+
+	heap_init(&heap, compare_tunnel, NULL);
+
+	for (i = 0; i < h; ++i) {
+		for (j = 0; j < w; ++j) {
+			if (tiles[i][j].h == UINT8_MAX) {
+				nodes[i][j] = NULL;
+			} else {
+				nodes[i][j] = heap_insert(&heap, &tiles[i][j]);
+			}
+		}
+	}
+
+	while((t = heap_remove_min(&heap))) {
+		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y-1][t->x+0]);
+		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+1][t->x+0]);
+
+		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+0][t->x-1]);
+		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+0][t->x+1]);
+
+		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+1][t->x+1]);
+		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y-1][t->x-1]);
+
+		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y-1][t->x+1]);
+		calc_cost_tunnel(&heap, nodes, t, &tiles[t->y+1][t->x-1]);
+	}
 
 	return 0;
 }
@@ -417,7 +464,7 @@ print_tunneling(int const w, int const h)
 			} else if (i == p.y && j == p.x) {
 				putchar('@');
 			} else {
-				printf("%d", tiles[i][j].d % 10);
+				printf("%d", tiles[i][j].dt % 10);
 			}
 		}
 		putchar('\n');
