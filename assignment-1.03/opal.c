@@ -36,12 +36,17 @@ struct tile tiles[HEIGHT][WIDTH];
 
 static void	usage(int const, char const *const);
 
+static void	sleep_next(WINDOW *const, int const, int const, char const *const);
+
 static int	register_tiles(WINDOW *const, int const, int const);
 
 static int	arrange_new(WINDOW *const, int const, int const);
 static void	arrange_loaded(WINDOW *const, int const, int const);
 
 static int	gen(void);
+
+static void	print_nontunneling(WINDOW *const, int const, int const, int const, int const);
+static void	print_tunneling(WINDOW *const, int const, int const, int const, int const);
 
 int
 main(int const argc, char *const argv[])
@@ -115,20 +120,28 @@ main(int const argc, char *const argv[])
 		place_player(win, &p, width, height);
 	}
 
-	mvwprintw(win, height - 1, 2, "[press 'q' to quit]");
-
 	if (!load) {
 		mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
 	}
 
 	wrefresh(win);
 
-	while ((ch = getch()) != 'q') {
-		if (ch == KEY_RESIZE) {
-			mvprintw(0, 2,
-				"[resizing the screen is undefined behavior]");
-		}
+	sleep_next(win, 'n', height, "press 'n' to proceed");
+
+	if (dijkstra(width, height, p.y, p.x) == -1) {
+		fprintf(stderr, "error in dijstra\n");
+		ok = EXIT_FAILURE;
+		goto exit;
 	}
+
+	print_nontunneling(win, width, height, p.y, p.x);
+
+	sleep_next(win, 'n', height, "press 'n' to proceed");
+
+	print_tunneling(win, width, height, p.y, p.x);
+
+	sleep_next(win, 'q', height, "press 'q' to quit");
+
 
 	delwin(win);
 	endwin();
@@ -143,15 +156,6 @@ main(int const argc, char *const argv[])
 		ok = EXIT_FAILURE;
 		goto exit;
 	}
-
-	if (dijkstra(width, height, p.y, p.x) == -1) {
-		fprintf(stderr, "error in dijstra\n");
-		ok = EXIT_FAILURE;
-		goto exit;
-	}
-
-	print_nontunneling(width, height, p.y, p.x);
-	print_tunneling(width, height, p.y, p.x);
 
 	exit:
 
@@ -170,6 +174,25 @@ main(int const argc, char *const argv[])
 	free(stairs_dn);
 
 	return ok;
+}
+
+static void
+sleep_next(WINDOW *const win, int const key, int const h, char const *const m)
+{
+	box(win, 0, 0);
+	mvwprintw(win, h - 1, 2, "[%s]", m);
+	wrefresh(win);
+
+	int ch;
+
+	while((ch = getch()) != key) {
+		if (ch == KEY_RESIZE) {
+			mvwprintw(win, 0, 2,
+				"[resizing the screen is undefined behavior]");
+			mvwprintw(win, h - 1, 2, "[%s]", m);
+			wrefresh(win);
+		}
+	}
 }
 
 static void
@@ -319,4 +342,42 @@ gen(void)
 	}
 
 	return 0;
+}
+
+static void
+print_nontunneling(WINDOW *const win, int const w, int const h, int const py, int const px)
+{
+	int i, j;
+
+	for (i = 1; i < h - 1; ++i) {
+		for (j = 1; j < w - 1; ++j) {
+			if (i == py && j == px) {
+				mvwaddch(win, i, j, '@');
+			} else if(tiles[i][j].h == 0) {
+				mvwprintw(win, i, j, "%d", tiles[i][j].d % 10);
+			} else {
+				mvwaddch(win, i, j, ' ');
+			}
+		}
+	}
+
+	wrefresh(win);
+}
+
+static void
+print_tunneling(WINDOW *const win, int const w, int const h, int const py, int const px)
+{
+	int i, j;
+
+	for (i = 1; i < h - 1; ++i) {
+		for (j = 1; j < w - 1; ++j) {
+			if (i == py && j == px) {
+				mvwaddch(win, i, j, '@');
+			} else {
+				mvwprintw(win, i, j, "%d", tiles[i][j].dt % 10);
+			}
+		}
+	}
+
+	wrefresh(win);
 }

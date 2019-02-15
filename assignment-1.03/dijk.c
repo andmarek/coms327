@@ -84,44 +84,6 @@ dijkstra(int const w, int const h, int const py, int const px)
 	return 0;
 }
 
-void
-print_nontunneling(int const w, int const h, int const py, int const px)
-{
-	int i, j;
-
-	for (i = 0; i < h; ++i) {
-		for (j = 0; j < w; ++j) {
-			if (i == py && j == px) {
-				putchar('@');
-			} else if(tiles[i][j].h == 0) {
-				printf("%d", tiles[i][j].d % 10);
-			} else {
-				putchar(' ');
-			}
-		}
-		putchar('\n');
-	}
-}
-
-void
-print_tunneling(int const w, int const h, int const py, int const px)
-{
-	int i, j;
-
-	for (i = 0; i < h; ++i) {
-		for (j = 0; j < w; ++j) {
-			if (i == 0 || j == 0 || i == h - 1 || j == w - 1) {
-				putchar('X');
-			} else if (i == py && j == px) {
-				putchar('@');
-			} else {
-				printf("%d", tiles[i][j].dt % 10);
-			}
-		}
-		putchar('\n');
-	}
-}
-
 static int32_t
 compare_nontunnel(void const *const key, void const *const with)
 {
