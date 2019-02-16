@@ -3,12 +3,14 @@
 #include <endian.h>
 #undef _BSD_SOURCE
 #undef _DEFAULT_SOURCE
+#include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
+#include "cerr.h"
 #include "player.h"
 #include "opal.h"
 
@@ -102,6 +104,7 @@ save_dungeon(int const w, int const h)
 	struct stat st;
 	FILE *f;
 	char *home, *path;
+	int ret;
 
 #ifdef _GNU_SOURCE
 	home = secure_getenv("HOME");
@@ -109,38 +112,41 @@ save_dungeon(int const w, int const h)
 	home = getenv("HOME");
 #endif
 
-	if (!home) {
+	if (home == NULL) {
 		return -1;
 	}
 
-	if (!(path = malloc(sizeof(char) * (strlen(home) + 2*DF_L)))) {
-		return -1;
+	if (!(path = malloc(sizeof(char) * (strlen(home) + 2*DF_L)))
+		&& (strlen(home) + 2*DF_L) != 0) {
+		cerr(1, "save malloc path");
 	}
 
-	strncpy(path, home, strlen(home));
-	strncat(path, DIRECTORY, DF_L + 1);
+	(void)strncpy(path, home, strlen(home));
+	(void)strncat(path, DIRECTORY, DF_L + 1);
 
-	if (stat(path, &st) == -1 && mkdir(path, 0700) == -1) {
-		free(path);
-		return -1;
+	if (stat(path, &st) == -1) {
+		if (errno == ENOENT && mkdir(path, 0700) == -1) {
+			cerr(1, "save mkdir");
+		} else {
+			cerr(1, "save stat");
+		}
 	}
 
-	strncat(path, FILEPATH, DF_L + 1);
+	(void)strncat(path, FILEPATH, DF_L + 1);
 
 	if (!(f = fopen(path, "w"))) {
-		free(path);
-		return -1;
-	}
-
-	if (write_things(f, w, h) == -1) {
-		(void)fclose(f);
-		free(path);
-		return -1;
+		cerr(1, "save fopen");
 	}
 
 	free(path);
 
-	return fclose(f) ? -1 : 0;
+	ret = write_things(f, w, h);
+
+	if (fclose(f) == EOF) {
+		cerr(1, "save fclose, (write_things=%d)", ret);
+	}
+
+	return ret;
 }
 
 static int
@@ -172,8 +178,9 @@ load_things(FILE *const f, int const w, int const h) {
 	}
 	room_count = be16toh(room_count);
 
-	if (!(rooms = malloc(sizeof(struct room) * room_count))) {
-		return -1;
+	if (!(rooms = malloc(sizeof(struct room) * room_count))
+		&& room_count != 0) {
+		cerr(1, "load malloc rooms");
 	}
 
 	/* room data */
@@ -187,8 +194,9 @@ load_things(FILE *const f, int const w, int const h) {
 	}
 	stair_up_count = be16toh(stair_up_count);
 
-	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
-		return -1;
+	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))
+		&& stair_up_count != 0) {
+		cerr(1, "load malloc stairs_up");
 	}
 
 	/* stair_up coords */
@@ -202,8 +210,9 @@ load_things(FILE *const f, int const w, int const h) {
 	}
 	stair_dn_count = be16toh(stair_dn_count);
 
-	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
-		return -1;
+	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))
+		&& stair_dn_count != 0) {
+		cerr(1, "load malloc stairs_dn");
 	}
 
 	/* stair_dn_coords */
@@ -219,6 +228,7 @@ load_dungeon(int const w, int const h)
 {
 	FILE *f;
 	char *home, *path;
+	int ret;
 
 #ifdef _GNU_SOURCE
 	home = secure_getenv("HOME");
@@ -226,30 +236,30 @@ load_dungeon(int const w, int const h)
 	home = getenv("HOME");
 #endif
 
-	if (!home) {
+	if (home == NULL) {
 		return -1;
 	}
 
-	if (!(path = malloc(sizeof(char) * (strlen(home) + 2*DF_L)))) {
-		return -1;
+	if (!(path = malloc(sizeof(char) * (strlen(home) + 2*DF_L)))
+		&& (strlen(home) + 2*DF_L) != 0) {
+		cerr(1, "load malloc path");
 	}
 
-	strncpy(path, home, strlen(home));
-	strncat(path, DIRECTORY, DF_L + 1);
-	strncat(path, FILEPATH, DF_L + 1);
+	(void)strncpy(path, home, strlen(home));
+	(void)strncat(path, DIRECTORY, DF_L + 1);
+	(void)strncat(path, FILEPATH, DF_L + 1);
 
 	if (!(f = fopen(path, "r"))) {
-		free(path);
-		return -1;
-	}
-
-	if (load_things(f, w, h) == -1) {
-		free(path);
-		(void)fclose(f);
-		return -1;
+		cerr(1, "load fopen");
 	}
 
 	free(path);
 
-	return fclose(f) ? -1 : 0;
+	ret = load_things(f, w, h);
+
+	if (fclose(f) == EOF) {
+		cerr(1, "load fclose, (load_things=%d)", ret);
+	}
+
+	return ret;
 }

@@ -23,7 +23,7 @@ place_player(WINDOW *const win, struct player *const p, int const w,
 		y = rrand(1, h - 2);
 	} while (!valid_player(win, y, x));
 
-	mvwaddch(win, y, x, PLAYER);
+	(void)mvwaddch(win, y, x, PLAYER);
 
 	p->x = (uint8_t)x;
 	p->y = (uint8_t)y;

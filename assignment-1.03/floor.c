@@ -43,7 +43,7 @@ draw_room(WINDOW *const win, struct room const *const r)
 
 	for (i = r->x; i < r->x + r->size_x; ++i) {
 		for (j = r->y; j < r->y + r->size_y; ++j) {
-			mvwaddch(win, j, i, ROOM);
+			(void)mvwaddch(win, j, i, ROOM);
 		}
 	}
 }
@@ -71,13 +71,13 @@ draw_corridor(WINDOW *const win, struct room const r1, struct room const r2)
 
 	for (i = MIN(r1.x, r2.x); i <= MAX(r1.x, r2.x); ++i) {
 		if (valid_corridor_y(win, r1.y, i)) {
-			mvwaddch(win, r1.y, i, CORRIDOR);
+			(void)mvwaddch(win, r1.y, i, CORRIDOR);
 		}
 	}
 
 	for (i = MIN(r1.y, r2.y); i <= MAX(r1.y, r2.y); ++i) {
 		if (valid_corridor_x(win, i, r2.x)) {
-			mvwaddch(win, i, r2.x, CORRIDOR);
+			(void)mvwaddch(win, i, r2.x, CORRIDOR);
 		}
 	}
 }
@@ -103,7 +103,7 @@ gen_draw_stair(WINDOW *const win, struct stair *const s, int const w,
 		y = rrand(1, h - 2);
 	} while(!valid_stair(win, y, x));
 
-	mvwaddch(win, y, x, up ? STAIR_UP : STAIR_DN);
+	(void)mvwaddch(win, y, x, up ? STAIR_UP : STAIR_DN);
 
 	s->x = (uint8_t)x;
 	s->y = (uint8_t)y;

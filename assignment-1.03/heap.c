@@ -121,7 +121,7 @@ heap_consolidate(struct heap *const h)
 	struct heap_node *x, *y, *n, *tmp;
 	struct heap_node *a[BUFSIZE];
 
-	memset(a, 0, sizeof(struct heap_node *[BUFSIZE]));
+	(void)memset(a, 0, sizeof(struct heap_node *[BUFSIZE]));
 
 	h->min->prev->next = NULL;
 

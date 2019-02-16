@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cerr.h"
 #include "dijk.h"
 #include "io.h"
 #include "opal.h"
@@ -40,10 +41,10 @@ static void	sleep_next(WINDOW *const, int const, int const, char const *const);
 
 static int	register_tiles(WINDOW *const, int const, int const);
 
-static int	arrange_new(WINDOW *const, int const, int const);
+static void	arrange_new(WINDOW *const, int const, int const);
 static void	arrange_loaded(WINDOW *const, int const, int const);
 
-static int	gen(void);
+static void	gen(void);
 
 static void	print_nontunneling(WINDOW *const, int const, int const, int const, int const);
 static void	print_tunneling(WINDOW *const, int const, int const, int const, int const);
@@ -52,7 +53,7 @@ int
 main(int const argc, char *const argv[])
 {
 	WINDOW *win;
-	int ch, ok = EXIT_SUCCESS;
+	int ch;
 	int load = 0, save = 0;
 	unsigned int seed = UINT_MAX;
 	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
@@ -83,55 +84,65 @@ main(int const argc, char *const argv[])
 	}
 
 	initscr();
-	refresh();
-	win = newwin(height, width, 0, 0);
-	box(win, 0, 0);
-	curs_set(0);
-	noecho();
-	raw();
+
+	if (refresh() == ERR) {
+		cerrx(1, "refresh from initscr");
+	}
+
+	if ((win = newwin(height, width, 0, 0)) == NULL) {
+		cerrx(1, "newwin");
+	}
+
+	/* always returns OK */
+	(void)box(win, 0, 0);
+
+	if (curs_set(0) == ERR) {
+		cerrx(1, "curs_set");
+	}
+
+	if (noecho() == ERR) {
+		cerrx(1, "noecho");
+	}
+
+	if (raw() == ERR) {
+		cerrx(1, "raw");
+	}
 
 	if (load) {
 		if (load_dungeon(width, height) == -1) {
-			fputs("error loading dungeon\n", stderr);
-			ok = EXIT_FAILURE;
-			goto exit;
+			cerrx(1, "loading dungeon");
 		}
 
 		arrange_loaded(win, width, height);
 
-		mvwaddch(win, p.y, p.x, PLAYER);
+		(void)mvwaddch(win, p.y, p.x, PLAYER);
 	} else {
 		room_count = 8;
 		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 		stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 
-		if (gen() == -1 || arrange_new(win, width, height) == -1) {
-			fputs("error generating dungeon\n", stderr);
-			ok = EXIT_FAILURE;
-			goto exit;
-		}
+		gen();
+		arrange_new(win, width, height);
 
 		if (register_tiles(win, width, height) == -1) {
-			fputs("error registering tiles\n", stderr);
-			ok = EXIT_FAILURE;
-			goto exit;
+			cerrx(1, "registering tiles");
 		}
 
 		place_player(win, &p, width, height);
 	}
 
 	if (!load) {
-		mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
+		(void)mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
 	}
 
-	wrefresh(win);
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "wrefresh on first draw cycle");
+	}
 
 	sleep_next(win, 'n', height, "press 'n' to proceed");
 
 	if (dijkstra(width, height, p.y, p.x) == -1) {
-		fprintf(stderr, "error in dijstra\n");
-		ok = EXIT_FAILURE;
-		goto exit;
+		cerrx(1, "dijkstra");
 	}
 
 	print_nontunneling(win, width, height, p.y, p.x);
@@ -142,55 +153,59 @@ main(int const argc, char *const argv[])
 
 	sleep_next(win, 'q', height, "press 'q' to quit");
 
+	if (delwin(win) == ERR) {
+		cerrx(1, "delwin");
+	}
 
-	delwin(win);
-	endwin();
-	win = NULL;
+	if (endwin() == ERR) {
+		cerrx(1, "endwin");
+	}
 
 	if (!load) {
 		printf("seed: %u\n", seed);
 	}
 
 	if (save && save_dungeon(width, height) == -1) {
-		fprintf(stderr, "error saving dungeon\n");
-		ok = EXIT_FAILURE;
-		goto exit;
+		cerrx(1, "saving dungeon");
 	}
 
-	exit:
-
-	if (win != NULL) {
-		delwin(win);
-		endwin();
-	}
-
-	/* zero memory before freeing */
-	memset(rooms, 0, sizeof(struct room) * room_count);
-	memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
-	memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
+	/* zero memory before freeing, won't happen on erroneous exit */
+	(void)memset(rooms, 0, sizeof(struct room) * room_count);
+	(void)memset(stairs_up, 0, sizeof(struct stair) * stair_up_count);
+	(void)memset(stairs_dn, 0, sizeof(struct stair) * stair_dn_count);
 
 	free(rooms);
 	free(stairs_up);
 	free(stairs_dn);
 
-	return ok;
+	return EXIT_SUCCESS;
 }
 
 static void
 sleep_next(WINDOW *const win, int const key, int const h, char const *const m)
 {
-	box(win, 0, 0);
-	mvwprintw(win, h - 1, 2, "[%s]", m);
-	wrefresh(win);
+	(void)box(win, 0, 0);
+	(void)mvwprintw(win, h - 1, 2, "[%s]", m);
+
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "sleep_next wrefresh");
+	}
 
 	int ch;
 
 	while((ch = getch()) != key) {
+		if (ch == ERR) {
+			cerr(1, "sleep_next getch");
+		}
+
 		if (ch == KEY_RESIZE) {
-			mvwprintw(win, 0, 2,
+			(void)mvwprintw(win, 0, 2,
 				"[resizing the screen is undefined behavior]");
-			mvwprintw(win, h - 1, 2, "[%s]", m);
-			wrefresh(win);
+			(void)mvwprintw(win, h - 1, 2, "[%s]", m);
+
+			if (wrefresh(win) == ERR) {
+				cerrx(1, "sleep_next resize wrefresh");
+			}
 		}
 	}
 }
@@ -198,13 +213,14 @@ sleep_next(WINDOW *const win, int const key, int const h, char const *const m)
 static void
 usage(int const status, char const *const n)
 {
-	printf("Usage: %s [OPTION]... \n\n", n);
+	(void)printf("Usage: %s [OPTION]... \n\n", n);
 
 	if (status != EXIT_SUCCESS) {
-		fprintf(stderr, "Try '%s --help' for more information.\n", n);
+		(void)fprintf(stderr,
+			"Try '%s --help' for more information.\n", n);
 	} else {
-		puts("Generate a dungeon.\n");
-		puts("Options:\n\
+		(void)puts("Generate a dungeon.\n");
+		(void)puts("Options:\n\
   -h, --help           display this help text and exit\n\
   -l, --load           load dungeon file\n\
   -s, --save           save dungeon file\n\
@@ -249,7 +265,7 @@ register_tiles(WINDOW *const win, int const w, int const h)
 	return 0;
 }
 
-static int
+static void
 arrange_new(WINDOW *const win, int const w, int const h)
 {
 	size_t i, retries = 0;
@@ -271,8 +287,8 @@ arrange_new(WINDOW *const win, int const w, int const h)
 		room_count = (uint16_t)i;
 		rooms = realloc(rooms, sizeof(struct room) * room_count);
 
-		if (!rooms) {
-			return -1;
+		if (!rooms && room_count != 0) {
+			cerr(1, "realloc rooms");
 		}
 	}
 
@@ -287,8 +303,6 @@ arrange_new(WINDOW *const win, int const w, int const h)
 	for (i = 0; i < stair_dn_count; ++i) {
 		gen_draw_stair(win, &stairs_dn[i], w, h, false);
 	}
-
-	return 0;
 }
 
 static void
@@ -302,11 +316,11 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 	}
 
 	for (i = 0; i < stair_up_count; ++i) {
-		mvwaddch(win, stairs_up[i].y, stairs_up[i].x, STAIR_UP);
+		(void)mvwaddch(win, stairs_up[i].y, stairs_up[i].x, STAIR_UP);
 	}
 
 	for (i = 0; i < stair_dn_count; ++i) {
-		mvwaddch(win, stairs_dn[i].y, stairs_dn[i].x, STAIR_DN);
+		(void)mvwaddch(win, stairs_dn[i].y, stairs_dn[i].x, STAIR_DN);
 	}
 
 	for (i = 1; i < h - 1; ++i) {
@@ -317,7 +331,7 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 			tiles[i][j].x = j;
 
 			if (tiles[i][j].h == 0 && ch == ROCK) {
-				mvwaddch(win, i, j, CORRIDOR);
+				(void)mvwaddch(win, i, j, CORRIDOR);
 				ch = mvwinch(win, i, j);
 			}
 
@@ -326,22 +340,23 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 	}
 }
 
-static int
+static void
 gen(void)
 {
-	if (!(rooms = malloc(sizeof(struct room) * room_count))) {
-		return -1;
+	if (!(rooms = malloc(sizeof(struct room) * room_count))
+		&& room_count != 0) {
+		cerr(1, "gen malloc rooms");
 	}
 
-	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))) {
-		return -1;
+	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))
+		&& stair_up_count != 0) {
+		cerr(1, "gen malloc stairs_dn");
 	}
 
-	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))) {
-		return -1;
+	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))
+		&& stair_dn_count != 0) {
+		cerr(1, "gen malloc stairs_dn");
 	}
-
-	return 0;
 }
 
 static void
@@ -352,16 +367,18 @@ print_nontunneling(WINDOW *const win, int const w, int const h, int const py, in
 	for (i = 1; i < h - 1; ++i) {
 		for (j = 1; j < w - 1; ++j) {
 			if (i == py && j == px) {
-				mvwaddch(win, i, j, '@');
+				(void)mvwaddch(win, i, j, '@');
 			} else if(tiles[i][j].h == 0) {
-				mvwprintw(win, i, j, "%d", tiles[i][j].d % 10);
+				(void)mvwprintw(win, i, j, "%d", tiles[i][j].d % 10);
 			} else {
-				mvwaddch(win, i, j, ' ');
+				(void)mvwaddch(win, i, j, ' ');
 			}
 		}
 	}
 
-	wrefresh(win);
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "print_nontunneling wrefresh");
+	}
 }
 
 static void
@@ -372,12 +389,15 @@ print_tunneling(WINDOW *const win, int const w, int const h, int const py, int c
 	for (i = 1; i < h - 1; ++i) {
 		for (j = 1; j < w - 1; ++j) {
 			if (i == py && j == px) {
-				mvwaddch(win, i, j, '@');
+				(void)mvwaddch(win, i, j, '@');
 			} else {
-				mvwprintw(win, i, j, "%d", tiles[i][j].dt % 10);
+				(void)mvwprintw(win, i, j, "%d",
+					tiles[i][j].dt % 10);
 			}
 		}
 	}
 
-	wrefresh(win);
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "print_tunneling wrefresh");
+	}
 }

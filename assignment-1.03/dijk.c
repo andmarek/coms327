@@ -1,3 +1,4 @@
+#include "cerr.h"
 #include "heap.h"
 #include "opal.h"
 
@@ -31,6 +32,9 @@ dijkstra(int const w, int const h, int const py, int const px)
 				nodes[i][j] = NULL;
 			} else {
 				nodes[i][j] = heap_insert(&heap, &tiles[i][j]);
+				if (nodes[i][j] == NULL) {
+					cerr(1, "dijk nontunnel heap_insert");
+				}
 			}
 		}
 	}
@@ -61,6 +65,9 @@ dijkstra(int const w, int const h, int const py, int const px)
 				nodes[i][j] = NULL;
 			} else {
 				nodes[i][j] = heap_insert(&heap, &tiles[i][j]);
+				if (nodes[i][j] == NULL) {
+					cerr(1, "dijk tunnel heap_insert");
+				}
 			}
 		}
 	}
@@ -102,7 +109,7 @@ calc_cost_nontunnel(struct heap *const h, struct heap_node *const n,
 {
 	if (n != NULL && t2->d > t1->d) {
 		t2->d = t1->d + 1;
-		heap_decrease_key_no_replace(h, n);
+		(void)heap_decrease_key_no_replace(h, n);
 	}
 }
 
@@ -112,7 +119,7 @@ calc_cost_tunnel(struct heap *const h, struct heap_node *const n,
 {
 	if (n != NULL && t2->dt > t1->dt + t1->h/85) {
 		t2->dt = t1->dt + 1 + t1->h/85;
-		heap_decrease_key_no_replace(h, n);
+		(void)heap_decrease_key_no_replace(h, n);
 	}
 }
 
