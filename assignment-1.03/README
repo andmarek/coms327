@@ -1,0 +1,7 @@
+Generate a dungeon along with weighted and non-weighted distance maps. Optional
+load, save, and seed flags.
+
+Get flag info using ./opal -h
+
+The program first shows the dungeon map. Use the 'n' key to proceed through the
+distance maps, and finally 'q' to quit.
