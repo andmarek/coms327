@@ -310,17 +310,18 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 {
 	chtype ch;
 	uint8_t i, j;
+	uint16_t k;
 
-	for (i = 0; i < room_count; ++i) {
-		draw_room(win, &rooms[i]);
+	for (k = 0; k < room_count; ++k) {
+		draw_room(win, &rooms[k]);
 	}
 
-	for (i = 0; i < stair_up_count; ++i) {
-		(void)mvwaddch(win, stairs_up[i].y, stairs_up[i].x, STAIR_UP);
+	for (k = 0; k < stair_up_count; ++k) {
+		(void)mvwaddch(win, stairs_up[k].y, stairs_up[k].x, STAIR_UP);
 	}
 
-	for (i = 0; i < stair_dn_count; ++i) {
-		(void)mvwaddch(win, stairs_dn[i].y, stairs_dn[i].x, STAIR_DN);
+	for (k = 0; k < stair_dn_count; ++k) {
+		(void)mvwaddch(win, stairs_dn[k].y, stairs_dn[k].x, STAIR_DN);
 	}
 
 	for (i = 1; i < h - 1; ++i) {
@@ -369,7 +370,12 @@ print_nontunneling(WINDOW *const win, int const w, int const h, int const py, in
 			if (i == py && j == px) {
 				(void)mvwaddch(win, i, j, '@');
 			} else if(tiles[i][j].h == 0) {
-				(void)mvwprintw(win, i, j, "%d", tiles[i][j].d % 10);
+				if (tiles[i][j].d == INT32_MAX) {
+					(void)mvwaddch(win, i, j, 'X');
+				} else {
+					(void)mvwprintw(win, i, j, "%d",
+						tiles[i][j].d % 10);
+				}
 			} else {
 				(void)mvwaddch(win, i, j, ' ');
 			}
