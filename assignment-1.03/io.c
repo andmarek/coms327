@@ -121,7 +121,7 @@ save_dungeon(int const w, int const h)
 		cerr(1, "save malloc path");
 	}
 
-	(void)strncpy(path, home, strlen(home));
+	(void)strcpy(path, home);
 	(void)strncat(path, DIRECTORY, DF_L + 1);
 
 	if (stat(path, &st) == -1) {
@@ -245,7 +245,7 @@ load_dungeon(int const w, int const h)
 		cerr(1, "load malloc path");
 	}
 
-	(void)strncpy(path, home, strlen(home));
+	(void)strcpy(path, home);
 	(void)strncat(path, DIRECTORY, DF_L + 1);
 	(void)strncat(path, FILEPATH, DF_L + 1);
 
