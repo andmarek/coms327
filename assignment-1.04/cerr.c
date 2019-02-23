@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 /*
-Becase err.h is platform dependent, here's a preproduced errx.
+Becase err.h is platform dependent, here's a reproduced err and errx.
 Almost identical to OpenBSD's err(3) and errx(3).
 */
 

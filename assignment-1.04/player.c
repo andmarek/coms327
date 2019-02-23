@@ -13,8 +13,7 @@ valid_player(WINDOW *const win, int const y, int const x)
 }
 
 void
-place_player(WINDOW *const win, struct player *const p, int const w,
-	int const h)
+place_player(WINDOW *const win, int const w, int const h)
 {
 	int x, y;
 
@@ -25,6 +24,22 @@ place_player(WINDOW *const win, struct player *const p, int const w,
 
 	(void)mvwaddch(win, y, x, PLAYER);
 
-	p->x = (uint8_t)x;
-	p->y = (uint8_t)y;
+	p.x = (uint8_t)x;
+	p.y = (uint8_t)y;
+}
+
+int move_player(WINDOW *const win, uint8_t const y, uint8_t const x)
+{
+	if (tiles[y][x].h != 0) {
+		return -1;
+	}
+
+	(void)mvwaddch(win, p.y, p.x, tiles[p.y][p.x].c);
+
+	p.y = y;
+	p.x = x;
+
+	(void)mvwaddch(win, p.y, p.x, PLAYER);
+
+	return 0;
 }

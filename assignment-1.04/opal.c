@@ -37,7 +37,7 @@ struct tile tiles[HEIGHT][WIDTH];
 
 static void	usage(int const, char const *const);
 
-static void	sleep_next(WINDOW *const, int const, int const, char const *const);
+static void	handle_input(WINDOW *const, int const, int const);
 
 static int	register_tiles(WINDOW *const, int const, int const);
 
@@ -45,9 +45,6 @@ static void	arrange_new(WINDOW *const, int const, int const);
 static void	arrange_loaded(WINDOW *const, int const, int const);
 
 static void	gen(void);
-
-static void	print_nontunneling(WINDOW *const, int const, int const, int const, int const);
-static void	print_tunneling(WINDOW *const, int const, int const, int const, int const);
 
 int
 main(int const argc, char *const argv[])
@@ -128,7 +125,7 @@ main(int const argc, char *const argv[])
 			cerrx(1, "registering tiles");
 		}
 
-		place_player(win, &p, width, height);
+		place_player(win, width, height);
 	}
 
 	if (!load) {
@@ -139,19 +136,7 @@ main(int const argc, char *const argv[])
 		cerrx(1, "wrefresh on first draw cycle");
 	}
 
-	sleep_next(win, 'n', height, "press 'n' to proceed");
-
-	if (dijkstra(width, height, p.y, p.x) == -1) {
-		cerrx(1, "dijkstra");
-	}
-
-	print_nontunneling(win, width, height, p.y, p.x);
-
-	sleep_next(win, 'n', height, "press 'n' to proceed");
-
-	print_tunneling(win, width, height, p.y, p.x);
-
-	sleep_next(win, 'q', height, "press 'q' to quit");
+	handle_input(win, width, height);
 
 	if (delwin(win) == ERR) {
 		cerrx(1, "delwin");
@@ -182,30 +167,75 @@ main(int const argc, char *const argv[])
 }
 
 static void
-sleep_next(WINDOW *const win, int const key, int const h, char const *const m)
+handle_input(WINDOW *const win, int const w, int const h)
 {
+	int ch;
+
 	(void)box(win, 0, 0);
-	(void)mvwprintw(win, h - 1, 2, "[%s]", m);
+	(void)mvwprintw(win, h - 1, 2, "[ESC to quit]");
 
 	if (wrefresh(win) == ERR) {
 		cerrx(1, "sleep_next wrefresh");
 	}
 
-	int ch;
-
-	while((ch = getch()) != key) {
-		if (ch == ERR) {
-			cerr(1, "sleep_next getch");
-		}
-
-		if (ch == KEY_RESIZE) {
+#define ESCAPE	27
+	while((ch = getch()) != ESCAPE) {
+		switch (ch) {
+		case 'w':
+			move_player(win, (uint8_t)(p.y - 1), p.x);
+			break;
+		case 'a':
+			move_player(win, p.y, (uint8_t)(p.x - 1));
+			break;
+		case 's':
+			move_player(win, (uint8_t)(p.y + 1), p.x);
+			break;
+		case 'd':
+			move_player(win, p.y, (uint8_t)(p.x + 1));
+			break;
+		case 'q':
+			move_player(win, (uint8_t)(p.y - 1), (uint8_t)(p.x - 1));
+			break;
+		case 'e':
+			move_player(win, (uint8_t)(p.y - 1), (uint8_t)(p.x + 1));
+			break;
+		case 'Q':
+			move_player(win, (uint8_t)(p.y + 1), (uint8_t)(p.x - 1));
+			break;
+		case 'E':
+			move_player(win, (uint8_t)(p.y + 1), (uint8_t)(p.x + 1));
+			break;
+		case ERR:
+			cerr(1, "handle_input getch");
+			break;
+		case KEY_RESIZE:
 			(void)mvwprintw(win, 0, 2,
 				"[resizing the screen is undefined behavior]");
-			(void)mvwprintw(win, h - 1, 2, "[%s]", m);
+			(void)mvwprintw(win, h - 1, 2, "[ESC to quit]");
+			break;
+		default:
+			break;
+		}
 
-			if (wrefresh(win) == ERR) {
-				cerrx(1, "sleep_next resize wrefresh");
+		switch (ch) {
+		case 'w':
+		case 'a':
+		case 's':
+		case 'd':
+		case 'q':
+		case 'e':
+		case 'Q':
+		case 'E':
+			if (dijkstra(w, h, p.y, p.x) == -1) {
+				cerrx(1, "dijkstra");
 			}
+			break;
+		default:
+			break;
+		}
+
+		if (wrefresh(win) == ERR) {
+			cerrx(1, "handle_input getch");
 		}
 	}
 }
@@ -357,53 +387,5 @@ gen(void)
 	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))
 		&& stair_dn_count != 0) {
 		cerr(1, "gen malloc stairs_dn");
-	}
-}
-
-static void
-print_nontunneling(WINDOW *const win, int const w, int const h, int const py, int const px)
-{
-	int i, j;
-
-	for (i = 1; i < h - 1; ++i) {
-		for (j = 1; j < w - 1; ++j) {
-			if (i == py && j == px) {
-				(void)mvwaddch(win, i, j, '@');
-			} else if(tiles[i][j].h == 0) {
-				if (tiles[i][j].d == INT32_MAX) {
-					(void)mvwaddch(win, i, j, 'X');
-				} else {
-					(void)mvwprintw(win, i, j, "%d",
-						tiles[i][j].d % 10);
-				}
-			} else {
-				(void)mvwaddch(win, i, j, ' ');
-			}
-		}
-	}
-
-	if (wrefresh(win) == ERR) {
-		cerrx(1, "print_nontunneling wrefresh");
-	}
-}
-
-static void
-print_tunneling(WINDOW *const win, int const w, int const h, int const py, int const px)
-{
-	int i, j;
-
-	for (i = 1; i < h - 1; ++i) {
-		for (j = 1; j < w - 1; ++j) {
-			if (i == py && j == px) {
-				(void)mvwaddch(win, i, j, '@');
-			} else {
-				(void)mvwprintw(win, i, j, "%d",
-					tiles[i][j].dt % 10);
-			}
-		}
-	}
-
-	if (wrefresh(win) == ERR) {
-		cerrx(1, "print_tunneling wrefresh");
 	}
 }
