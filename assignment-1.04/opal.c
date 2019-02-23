@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <getopt.h>
 #include <limits.h>
 #include <ncurses.h>
@@ -17,6 +18,7 @@
 static struct option const long_opts[] = {
 	{"help", no_argument, NULL, 'h'},
 	{"load", no_argument, NULL, 'l'},
+	{"nummon", required_argument, NULL, 'n'},
 	{"save", no_argument, NULL, 's'},
 	{"seed", required_argument, NULL, 'z'},
 	{NULL, 0, NULL, 0}
@@ -50,20 +52,29 @@ int
 main(int const argc, char *const argv[])
 {
 	WINDOW *win;
+	char *end;
 	int ch;
 	int load = 0, save = 0;
 	unsigned int seed = UINT_MAX;
+	unsigned int nummon = (unsigned int)rrand(3, 10);
 	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
 
 	int const width = WIDTH, height = HEIGHT;
 
-	while ((ch = getopt_long(argc, argv, "hlsz:", long_opts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "hln:sz:", long_opts, NULL)) != -1) {
 		switch(ch) {
 		case 'h':
 			usage(EXIT_SUCCESS, name);
 			break;
 		case 'l':
 			load = 1;
+			break;
+		case 'n':
+			nummon = (unsigned int)strtoul(optarg, &end, 10);
+
+			if (optarg == end || errno == EINVAL || errno == ERANGE) {
+				cerr(1, "nummon invalid");
+			}
 			break;
 		case 's':
 			save = 1;
@@ -251,10 +262,11 @@ usage(int const status, char const *const n)
 	} else {
 		(void)puts("Generate a dungeon.\n");
 		(void)puts("Options:\n\
-  -h, --help           display this help text and exit\n\
-  -l, --load           load dungeon file\n\
-  -s, --save           save dungeon file\n\
-  -z, --seed=[SEED]    set rand seed, takes integer or string");
+  -h, --help            display this help text and exit\n\
+  -l, --load            load dungeon file\n\
+  -n, --nummon=[NUM]    number of monsters\n\
+  -s, --save            save dungeon file\n\
+  -z, --seed=[SEED]     set rand seed, takes integer or string");
 	}
 
 	exit(status);
