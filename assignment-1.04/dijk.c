@@ -88,6 +88,8 @@ dijkstra(int const w, int const h, int const py, int const px)
 		CALC_TUNNEL(t->y+1, t->x-1);
 	}
 
+	heap_delete(&heap);
+
 	return 0;
 }
 
