@@ -224,8 +224,8 @@ gen_monster(struct npc *const m, int const w, int const h)
 
 	tiles[y][x].n = m;
 
-	m->type = 7;//(uint8_t)rrand(TYPE_MIN, TYPE_MAX);
-	m->speed = 20;//(uint8_t)rrand(SPEED_MIN, SPEED_MAX);
+	m->type = (uint8_t)rrand(TYPE_MIN, TYPE_MAX);
+	m->speed = (uint8_t)rrand(SPEED_MIN, SPEED_MAX);
 	m->turn = 0;
 	m->saw_pc = false;
 	m->dead = false;
