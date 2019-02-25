@@ -8,8 +8,8 @@
 #include "cerr.h"
 #include "dijk.h"
 #include "io.h"
+#include "npc.h"
 #include "opal.h"
-#include "player.h"
 #include "rand.h"
 
 #define PROGRAM_NAME	"opal"
@@ -24,7 +24,7 @@ static struct option const long_opts[] = {
 	{NULL, 0, NULL, 0}
 };
 
-struct player p;
+struct npc player;
 
 uint16_t room_count;
 struct room *rooms;
@@ -39,7 +39,7 @@ struct tile tiles[HEIGHT][WIDTH];
 
 static void	usage(int const, char const *const);
 
-static void	handle_input(WINDOW *const, int const, int const);
+static void	handle_input(WINDOW *const, int const);
 
 static int	register_tiles(WINDOW *const, int const, int const);
 
@@ -87,6 +87,11 @@ main(int const argc, char *const argv[])
 		}
 	}
 
+	// TODO make #define
+	if (nummon > 64) {
+		cerrx(1, "nummon cannot be greater than 64");
+	}
+
 	if (seed == UINT_MAX) {
 		seed = init_rand(NULL);
 	}
@@ -123,7 +128,7 @@ main(int const argc, char *const argv[])
 
 		arrange_loaded(win, width, height);
 
-		(void)mvwaddch(win, p.y, p.x, PLAYER);
+		(void)mvwaddch(win, player.y, player.x, PLAYER);
 	} else {
 		room_count = 8;
 		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
@@ -147,7 +152,14 @@ main(int const argc, char *const argv[])
 		cerrx(1, "wrefresh on first draw cycle");
 	}
 
-	handle_input(win, width, height);
+	if (dijkstra(width, height, player.y, player.x) == -1) {
+		cerrx(1, "dijkstra");
+	}
+
+	handle_input(win, height);
+	turn_engine(win, nummon, width, height);
+
+	handle_input(win, height);
 
 	if (delwin(win) == ERR) {
 		cerrx(1, "delwin");
@@ -178,68 +190,26 @@ main(int const argc, char *const argv[])
 }
 
 static void
-handle_input(WINDOW *const win, int const w, int const h)
+handle_input(WINDOW *const win, int const h)
 {
 	int ch;
 
 	(void)box(win, 0, 0);
-	(void)mvwprintw(win, h - 1, 2, "[ESC to quit]");
+	(void)mvwprintw(win, h - 1, 2, "['q' to quit]");
 
 	if (wrefresh(win) == ERR) {
 		cerrx(1, "sleep_next wrefresh");
 	}
 
-#define ESCAPE	27
-	while((ch = getch()) != ESCAPE) {
+	while((ch = getch()) != 'q') {
 		switch (ch) {
-		case 'w':
-			move_player(win, (uint8_t)(p.y - 1), p.x);
-			break;
-		case 'a':
-			move_player(win, p.y, (uint8_t)(p.x - 1));
-			break;
-		case 's':
-			move_player(win, (uint8_t)(p.y + 1), p.x);
-			break;
-		case 'd':
-			move_player(win, p.y, (uint8_t)(p.x + 1));
-			break;
-		case 'q':
-			move_player(win, (uint8_t)(p.y - 1), (uint8_t)(p.x - 1));
-			break;
-		case 'e':
-			move_player(win, (uint8_t)(p.y - 1), (uint8_t)(p.x + 1));
-			break;
-		case 'Q':
-			move_player(win, (uint8_t)(p.y + 1), (uint8_t)(p.x - 1));
-			break;
-		case 'E':
-			move_player(win, (uint8_t)(p.y + 1), (uint8_t)(p.x + 1));
-			break;
 		case ERR:
 			cerr(1, "handle_input getch");
 			break;
 		case KEY_RESIZE:
 			(void)mvwprintw(win, 0, 2,
 				"[resizing the screen is undefined behavior]");
-			(void)mvwprintw(win, h - 1, 2, "[ESC to quit]");
-			break;
-		default:
-			break;
-		}
-
-		switch (ch) {
-		case 'w':
-		case 'a':
-		case 's':
-		case 'd':
-		case 'q':
-		case 'e':
-		case 'Q':
-		case 'E':
-			if (dijkstra(w, h, p.y, p.x) == -1) {
-				cerrx(1, "dijkstra");
-			}
+			(void)mvwprintw(win, h - 1, 2, "['q' to quit]");
 			break;
 		default:
 			break;
@@ -279,6 +249,7 @@ register_tiles(WINDOW *const win, int const w, int const h)
 
 	for (i = 0; i < h; ++i) {
 		for (j = 0; j < w; ++j) {
+			tiles[i][j].n = NULL;
 			tiles[i][j].c = mvwinch(win, i, j);
 
 			if (i == 0 || j == 0 || i == h - 1 || j == w - 1) {
@@ -379,6 +350,7 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 			}
 
 			tiles[i][j].c = ch;
+			tiles[i][j].n = NULL;
 		}
 	}
 }

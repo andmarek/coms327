@@ -3,8 +3,6 @@
 
 #include "floor.h"
 
-extern struct player p;
-
 extern uint16_t room_count;
 extern struct room *rooms;
 
@@ -23,6 +21,9 @@ struct tile {
 	int32_t dt; /* tunneling distance cost */
 	uint8_t	x; /* x position */
 	uint8_t	y; /* y position */
+
+	/* turn engine */
+	struct npc	*n;
 };
 
 #define WIDTH	80

@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 
 #include "cerr.h"
-#include "player.h"
+#include "npc.h"
 #include "opal.h"
 
 #define DIRECTORY	"/.rlg327"
@@ -45,7 +45,10 @@ write_things(FILE *const f, int const w, int const h)
 	}
 
 	/* player coords */
-	if (fwrite(&p, sizeof(struct player), 1, f) != 1) {
+	if (fwrite(&player.x, sizeof(uint8_t), 1, f) != 1) {
+		return -1;
+	}
+	if (fwrite(&player.y, sizeof(uint8_t), 1, f) != 1) {
 		return -1;
 	}
 
@@ -159,7 +162,10 @@ load_things(FILE *const f, int const w, int const h) {
 	}
 
 	/* player coords */
-	if (fread(&p, sizeof(struct player), 1, f) != 1) {
+	if (fread(&player.x, sizeof(uint8_t), 1, f) != 1) {
+		return -1;
+	}
+	if (fread(&player.y, sizeof(uint8_t), 1, f) != 1) {
 		return -1;
 	}
 
