@@ -1,0 +1,2 @@
+Generate a playable dungeon. Get flag info using ./opal -h. Press 'n' to begin
+dungeon simulation. Once the player wins or loses, press 'q' to quit.
