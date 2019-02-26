@@ -1,8 +1,3 @@
-/* TODO:
-	avoid rand(): read from /dev/urandom, or alternatively:
-	avoid time(): read from /dev/urandom
-*/
-
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>

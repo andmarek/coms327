@@ -7,13 +7,15 @@
 
 #include "cerr.h"
 #include "dijk.h"
+#include "floor.h"
+#include "globs.h"
 #include "io.h"
 #include "npc.h"
-#include "opal.h"
 #include "rand.h"
 
 #define PROGRAM_NAME	"opal"
 #define ROOM_RETRIES	150
+#define WAIT_DEFAULT	250000
 
 static struct option const long_opts[] = {
 	{"help", no_argument, NULL, 'h'},
@@ -21,6 +23,7 @@ static struct option const long_opts[] = {
 	{"nummon", required_argument, NULL, 'n'},
 	{"save", no_argument, NULL, 's'},
 	{"seed", required_argument, NULL, 'z'},
+	{"wait", required_argument, NULL, 'w'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -39,12 +42,12 @@ struct tile tiles[HEIGHT][WIDTH];
 
 static void	usage(int const, char const *const);
 
-static void	handle_input(WINDOW *const, int const);
+static void	handle_input(WINDOW *const, int const, char const *const);
 
-static int	register_tiles(WINDOW *const, int const, int const);
+static void	register_tiles(WINDOW *const);
 
-static void	arrange_new(WINDOW *const, int const, int const);
-static void	arrange_loaded(WINDOW *const, int const, int const);
+static void	arrange_new(WINDOW *const);
+static void	arrange_loaded(WINDOW *const);
 
 static void	gen(void);
 
@@ -54,14 +57,14 @@ main(int const argc, char *const argv[])
 	WINDOW *win;
 	char *end;
 	int ch;
-	int load = 0, save = 0;
+	int load = 0;
+	int save = 0;
+	unsigned int nummon = (unsigned int)rrand(3, 5);
 	unsigned int seed = UINT_MAX;
-	unsigned int nummon = (unsigned int)rrand(3, 10);
+	unsigned int wait = WAIT_DEFAULT;
 	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
 
-	int const width = WIDTH, height = HEIGHT;
-
-	while ((ch = getopt_long(argc, argv, "hln:sz:", long_opts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "hln:sz:w:", long_opts, NULL)) != -1) {
 		switch(ch) {
 		case 'h':
 			usage(EXIT_SUCCESS, name);
@@ -82,31 +85,32 @@ main(int const argc, char *const argv[])
 		case 'z':
 			seed = init_rand(optarg);
 			break;
+		case 'w':
+			wait = (unsigned int)strtoul(optarg, &end, 10);
+
+			if (optarg == end || errno == EINVAL || errno == ERANGE) {
+				cerr(1, "wait invalid");
+			}
+			break;
 		default:
 			usage(EXIT_FAILURE, name);
 		}
-	}
-
-	// TODO remove limit, add limit to num of retries
-	if (nummon > 64) {
-		cerrx(1, "TODO: remove limit nummon cannot be greater than 64");
 	}
 
 	if (seed == UINT_MAX) {
 		seed = init_rand(NULL);
 	}
 
-	initscr();
+	(void)initscr();
 
 	if (refresh() == ERR) {
 		cerrx(1, "refresh from initscr");
 	}
 
-	if ((win = newwin(height, width, 0, 0)) == NULL) {
+	if ((win = newwin(HEIGHT, WIDTH, 0, 0)) == NULL) {
 		cerrx(1, "newwin");
 	}
 
-	/* always returns OK */
 	(void)box(win, 0, 0);
 
 	if (curs_set(0) == ERR) {
@@ -122,44 +126,35 @@ main(int const argc, char *const argv[])
 	}
 
 	if (load) {
-		if (load_dungeon(width, height) == -1) {
+		if (load_dungeon() == -1) {
 			cerrx(1, "loading dungeon");
 		}
 
-		arrange_loaded(win, width, height);
-
-		(void)mvwaddch(win, player.y, player.x, PLAYER);
+		arrange_loaded(win);
 	} else {
 		room_count = 8;
 		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 		stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
 
 		gen();
-		arrange_new(win, width, height);
+		arrange_new(win);
 
-		if (register_tiles(win, width, height) == -1) {
-			cerrx(1, "registering tiles");
-		}
+		register_tiles(win);
 
-		place_player(win, width, height);
+		place_player();
 	}
 
 	if (!load) {
-		(void)mvwprintw(win, height - 1, 26, "[seed: %u]", seed);
+		(void)mvwprintw(win, HEIGHT - 1, 26, "[seed: %u]", seed);
 	}
 
-	if (wrefresh(win) == ERR) {
-		cerrx(1, "wrefresh on first draw cycle");
-	}
+	dijkstra();
 
-	if (dijkstra(width, height, player.y, player.x) == -1) {
-		cerrx(1, "dijkstra");
-	}
+	handle_input(win, 'n', "['n' to continue]");
 
-	handle_input(win, height);
-	turn_engine(win, nummon, width, height);
+	turn_engine(win, wait, nummon);
 
-	handle_input(win, height);
+	handle_input(win, 'q', "['q' to quit]");
 
 	if (delwin(win) == ERR) {
 		cerrx(1, "delwin");
@@ -173,7 +168,7 @@ main(int const argc, char *const argv[])
 		printf("seed: %u\n", seed);
 	}
 
-	if (save && save_dungeon(width, height) == -1) {
+	if (save && save_dungeon() == -1) {
 		cerrx(1, "saving dungeon");
 	}
 
@@ -190,18 +185,19 @@ main(int const argc, char *const argv[])
 }
 
 static void
-handle_input(WINDOW *const win, int const h)
+handle_input(WINDOW *const win, int const disrupt,
+	char const *const str)
 {
 	int ch;
 
 	(void)box(win, 0, 0);
-	(void)mvwprintw(win, h - 1, 2, "['q' to quit]");
+	(void)mvwprintw(win, HEIGHT - 1, 2, str);
 
 	if (wrefresh(win) == ERR) {
 		cerrx(1, "sleep_next wrefresh");
 	}
 
-	while((ch = getch()) != 'q') {
+	while((ch = getch()) != disrupt) {
 		switch (ch) {
 		case ERR:
 			cerr(1, "handle_input getch");
@@ -209,26 +205,26 @@ handle_input(WINDOW *const win, int const h)
 		case KEY_RESIZE:
 			(void)mvwprintw(win, 0, 2,
 				"[resizing the screen is undefined behavior]");
-			(void)mvwprintw(win, h - 1, 2, "['q' to quit]");
-			break;
-		default:
-			break;
+			(void)mvwprintw(win, HEIGHT - 1, 2, str);
+
+			if (wrefresh(win) == ERR) {
+				cerrx(1, "handle_input getch");
+			}
 		}
 
-		if (wrefresh(win) == ERR) {
-			cerrx(1, "handle_input getch");
-		}
 	}
+
+	(void)box(win, 0, 0);
 }
 
 static void
-usage(int const status, char const *const n)
+usage(int const status, char const *const name)
 {
-	(void)printf("Usage: %s [OPTION]... \n\n", n);
+	(void)printf("Usage: %s [OPTION]... \n\n", name);
 
 	if (status != EXIT_SUCCESS) {
 		(void)fprintf(stderr,
-			"Try '%s --help' for more information.\n", n);
+			"Try '%s --help' for more information.\n", name);
 	} else {
 		(void)puts("Generate a dungeon.\n");
 		(void)puts("Options:\n\
@@ -242,17 +238,18 @@ usage(int const status, char const *const n)
 	exit(status);
 }
 
-static int
-register_tiles(WINDOW *const win, int const w, int const h)
+static void
+register_tiles(WINDOW *const win)
 {
 	uint8_t i, j;
 
-	for (i = 0; i < h; ++i) {
-		for (j = 0; j < w; ++j) {
+	for (i = 0; i < HEIGHT; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
 			tiles[i][j].n = NULL;
 			tiles[i][j].c = mvwinch(win, i, j);
 
-			if (i == 0 || j == 0 || i == h - 1 || j == w - 1) {
+			if (i == 0 || j == 0 || i == HEIGHT - 1
+				|| j == WIDTH - 1) {
 				tiles[i][j].h = UINT8_MAX;
 				continue;
 			}
@@ -261,8 +258,6 @@ register_tiles(WINDOW *const win, int const w, int const h)
 			tiles[i][j].x = j;
 
 			switch(tiles[i][j].c) {
-			case PLAYER:
-				return -1;
 			case ROOM:
 			case CORRIDOR:
 			case STAIR_UP:
@@ -274,23 +269,21 @@ register_tiles(WINDOW *const win, int const w, int const h)
 			}
 		}
 	}
-
-	return 0;
 }
 
 static void
-arrange_new(WINDOW *const win, int const w, int const h)
+arrange_new(WINDOW *const win)
 {
 	size_t i, retries = 0;
 
 	for (i = 0; i < room_count; ++i) {
-		gen_room(&rooms[i], w, h);
+		gen_room(&rooms[i]);
 	}
 
 	for (i = 0; i < room_count && retries < ROOM_RETRIES; ++i) {
 		if (valid_room(win, &rooms[i]) == -1) {
 			retries++;
-			gen_room(&rooms[i--], w, h);
+			gen_room(&rooms[i--]);
 		} else {
 			draw_room(win, &rooms[i]);
 		}
@@ -310,16 +303,16 @@ arrange_new(WINDOW *const win, int const w, int const h)
 	}
 
 	for (i = 0; i < stair_up_count; ++i) {
-		gen_draw_stair(win, &stairs_up[i], w, h, true);
+		gen_draw_stair(win, &stairs_up[i], true);
 	}
 
 	for (i = 0; i < stair_dn_count; ++i) {
-		gen_draw_stair(win, &stairs_dn[i], w, h, false);
+		gen_draw_stair(win, &stairs_dn[i], false);
 	}
 }
 
 static void
-arrange_loaded(WINDOW *const win, int const w, int const h)
+arrange_loaded(WINDOW *const win)
 {
 	chtype ch;
 	uint8_t i, j;
@@ -337,8 +330,8 @@ arrange_loaded(WINDOW *const win, int const w, int const h)
 		(void)mvwaddch(win, stairs_dn[k].y, stairs_dn[k].x, STAIR_DN);
 	}
 
-	for (i = 1; i < h - 1; ++i) {
-		for (j = 1; j < w - 1; ++j) {
+	for (i = 1; i < HEIGHT - 1; ++i) {
+		for (j = 1; j < WIDTH - 1; ++j) {
 			ch = mvwinch(win, i, j);
 
 			tiles[i][j].y = i;

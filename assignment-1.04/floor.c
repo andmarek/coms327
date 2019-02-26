@@ -12,10 +12,10 @@
 #define MAX(X,Y) (((X) > (Y)) ? (X) : (Y))
 
 void
-gen_room(struct room *const r, int const w, int const h)
+gen_room(struct room *const r)
 {
-	r->x = (uint8_t)rrand(1, w - 2);
-	r->y = (uint8_t)rrand(1, h - 2);
+	r->x = (uint8_t)rrand(1, WIDTH - 2);
+	r->y = (uint8_t)rrand(1, HEIGHT - 2);
 	r->size_x = (uint8_t)rrand(MINROOMW, MAXROOMW);
 	r->size_y = (uint8_t)rrand(MINROOMH, MAXROOMH);
 }
@@ -93,14 +93,13 @@ valid_stair(WINDOW *const win, int const y, int const x)
 }
 
 void
-gen_draw_stair(WINDOW *const win, struct stair *const s, int const w,
-	int const h, int const up)
+gen_draw_stair(WINDOW *const win, struct stair *const s, bool const up)
 {
 	int x, y;
 
 	do {
-		x = rrand(1, w - 2);
-		y = rrand(1, h - 2);
+		x = rrand(1, WIDTH - 2);
+		y = rrand(1, HEIGHT - 2);
 	} while(!valid_stair(win, y, x));
 
 	(void)mvwaddch(win, y, x, up ? STAIR_UP : STAIR_DN);

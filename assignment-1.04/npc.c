@@ -1,14 +1,15 @@
+#define _DEFAULT_SOURCE
+#include <unistd.h>
+#undef _DEFAULT_SOURCE
+
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "cerr.h"
 #include "dijk.h"
-#include "floor.h"
+#include "globs.h"
 #include "heap.h"
-#include "npc.h"
-#include "opal.h"
 #include "rand.h"
 
 #define PLAYER_TYPE	0x80
@@ -17,74 +18,156 @@
 #define TUNNELING	0x4
 #define ERRATIC		0x8
 
+#define CUTOFF	4.0 /* minimum distance from the PC an NPC can be placed */
+#define TUNNEL_STRENGTH	85
 #define PERSISTANCE	5
 
-static int
-valid_player(WINDOW *const win, int const y, int const x)
-{
-	return mvwinch(win, y, x) == ROOM
-		&& mvwinch(win, y + 1, x) == ROOM
-		&& mvwinch(win, y - 1, x) == ROOM
-		&& mvwinch(win, y, x + 1) == ROOM
-		&& mvwinch(win, y, x - 1) == ROOM;
-}
+#define TYPE_MIN	0x0
+#define TYPE_MAX	0xF
+#define SPEED_MIN	5
+#define SPEED_MAX	20
+
+static int	valid_player(int const, int const);
+static int	valid_npc(int const, int const);
+
+static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
+static uint8_t		subu8(unsigned int const, unsigned int const);
+static bool		pc_visible(struct npc const *restrict const);
+static unsigned int	limited_int_to_char(uint8_t const);
+
+
+static void	move_redraw(WINDOW *const, struct npc *const, uint8_t const, uint8_t const);
+static void	move_tunnel(WINDOW *const, struct npc *const, uint8_t const, uint8_t const);
+
+static void	move_straight(WINDOW *const, struct npc *const);
+static void	move_dijk_nontunneling(WINDOW *const, struct npc *const);
+static void	move_dijk_tunneling(WINDOW *const, struct npc *const);
+
+static void	gen_monster(struct npc *const);
+
+static void	move_npc(WINDOW *const, struct npc *const);
+static int32_t	compare_npc(void const *const, void const *const);
+
+static void	print_deathscreen(WINDOW *const);
+static void	print_winscreen(WINDOW *const);
 
 void
-place_player(WINDOW *const win, int const w, int const h)
+place_player(void)
 {
 	int x, y;
 
 	do {
-		x = rrand(1, w - 2);
-		y = rrand(1, h - 2);
-	} while (!valid_player(win, y, x));
-
-	(void)mvwaddch(win, y, x, PLAYER);
+		x = rrand(1, WIDTH - 2);
+		y = rrand(1, HEIGHT - 2);
+	} while (!valid_player(y, x));
 
 	player.x = (uint8_t)x;
 	player.y = (uint8_t)y;
 }
 
-static double
-distance(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
+void
+turn_engine(WINDOW *const win, unsigned int const wait,
+	unsigned int const nummon)
 {
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-	return sqrt(dx * dx + dy * dy);
+	struct heap heap;
+	struct npc *monsters;
+	struct npc *n;
+	int32_t turn;
+	unsigned int i;
+	unsigned int alive = nummon;
+
+	monsters = malloc(sizeof(struct npc) * nummon);
+
+	if (monsters == NULL && nummon != 0) {
+		cerr(1, "turn_engine malloc");
+	}
+
+	heap_init(&heap, compare_npc, NULL);
+
+	player.speed = 10;
+	player.type = PLAYER_TYPE;
+	player.turn = 0;
+	player.type_ch = PLAYER;
+
+	if(heap_insert(&heap, &player) == NULL) {
+		cerr(1, "turn_engine heap_insert pc");
+	}
+
+	for (i = 0; i < nummon; ++i) {
+		gen_monster(&monsters[i]);
+
+		(void)mvwaddch(win, monsters[i].y, monsters[i].x, monsters[i].type_ch);
+
+		if (heap_insert(&heap, &monsters[i]) == NULL) {
+			cerr(1, "turn_engine heap_insert npc");
+		}
+	}
+
+	while ((n = heap_remove_min(&heap))) {
+		if (n->type & PLAYER_TYPE) {
+			if (wrefresh(win) == ERR) {
+				cerrx(1, "turn_engine wrefresh");
+			}
+
+			if (usleep(wait) == -1) {
+				cerr(1, "turn_engine usleep");
+			}
+		}
+
+		if (alive == 0) {
+			print_winscreen(win);
+			break;
+		}
+
+		if (n->dead) {
+			if (n->type & PLAYER_TYPE) {
+				print_deathscreen(win);
+				break;
+			} else {
+				alive--;
+			}
+			continue;
+		}
+
+		turn = n->turn + 1;
+		n->turn = turn + 1000/n->speed;
+
+		move_npc(win, n);
+
+		if (heap_insert(&heap, n) == NULL) {
+			cerr(1, "turn_engine re-heap_insert");
+		}
+	}
+
+	heap_delete(&heap);
+
+	free(monsters);
+}
+
+static int
+valid_player(int const y, int const x)
+{
+	return tiles[y][x].h == 0
+		&& tiles[y + 1][x].h == 0 && tiles[y - 1][x].h == 0
+		&& tiles[y][x + 1].h == 0 && tiles[y][x - 1].h == 0;
 }
 
 static int
 valid_npc(int const y, int const x)
 {
-	if (tiles[y][x].c != ROOM) {
+	if (tiles[y][x].h != 0) {
 		return false;
 	}
 
-// TODO move up
-#define CUTOFF	4.0
 	return distance(player.x, player.y, (uint8_t)x, (uint8_t)y) > CUTOFF;
 }
 
-static void
-move_redraw(WINDOW *const win, struct npc *const n, uint8_t const y,
-	uint8_t const x)
+static double
+distance(uint8_t const x0, uint8_t const y0, uint8_t const x1, uint8_t const y1)
 {
-	if (n->x == x && n->y == y) {
-		return;
-	}
-
-	if (tiles[y][x].n != NULL) {
-		(tiles[y][x].n)->dead = true;
-	}
-
-	tiles[n->y][n->x].n = NULL;
-	tiles[y][x].n = n;
-
-	unsigned int const ch = mvwinch(win, n->y, n->x);
-	(void)mvwaddch(win, n->y, n->x, tiles[n->y][n->x].c);
-	n->y = y;
-	n->x = x;
-	(void)mvwaddch(win, y, x, ch);
+	int const dx = x1 - x0;
+	int const dy = y1 - y0;
+	return sqrt(dx * dx + dy * dy);
 }
 
 /*
@@ -98,187 +181,6 @@ subu8(unsigned int const a, unsigned int const b)
 	unsigned int res = a - b;
 	res &= (unsigned int) (-(unsigned int) (res <= a));
 	return (uint8_t)res;
-}
-
-static void
-move_tunnel(WINDOW *const win, struct npc *const n, uint8_t const y,
-	uint8_t const x)
-{
-	if (tiles[y][x].h == UINT8_MAX) {
-		return;
-	}
-
-	tiles[y][x].h = subu8(tiles[y][x].h, 85);
-
-	dijkstra(WIDTH, HEIGHT, player.y, player.x);
-
-	if (tiles[y][x].h != 0) {
-		return;
-	}
-
-	if (tiles[y][x].c == ROCK) {
-		tiles[y][x].c = CORRIDOR;
-	}
-
-	move_redraw(win, n, y, x);
-}
-
-static void
-move_straight(WINDOW *const win, struct npc *const m)
-{
-	uint8_t x, y;
-	uint8_t minx = m->x, miny = m->y;
-	int i, j;
-	double dist;
-	double min = DBL_MAX;
-
-	// TODO unroll?
-	for (i = -1; i < 1; ++i) {
-		for (j = -1; j < 1; ++j) {
-			x = (uint8_t)(m->x + i);
-			y = (uint8_t)(m->y + j);
-
-			if (!(m->type & TUNNELING) && tiles[y][x].h != 0) {
-				continue;
-			}
-
-			dist = distance(player.x, player.y, x, y);
-
-			if (dist < min) {
-				min = dist;
-				minx = x;
-				miny = y;
-			}
-		}
-	}
-
-	if (m->type & TUNNELING) {
-		move_tunnel(win, m, miny, minx);
-	} else {
-		move_redraw(win, m, miny, minx);
-	}
-}
-
-static void
-move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
-{
-	int32_t min_d = tiles[n->y][n->x].d;
-	int i, j;
-	uint8_t x, y;
-	uint8_t minx = n->x;
-	uint8_t miny = n->y;
-
-	// TODO unroll?
-	for (i = -1; i <= 1; ++i) {
-		for (j = -1; j <= 1; ++j) {
-			x = (uint8_t)(n->x + i);
-			y = (uint8_t)(n->y + j);
-
-
-			if (tiles[y][x].h != 0) {
-				continue;
-			}
-
-			if (tiles[y][x].d < min_d) {
-				min_d = tiles[y][x].d;
-				minx = x;
-				miny = y;
-			}
-		}
-	}
-
-	move_redraw(win, n, miny, minx);
-}
-
-static void
-move_dijk_tunneling(WINDOW *const win, struct npc *const n)
-{
-	int32_t min_dt = tiles[n->y][n->x].dt;
-	int i, j;
-	uint8_t x, y;
-	uint8_t minx = n->x;
-	uint8_t miny = n->y;
-
-	// TODO unroll?
-	for (i = -1; i <= 1; ++i) {
-		for (j = -1; j <= 1; ++j) {
-			x = (uint8_t)(n->x + i);
-			y = (uint8_t)(n->y + j);
-
-			if (tiles[y][x].dt < min_dt) {
-				min_dt = tiles[y][x].dt;
-				minx = x;
-				miny = y;
-			}
-		}
-	}
-
-	move_tunnel(win, n, miny, minx);
-}
-
-static unsigned int
-gen_monster(struct npc *const m, int const w, int const h)
-{
-#define TYPE_MIN	0
-#define TYPE_MAX	0xF
-#define SPEED_MIN	5
-#define SPEED_MAX	20
-
-	int x, y;
-
-	do {
-		x = rrand(1, w - 2);
-		y = rrand(1, h - 2);
-	} while (!valid_npc(y, x));
-
-	m->x = (uint8_t)x;
-	m->y = (uint8_t)y;
-
-	tiles[y][x].n = m;
-
-	m->type = (uint8_t)rrand(TYPE_MIN, TYPE_MAX);
-	m->speed = (uint8_t)rrand(SPEED_MIN, SPEED_MAX);
-	m->turn = 0;
-	m->p_count = 0;
-	m->dead = false;
-
-	switch (m->type) {
-	case 0x0:
-		return '0';
-	case 0x1:
-		return '1';
-	case 0x2:
-		return '2';
-	case 0x3:
-		return '3';
-	case 0x4:
-		return '4';
-	case 0x5:
-		return '5';
-	case 0x6:
-		return '6';
-	case 0x7:
-		return '7';
-	case 0x8:
-		return '8';
-	case 0x9:
-		return '9';
-	case 0xA:
-		return 'a';
-	case 0xB:
-		return 'b';
-	case 0xC:
-		return 'c';
-	case 0xD:
-		return 'd';
-	case 0xE:
-		return 'e';
-	case 0xF:
-		return 'f';
-	default:
-		cerrx(1, "gen_monster invalid monster type %d", m->type);
-		return 0;
-	}
 }
 
 /* Bresenham's line algorithm */
@@ -323,8 +225,176 @@ pc_visible(struct npc const *restrict const n)
 
 	return true;
 }
-void
-move_npc(WINDOW *const win, struct npc *const n, int const w, int const h)
+
+static unsigned int
+limited_int_to_char(uint8_t const i)
+{
+	return (unsigned int)((i < 0xA) ? i + '0' : i + 'a' - 0xA);
+}
+
+static void
+move_redraw(WINDOW *const win, struct npc *const n, uint8_t const y,
+	uint8_t const x)
+{
+	if (n->x == x && n->y == y) {
+		return;
+	}
+
+	if (tiles[y][x].n != NULL) {
+		(tiles[y][x].n)->dead = true;
+	}
+
+	tiles[n->y][n->x].n = NULL;
+	tiles[y][x].n = n;
+
+	(void)mvwaddch(win, n->y, n->x, tiles[n->y][n->x].c);
+	(void)mvwaddch(win, y, x, n->type_ch);
+
+	n->y = y;
+	n->x = x;
+}
+
+static void
+move_tunnel(WINDOW *const win, struct npc *const n, uint8_t const y,
+	uint8_t const x)
+{
+	if (tiles[y][x].h == UINT8_MAX) {
+		return;
+	}
+
+	tiles[y][x].h = subu8(tiles[y][x].h, TUNNEL_STRENGTH);
+
+	dijkstra();
+
+	if (tiles[y][x].h != 0) {
+		return;
+	}
+
+	if (tiles[y][x].c == ROCK) {
+		tiles[y][x].c = CORRIDOR;
+	}
+
+	move_redraw(win, n, y, x);
+}
+
+static void
+move_straight(WINDOW *const win, struct npc *const n)
+{
+	double min = DBL_MAX;
+	double dist;
+	int i, j;
+	uint8_t x, y;
+	uint8_t minx = n->x;
+	uint8_t miny = n->y;
+
+	for (i = -1; i <= 1; ++i) {
+		for (j = -1; j <= 1; ++j) {
+			x = (uint8_t)(n->x + i);
+			y = (uint8_t)(n->y + j);
+
+			if (!(n->type & TUNNELING) && tiles[y][x].h != 0) {
+				continue;
+			}
+
+			dist = distance(player.x, player.y, x, y);
+
+			if (dist < min) {
+				min = dist;
+				minx = x;
+				miny = y;
+			}
+		}
+	}
+
+	if (n->type & TUNNELING) {
+		move_tunnel(win, n, miny, minx);
+	} else {
+		move_redraw(win, n, miny, minx);
+	}
+}
+
+static void
+move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
+{
+	int32_t min_d = tiles[n->y][n->x].d;
+	int i, j;
+	uint8_t x, y;
+	uint8_t minx = n->x;
+	uint8_t miny = n->y;
+
+	for (i = -1; i <= 1; ++i) {
+		for (j = -1; j <= 1; ++j) {
+			x = (uint8_t)(n->x + i);
+			y = (uint8_t)(n->y + j);
+
+
+			if (tiles[y][x].h != 0) {
+				continue;
+			}
+
+			if (tiles[y][x].d < min_d) {
+				min_d = tiles[y][x].d;
+				minx = x;
+				miny = y;
+			}
+		}
+	}
+
+	move_redraw(win, n, miny, minx);
+}
+
+static void
+move_dijk_tunneling(WINDOW *const win, struct npc *const n)
+{
+	int32_t min_dt = tiles[n->y][n->x].dt;
+	int i, j;
+	uint8_t x, y;
+	uint8_t minx = n->x;
+	uint8_t miny = n->y;
+
+	for (i = -1; i <= 1; ++i) {
+		for (j = -1; j <= 1; ++j) {
+			x = (uint8_t)(n->x + i);
+			y = (uint8_t)(n->y + j);
+
+			if (tiles[y][x].dt < min_dt) {
+				min_dt = tiles[y][x].dt;
+				minx = x;
+				miny = y;
+			}
+		}
+	}
+
+	move_tunnel(win, n, miny, minx);
+}
+
+static void
+gen_monster(struct npc *const n)
+{
+	int x, y;
+
+	do {
+		x = rrand(1, WIDTH - 2);
+		y = rrand(1, HEIGHT - 2);
+	} while (!valid_npc(y, x));
+
+	*n = (struct npc) {
+		.x = (uint8_t)x,
+		.y = (uint8_t)y,
+		.type = (uint8_t)rrand(TYPE_MIN, TYPE_MAX),
+		.speed = (uint8_t)rrand(SPEED_MIN, SPEED_MAX),
+		.turn = 0,
+		.p_count = 0,
+		.dead = false
+	};
+
+	n->type_ch = limited_int_to_char(n->type);
+
+	tiles[y][x].n = n;
+}
+
+static void
+move_npc(WINDOW *const win, struct npc *const n)
 {
 	uint8_t y, x;
 
@@ -338,7 +408,7 @@ move_npc(WINDOW *const win, struct npc *const n, int const w, int const h)
 
 		move_redraw(win, n, y, x);
 
-		dijkstra(w, h, player.y, player.x);
+		dijkstra();
 
 		return;
 	}
@@ -419,95 +489,38 @@ compare_npc(void const *const key, void const *const with)
 }
 
 static void
-print_deathscreen(WINDOW *const win, int const w, int const h)
+print_deathscreen(WINDOW *const win)
 {
-	// TODO error check
-	wclear(win);
+	if (wclear(win) == ERR) {
+		cerrx(1, "clear on deathscreen");
+	}
+
 	(void)box(win, 0, 0);
-	mvwprintw(win, h / 2 - 1, w / 4, "You're dead, Jim.");
-	mvwprintw(win, h / 2 + 0, w/ 4, "\t\t-- McCoy, stardate 3468.1");
-	mvwprintw(win, h / 2 + 2, w / 4, "You've died. Game over.");
+	(void)mvwprintw(win, HEIGHT / 2 - 1, WIDTH / 4, "You're dead, Jim.");
+	(void)mvwprintw(win, HEIGHT / 2 + 0, WIDTH / 4,
+		"\t\t-- McCoy, stardate 3468.1");
+	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 4,
+		"You've died. Game over.");
 }
 
 static void
-print_winscreen(WINDOW *const win, int const w, int const h)
+print_winscreen(WINDOW *const win)
 {
-	// TODO error check
-	wclear(win);
+	if (wclear(win) == ERR) {
+		cerrx(1, "clear on winscreen");
+	}
+
 	(void)box(win, 0, 0);
-	mvwprintw(win, h / 2 - 3, w / 12, "[War] is instinctive. But the insinct can be fought. We're human");
-	mvwprintw(win, h / 2 - 2, w / 12, "beings with the blood of a million savage years on our hands! But we");
-	mvwprintw(win, h / 2 - 1, w / 12, "can stop it. We can admit that we're killers ... but we're not going");
-	mvwprintw(win, h / 2 + 0, w / 12, "to kill today. That's all it takes! Knowing that we're not going to");
-	mvwprintw(win, h / 2 + 1, w / 12, "kill today!");
-	mvwprintw(win, h / 2 + 2, w / 12, "\t\t-- Kirk, \"A Taste of Armageddon\", stardate 3193.0");
-	mvwprintw(win, h / 2 + 4, w / 12, "You've won. Game over.");
-}
-
-void
-turn_engine(WINDOW *const win, unsigned int const nummon, int const w, int const h)
-{
-	struct heap heap;
-	struct npc *monsters;
-	struct npc *n;
-	int32_t turn;
-	unsigned int i, ch;
-	unsigned int alive = nummon;
-
-	monsters = malloc(sizeof(struct npc) * nummon);
-
-	if (monsters == NULL) {
-		cerr(1, "turn_engine malloc");
-	}
-
-	heap_init(&heap, compare_npc, NULL);
-
-	player.speed = 10;
-	player.type = PLAYER_TYPE;
-	player.turn = 0;
-	heap_insert(&heap, &player);
-
-	for (i = 0; i < nummon; ++i) {
-		ch = gen_monster(&monsters[i], w, h);
-
-		// TODO check != -1
-		mvwaddch(win, monsters[i].y, monsters[i].x, ch);
-
-		// TODO error check
-		heap_insert(&heap, &monsters[i]);
-	}
-
-	while ((n = heap_remove_min(&heap))) {
-		if (alive == 0) {
-			print_winscreen(win, w, h);
-			break;
-		}
-		if (n->dead) {
-			if (n->type & PLAYER_TYPE) {
-				print_deathscreen(win, w, h);
-				break;
-			} else {
-				alive--;
-			}
-			continue;
-		}
-
-		turn = n->turn + 1;
-		n->turn = turn + 1000/n->speed;
-
-		move_npc(win, n, w, h);
-
-		if (n->type & PLAYER_TYPE) {
-			// TODO error check
-			wrefresh(win);
-			usleep(250000);
-		}
-
-		// TODO error check
-		heap_insert(&heap, n);
-	}
-
-	heap_delete(&heap);
-
-	free(monsters);
+	(void)mvwprintw(win, HEIGHT / 2 - 3, WIDTH / 12,
+		"[War] is instinctive. But the insinct can be fought. We're human");
+	(void)mvwprintw(win, HEIGHT / 2 - 2, WIDTH / 12,
+		"beings with the blood of a million savage years on our hands! But we");
+	(void)mvwprintw(win, HEIGHT / 2 - 1, WIDTH / 12,
+		"can stop it. We can admit that we're killers ... but we're not going");
+	(void)mvwprintw(win, HEIGHT / 2 + 0, WIDTH / 12,
+		"to kill today. That's all it takes! Knowing that we're not going to");
+	(void)mvwprintw(win, HEIGHT / 2 + 1, WIDTH / 12, "kill today!");
+	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 12,
+		"\t\t-- Kirk, \"A Taste of Armageddon\", stardate 3193.0");
+	(void)mvwprintw(win, HEIGHT / 2 + 4, WIDTH / 12, "You've won. Game over.");
 }

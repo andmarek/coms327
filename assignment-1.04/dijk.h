@@ -1,6 +1,6 @@
 #ifndef DIJK_H
 #define DIJK_H
 
-int	dijkstra(int const, int const, int const, int const);
+void	dijkstra(void);
 
 #endif /* DIJK_H */

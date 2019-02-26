@@ -3,16 +3,14 @@
 #include <endian.h>
 #undef _BSD_SOURCE
 #undef _DEFAULT_SOURCE
+
 #include <errno.h>
-#include <inttypes.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
 #include "cerr.h"
-#include "npc.h"
-#include "opal.h"
+#include "globs.h"
 
 #define DIRECTORY	"/.rlg327"
 #define FILEPATH	"/dungeon"
@@ -22,7 +20,7 @@
 #define MARK_L	12
 
 static int
-write_things(FILE *const f, int const w, int const h)
+write_things(FILE *const f)
 {
 	uint32_t const ver = htobe32(0);
 	uint32_t const filesize = htobe32((uint32_t)(1708 + (room_count * 4)
@@ -53,8 +51,8 @@ write_things(FILE *const f, int const w, int const h)
 	}
 
 	/* hardness */
-	for (i = 0; i < h; ++i) {
-		for (j = 0; j < w; ++j) {
+	for (i = 0; i < HEIGHT; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
 			if (fwrite(&tiles[i][j].h, sizeof(uint8_t), 1, f) != 1) {
 				return -1;
 			}
@@ -102,7 +100,7 @@ write_things(FILE *const f, int const w, int const h)
 }
 
 int
-save_dungeon(int const w, int const h)
+save_dungeon(void)
 {
 	struct stat st;
 	FILE *f;
@@ -143,7 +141,7 @@ save_dungeon(int const w, int const h)
 
 	free(path);
 
-	ret = write_things(f, w, h);
+	ret = write_things(f);
 
 	if (fclose(f) == EOF) {
 		cerr(1, "save fclose, (write_things=%d)", ret);
@@ -153,7 +151,7 @@ save_dungeon(int const w, int const h)
 }
 
 static int
-load_things(FILE *const f, int const w, int const h) {
+load_things(FILE *const f) {
 	int i, j;
 
 	/* skip type marker, version, and size */
@@ -170,8 +168,8 @@ load_things(FILE *const f, int const w, int const h) {
 	}
 
 	/* hardness */
-	for (i = 0; i < h; ++i) {
-		for (j = 0; j < w; ++j) {
+	for (i = 0; i < HEIGHT; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
 			if (fread(&tiles[i][j].h, sizeof(uint8_t), 1, f) != 1) {
 				return -1;
 			}
@@ -230,7 +228,7 @@ load_things(FILE *const f, int const w, int const h) {
 }
 
 int
-load_dungeon(int const w, int const h)
+load_dungeon(void)
 {
 	FILE *f;
 	char *home, *path;
@@ -261,7 +259,7 @@ load_dungeon(int const w, int const h)
 
 	free(path);
 
-	ret = load_things(f, w, h);
+	ret = load_things(f);
 
 	if (fclose(f) == EOF) {
 		cerr(1, "load fclose, (load_things=%d)", ret);

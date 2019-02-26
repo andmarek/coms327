@@ -1,6 +1,6 @@
 #include "cerr.h"
+#include "globs.h"
 #include "heap.h"
-#include "opal.h"
 
 static int32_t	compare_nontunnel(void const *const, void const *const);
 static int32_t	compare_tunnel(void const *const, void const *const);
@@ -8,22 +8,22 @@ static int32_t	compare_tunnel(void const *const, void const *const);
 static void	calc_cost_nontunnel(struct heap *const, struct heap_node *const, struct tile const *const, struct tile *const);
 static void	calc_cost_tunnel(struct heap *const, struct heap_node *const, struct tile const *const, struct tile *const);
 
-int
-dijkstra(int const w, int const h, int const py, int const px)
+void
+dijkstra(void)
 {
 	struct heap_node *nodes[HEIGHT][WIDTH];
 	struct heap heap;
 	struct tile *t;
-	int i, j;
+	size_t i, j;
 
-	tiles[py][px].d = 0;
-	tiles[py][px].dt = 0;
+	tiles[player.y][player.x].d = 0;
+	tiles[player.y][player.x].dt = 0;
 
 	heap_init(&heap, compare_nontunnel, NULL);
 
-	for (i = 0; i < h; ++i) {
-		for (j = 0; j < w; ++j) {
-			if (i != py || j != px) {
+	for (i = 0; i < HEIGHT; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
+			if (i != player.y || j != player.x) {
 				tiles[i][j].d = INT32_MAX;
 				tiles[i][j].dt = INT32_MAX;
 			}
@@ -59,8 +59,8 @@ dijkstra(int const w, int const h, int const py, int const px)
 
 	heap_init(&heap, compare_tunnel, NULL);
 
-	for (i = 0; i < h; ++i) {
-		for (j = 0; j < w; ++j) {
+	for (i = 0; i < HEIGHT; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
 			if (tiles[i][j].h == UINT8_MAX) {
 				nodes[i][j] = NULL;
 			} else {
@@ -89,8 +89,6 @@ dijkstra(int const w, int const h, int const py, int const px)
 	}
 
 	heap_delete(&heap);
-
-	return 0;
 }
 
 static int32_t
