@@ -142,10 +142,6 @@ main(int const argc, char *const argv[])
 		place_player();
 	}
 
-	if (!load) {
-		(void)mvwprintw(win, HEIGHT - 1, 26, "[seed: %u]", seed);
-	}
-
 	dijkstra();
 
 	handle_input(win, 'n', "['n' to continue]");
