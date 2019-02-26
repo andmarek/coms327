@@ -43,19 +43,24 @@ place_player(WINDOW *const win, int const w, int const h)
 	player.y = (uint8_t)y;
 }
 
+static double
+distance(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
+{
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	return sqrt(dx * dx + dy * dy);
+}
+
 static int
 valid_npc(int const y, int const x)
 {
-	int dx, dy;
-
 	if (tiles[y][x].c != ROOM) {
 		return false;
 	}
 
-	dx = player.x - x;
-	dy = player.y - y;
-
-	return sqrt(dx * dx - dy * dy) > 4.0;
+// TODO move up
+#define CUTOFF	4.0
+	return distance(player.x, player.y, (uint8_t)x, (uint8_t)y) > CUTOFF;
 }
 
 static void
@@ -83,13 +88,13 @@ move_redraw(WINDOW *const win, struct npc *const n, uint8_t const y,
 /*
  * Adapted from my branchfree saturating arithmetic library.
  * See: https://github.com/esote/bsa
+ * Preconditon: a and b are within range of uint8_t.
  */
 static uint8_t
 subu8(unsigned int const a, unsigned int const b)
 {
 	unsigned int res = a - b;
 	res &= (unsigned int) (-(unsigned int) (res <= a));
-	// value should always be within range of uint8_t
 	return (uint8_t)res;
 }
 
@@ -102,6 +107,8 @@ move_tunnel(WINDOW *const win, struct npc *const n, uint8_t const y,
 	}
 
 	tiles[y][x].h = subu8(tiles[y][x].h, 85);
+
+	dijkstra(WIDTH, HEIGHT, player.y, player.x);
 
 	if (tiles[y][x].h != 0) {
 		return;
@@ -117,7 +124,6 @@ move_tunnel(WINDOW *const win, struct npc *const n, uint8_t const y,
 static void
 move_straight(WINDOW *const win, struct npc *const m)
 {
-	int dx, dy;
 	uint8_t x, y;
 	uint8_t minx = m->x, miny = m->y;
 	int i, j;
@@ -134,9 +140,7 @@ move_straight(WINDOW *const win, struct npc *const m)
 				continue;
 			}
 
-			dx = player.x - x;
-			dy = player.y - y;
-			dist = sqrt(dx * dx - dy * dy);
+			dist = distance(player.x, player.y, x, y);
 
 			if (dist < min) {
 				min = dist;
@@ -156,13 +160,15 @@ move_straight(WINDOW *const win, struct npc *const m)
 static void
 move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
 {
-	uint8_t x, y;
-	uint8_t minx = n->x, miny = n->y;
+	int32_t min_d = tiles[miny][minx].d;
 	int i, j;
+	uint8_t x, y;
+	uint8_t minx = n->x
+	uint8_t miny = n->y;
 
 	// TODO unroll?
-	for (i = -1; i < 1; ++i) {
-		for (j = -1; j < 1; ++j) {
+	for (i = -1; i <= 1; ++i) {
+		for (j = -1; j <= 1; ++j) {
 			x = (uint8_t)(n->x + i);
 			y = (uint8_t)(n->y + j);
 
@@ -171,7 +177,8 @@ move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
 				continue;
 			}
 
-			if (tiles[y][x].d < tiles[miny][minx].d) {
+			if (tiles[y][x].d < min_d) {
+				min_d = tiles[y][x].d;
 				minx = x;
 				miny = y;
 			}
@@ -184,17 +191,20 @@ move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
 static void
 move_dijk_tunneling(WINDOW *const win, struct npc *const n)
 {
-	uint8_t x, y;
-	uint8_t minx = n->x, miny = n->y;
+	int32_t min_dt = tiles[miny][minx].dt;
 	int i, j;
+	uint8_t x, y;
+	uint8_t minx = n->x;
+	uint8_t miny = n->y;
 
 	// TODO unroll?
-	for (i = -1; i < 1; ++i) {
-		for (j = -1; j < 1; ++j) {
+	for (i = -1; i <= 1; ++i) {
+		for (j = -1; j <= 1; ++j) {
 			x = (uint8_t)(n->x + i);
 			y = (uint8_t)(n->y + j);
 
-			if (tiles[y][x].dt < tiles[miny][minx].dt) {
+			if (tiles[y][x].dt < min_dt) {
+				min_dt = tiles[y][x].dt;
 				minx = x;
 				miny = y;
 			}
@@ -224,7 +234,7 @@ gen_monster(struct npc *const m, int const w, int const h)
 
 	tiles[y][x].n = m;
 
-	m->type = (uint8_t)rrand(TYPE_MIN, TYPE_MAX);
+	m->type = 7;//(uint8_t)rrand(TYPE_MIN, TYPE_MAX);
 	m->speed = (uint8_t)rrand(SPEED_MIN, SPEED_MAX);
 	m->turn = 0;
 	m->saw_pc = false;
@@ -343,8 +353,6 @@ move_npc(WINDOW *const win, struct npc *const n, int const w, int const h)
 			move_redraw(win, n, y, x);
 		}
 
-		// TODO dijkstra (recalc, hardness map changed)
-
 		return;
 	}
 
@@ -448,7 +456,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon, int const w, int const
 
 	while ((n = heap_remove_min(&heap))) {
 		if (alive == 0) {
-			mvwprintw(win, 0, 2, "[no monsters lift]");
+			mvwprintw(win, 0, 2, "[no monsters left]");
 			wrefresh(win);
 			getch();
 			break;

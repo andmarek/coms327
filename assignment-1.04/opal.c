@@ -87,9 +87,9 @@ main(int const argc, char *const argv[])
 		}
 	}
 
-	// TODO make #define
+	// TODO remove limit, add limit to num of retries
 	if (nummon > 64) {
-		cerrx(1, "nummon cannot be greater than 64");
+		cerrx(1, "TODO: remove limit nummon cannot be greater than 64");
 	}
 
 	if (seed == UINT_MAX) {
