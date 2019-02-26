@@ -418,6 +418,32 @@ compare_npc(void const *const key, void const *const with)
 	return ((struct npc const *const) key)->turn - ((struct npc const *const) with)->turn;
 }
 
+static void
+print_deathscreen(WINDOW *const win, int const w, int const h)
+{
+	// TODO error check
+	wclear(win);
+	(void)box(win, 0, 0);
+	mvwprintw(win, h / 2 - 1, w / 4, "You're dead, Jim.");
+	mvwprintw(win, h / 2 + 0, w/ 4, "\t\t-- McCoy, stardate 3468.1");
+	mvwprintw(win, h / 2 + 2, w / 4, "You've died. Game over.");
+}
+
+static void
+print_winscreen(WINDOW *const win, int const w, int const h)
+{
+	// TODO error check
+	wclear(win);
+	(void)box(win, 0, 0);
+	mvwprintw(win, h / 2 - 3, w / 12, "[War] is instinctive. But the insinct can be fought. We're human");
+	mvwprintw(win, h / 2 - 2, w / 12, "beings with the blood of a million savage years on our hands! But we");
+	mvwprintw(win, h / 2 - 1, w / 12, "can stop it. We can admit that we're killers ... but we're not going");
+	mvwprintw(win, h / 2 + 0, w / 12, "to kill today. That's all it takes! Knowing that we're not going to");
+	mvwprintw(win, h / 2 + 1, w / 12, "kill today!");
+	mvwprintw(win, h / 2 + 2, w / 12, "\t\t-- Kirk, \"A Taste of Armageddon\", stardate 3193.0");
+	mvwprintw(win, h / 2 + 4, w / 12, "You've won. Game over.");
+}
+
 void
 turn_engine(WINDOW *const win, unsigned int const nummon, int const w, int const h)
 {
@@ -451,22 +477,14 @@ turn_engine(WINDOW *const win, unsigned int const nummon, int const w, int const
 		heap_insert(&heap, &monsters[i]);
 	}
 
-	wrefresh(win);
-	getch();
-
 	while ((n = heap_remove_min(&heap))) {
 		if (alive == 0) {
-			mvwprintw(win, 0, 2, "[no monsters left]");
-			wrefresh(win);
-			getch();
+			print_winscreen(win, w, h);
 			break;
 		}
 		if (n->dead) {
-			mvwprintw(win, 0, 2, "[DIED: n->type: %d, x: %d, y: %d]", n->type, n->x, n->y);
-			wrefresh(win);
-			getch();
 			if (n->type & PLAYER_TYPE) {
-				// game over
+				print_deathscreen(win, w, h);
 				break;
 			} else {
 				alive--;
@@ -477,13 +495,12 @@ turn_engine(WINDOW *const win, unsigned int const nummon, int const w, int const
 		turn = n->turn + 1;
 		n->turn = turn + 1000/n->speed;
 
-		mvwprintw(win, 0, 2, "[n->type: %d, x: %d, y: %d]", n->type, n->x, n->y);
-		wrefresh(win);
-
 		move_npc(win, n, w, h);
 
-		if (wrefresh(win) == ERR) {
-			cerrx(1, "turn_engine wrefresh");
+		if (n->type & PLAYER_TYPE) {
+			// TODO error check
+			wrefresh(win);
+			usleep(250000);
 		}
 
 		// TODO error check
