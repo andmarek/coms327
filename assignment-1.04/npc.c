@@ -160,10 +160,10 @@ move_straight(WINDOW *const win, struct npc *const m)
 static void
 move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
 {
-	int32_t min_d = tiles[miny][minx].d;
+	int32_t min_d = tiles[n->y][n->x].d;
 	int i, j;
 	uint8_t x, y;
-	uint8_t minx = n->x
+	uint8_t minx = n->x;
 	uint8_t miny = n->y;
 
 	// TODO unroll?
@@ -191,7 +191,7 @@ move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
 static void
 move_dijk_tunneling(WINDOW *const win, struct npc *const n)
 {
-	int32_t min_dt = tiles[miny][minx].dt;
+	int32_t min_dt = tiles[n->y][n->x].dt;
 	int i, j;
 	uint8_t x, y;
 	uint8_t minx = n->x;
@@ -234,7 +234,7 @@ gen_monster(struct npc *const m, int const w, int const h)
 
 	tiles[y][x].n = m;
 
-	m->type = 7;//(uint8_t)rrand(TYPE_MIN, TYPE_MAX);
+	m->type = (uint8_t)rrand(TYPE_MIN, TYPE_MAX);
 	m->speed = (uint8_t)rrand(SPEED_MIN, SPEED_MAX);
 	m->turn = 0;
 	m->saw_pc = false;
