@@ -51,6 +51,8 @@ static int32_t	compare_npc(void const *const, void const *const);
 static void	print_deathscreen(WINDOW *const);
 static void	print_winscreen(WINDOW *const);
 
+struct npc player;
+
 void
 place_player(void)
 {

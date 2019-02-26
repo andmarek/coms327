@@ -51,9 +51,9 @@ struct tile {
 	struct npc	*n;
 };
 
-extern struct tile tiles[HEIGHT][WIDTH];
-
 extern struct npc player;
+
+extern struct tile tiles[HEIGHT][WIDTH];
 
 extern uint16_t room_count;
 extern struct room *rooms;

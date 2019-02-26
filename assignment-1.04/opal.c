@@ -27,8 +27,6 @@ static struct option const long_opts[] = {
 	{NULL, 0, NULL, 0}
 };
 
-struct npc player;
-
 uint16_t room_count;
 struct room *rooms;
 
