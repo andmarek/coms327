@@ -17,6 +17,8 @@
 #define TUNNELING	0x4
 #define ERRATIC		0x8
 
+#define PERSISTANCE	5
+
 static int
 valid_player(WINDOW *const win, int const y, int const x)
 {
@@ -237,7 +239,7 @@ gen_monster(struct npc *const m, int const w, int const h)
 	m->type = (uint8_t)rrand(TYPE_MIN, TYPE_MAX);
 	m->speed = (uint8_t)rrand(SPEED_MIN, SPEED_MAX);
 	m->turn = 0;
-	m->saw_pc = false;
+	m->p_count = 0;
 	m->dead = false;
 
 	switch (m->type) {
@@ -382,13 +384,12 @@ move_npc(WINDOW *const win, struct npc *const n, int const w, int const h)
 		// use nontunneling dijk, remembered location
 		// or use nontunneling dijk, telepathic towards player
 		if (n->type & TELEPATHIC || pc_visible(n)) {
-			n->saw_pc = true;
-			n->target_x = player.x;
-			n->target_y = player.y;
+			n->p_count = PERSISTANCE;
 		}
 
-		if (n->saw_pc) {
+		if (n->p_count != 0) {
 			move_dijk_nontunneling(win, n);
+			n->p_count--;
 		}
 		break;
 	case 0x5:
@@ -398,13 +399,12 @@ move_npc(WINDOW *const win, struct npc *const n, int const w, int const h)
 		// tunnel: use tunneling dijk, remembered location
 		// or tunnel: use tunneling dijk, telepathic towards player
 		if (n->type & TELEPATHIC || pc_visible(n)) {
-			n->saw_pc = true;
-			n->target_x = player.x;
-			n->target_y = player.y;
+			n->p_count = PERSISTANCE;
 		}
 
-		if (n->saw_pc) {
+		if (n->p_count != 0) {
 			move_dijk_tunneling(win, n);
+			n->p_count--;
 		}
 		break;
 	default:

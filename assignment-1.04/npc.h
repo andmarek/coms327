@@ -10,9 +10,7 @@ struct npc {
 	uint8_t	speed;
 	uint8_t	type;
 	int32_t	turn;
-	uint8_t target_x;
-	uint8_t target_y;
-	bool	saw_pc;
+	uint8_t p_count;
 	bool	dead;
 };
 
