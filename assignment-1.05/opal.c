@@ -15,7 +15,6 @@
 #define PROGRAM_NAME	"opal"
 #define NEW_ROOM_COUNT	8
 #define ROOM_RETRIES	150
-#define WAIT_DEFAULT	250000
 
 static struct option const long_opts[] = {
 	{"help", no_argument, NULL, 'h'},
@@ -23,7 +22,6 @@ static struct option const long_opts[] = {
 	{"nummon", required_argument, NULL, 'n'},
 	{"save", no_argument, NULL, 's'},
 	{"seed", required_argument, NULL, 'z'},
-	{"wait", required_argument, NULL, 'w'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -56,7 +54,6 @@ main(int const argc, char *const argv[])
 	uint8_t i, j;
 	unsigned int nummon = (unsigned int)rrand(3, 5);
 	unsigned int seed = UINT_MAX;
-	unsigned int wait = WAIT_DEFAULT;
 	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
 
 	while ((ch = getopt_long(argc, argv, "hln:sz:w:", long_opts, NULL)) != -1) {
@@ -79,13 +76,6 @@ main(int const argc, char *const argv[])
 			break;
 		case 'z':
 			seed = init_rand(optarg);
-			break;
-		case 'w':
-			wait = (unsigned int)strtoul(optarg, &end, 10);
-
-			if (optarg == end || errno == EINVAL || errno == ERANGE) {
-				cerr(1, "wait invalid");
-			}
 			break;
 		default:
 			usage(EXIT_FAILURE, name);
@@ -155,7 +145,7 @@ main(int const argc, char *const argv[])
 
 	handle_input(win, 'n', "['n' to continue]");
 
-	turn_engine(win, wait, nummon);
+	turn_engine(win, nummon);
 
 	handle_input(win, 'q', "['q' to quit]");
 

@@ -1,12 +1,7 @@
-#define _DEFAULT_SOURCE
-#define _BSD_SOURCE
-#include <unistd.h>
-#undef _BSD_SOURCE
-#undef _DEFAULT_SOURCE
-
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "cerr.h"
 #include "dijk.h"
@@ -71,8 +66,7 @@ place_player(void)
 }
 
 void
-turn_engine(WINDOW *const win, unsigned int const wait,
-	unsigned int const nummon)
+turn_engine(WINDOW *const win, unsigned int const nummon)
 {
 	struct heap heap;
 	struct npc *monsters;
@@ -119,19 +113,17 @@ turn_engine(WINDOW *const win, unsigned int const wait,
 			if (wrefresh(win) == ERR) {
 				cerrx(1, "turn_engine wrefresh");
 			}
-
-			if (usleep(wait) == -1) {
-				cerr(1, "turn_engine usleep");
-			}
 		}
 
 		if (alive == 0) {
+			sleep(1);
 			print_winscreen(win);
 			break;
 		}
 
 		if (n->dead) {
 			if (n->type & PLAYER_TYPE) {
+				sleep(1);
 				print_deathscreen(win);
 				break;
 			} else {
