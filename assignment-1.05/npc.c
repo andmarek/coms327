@@ -480,79 +480,90 @@ turn_pc(WINDOW *const win, struct npc *const n)
 {
 	uint8_t y = n->y;
 	uint8_t x = n->x;
+	bool exit = false;
 
-	switch(getch()) {
-	case KEY_A1:
-	case '7':
-	case 'y':
-		// up left
-		y--;
-		x--;
-		break;
-	case KEY_UP:
-	case '8':
-	case 'k':
-		// TODO: scroll up monster list
-		// up
-		y--;
-		break;
-	case KEY_A3:
-	case '9':
-	case 'u':
-		// up right
-		y--;
-		x++;
-		break;
-	case KEY_RIGHT:
-	case '6':
-	case 'l':
-		// right
-		x++;
-		break;
-	case KEY_C3:
-	case '3':
-	case 'n':
-		// down right
-		y++;
-		x++;
-		break;
-	case KEY_DOWN:
-	case '2':
-	case 'j':
-		// TODO: scroll down monster list
-		// down
-		y++;
-		break;
-	case KEY_C1:
-	case '1':
-	case 'b':
-		// down left
-		y++;
-		x--;
-		break;
-	case KEY_LEFT:
-	case '4':
-	case 'h':
-		// left
-		x--;
-		break;
-	case ' ':
-	case '5':
-	case '.':
-		// rest
-		return;
-	case '>':
-		// TODO
-		// go down stairs
-		break;
-	case '<':
-		// TODO
-		// go up stairs
-		break;
-	case 'm':
-		// TODO
-		// monster list
-		break;
+	while(!exit) {
+		exit = true;
+		switch(getch()) {
+		case KEY_HOME:
+		case KEY_A1:
+		case '7':
+		case 'y':
+			// up left
+			y--;
+			x--;
+			break;
+		case KEY_UP:
+		case '8':
+		case 'k':
+			// TODO: scroll up monster list
+			// up
+			y--;
+			break;
+		case KEY_PPAGE:
+		case KEY_A3:
+		case '9':
+		case 'u':
+			// up right
+			y--;
+			x++;
+			break;
+		case KEY_RIGHT:
+		case '6':
+		case 'l':
+			// right
+			x++;
+			break;
+		case KEY_NPAGE:
+		case KEY_C3:
+		case '3':
+		case 'n':
+			// down right
+			y++;
+			x++;
+			break;
+		case KEY_DOWN:
+		case '2':
+		case 'j':
+			// TODO: scroll down monster list
+			// down
+			y++;
+			break;
+		case KEY_END:
+		case KEY_C1:
+		case '1':
+		case 'b':
+			// down left
+			y++;
+			x--;
+			break;
+		case KEY_LEFT:
+		case KEY_B2:
+		case '4':
+		case 'h':
+			// left
+			x--;
+			break;
+		case ' ':
+		case '5':
+		case '.':
+			// rest
+			return;
+		case '>':
+			// TODO
+			// go down stairs
+			break;
+		case '<':
+			// TODO
+			// go up stairs
+			break;
+		case 'm':
+			// TODO
+			// monster list
+			break;
+		default:
+			exit = false;
+		}
 	}
 
 	if (tiles[y][x].h != 0) {
