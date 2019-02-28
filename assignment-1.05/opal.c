@@ -6,7 +6,6 @@
 #include <string.h>
 
 #include "cerr.h"
-#include "dijk.h"
 #include "floor.h"
 #include "globs.h"
 #include "io.h"
@@ -14,6 +13,7 @@
 #include "rand.h"
 
 #define PROGRAM_NAME	"opal"
+#define NEW_ROOM_COUNT	8
 #define ROOM_RETRIES	150
 #define WAIT_DEFAULT	250000
 
@@ -53,6 +53,7 @@ main(int const argc, char *const argv[])
 	int ch;
 	int load = 0;
 	int save = 0;
+	uint8_t i, j;
 	unsigned int nummon = (unsigned int)rrand(3, 5);
 	unsigned int seed = UINT_MAX;
 	unsigned int wait = WAIT_DEFAULT;
@@ -95,6 +96,27 @@ main(int const argc, char *const argv[])
 		seed = init_rand(NULL);
 	}
 
+	for (i = 0; i < HEIGHT; ++i) {
+		for (j = 0; j < WIDTH; ++j) {
+			tiles[i][j] = (struct tile) {
+				.h = 0,
+				.c = 0,
+				.d = 0,
+				.dt = 0,
+				.x = j,
+				.y = i,
+				.n = NULL,
+			};
+
+			if (i == 0 || j == 0 || i == HEIGHT - 1
+				|| j == WIDTH - 1) {
+				tiles[i][j].h = UINT8_MAX;
+			} else {
+				tiles[i][j].c = ROCK;
+			}
+		}
+	}
+
 	(void)initscr();
 
 	if (refresh() == ERR) {
@@ -126,16 +148,10 @@ main(int const argc, char *const argv[])
 
 		arrange_loaded(win);
 	} else {
-		room_count = 8;
-		stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
-		stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
-
 		arrange_new(win);
 
 		place_player();
 	}
-
-	dijkstra();
 
 	handle_input(win, 'n', "['n' to continue]");
 
@@ -195,7 +211,7 @@ handle_input(WINDOW *const win, int const disrupt,
 			(void)mvwprintw(win, HEIGHT - 1, 2, str);
 
 			if (wrefresh(win) == ERR) {
-				cerrx(1, "handle_input getch");
+				cerrx(1, "handle_input resize wrefresh");
 			}
 		}
 
@@ -230,7 +246,11 @@ arrange_new(WINDOW *const win)
 {
 	size_t i, j;
 	size_t retries = 0;
-	
+
+	room_count = NEW_ROOM_COUNT;
+	stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
+	stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
+
 	if (!(rooms = malloc(sizeof(struct room) * room_count))
 		&& room_count != 0) {
 		cerr(1, "gen malloc rooms");
@@ -251,7 +271,7 @@ arrange_new(WINDOW *const win)
 	}
 
 	for (i = 0; i < room_count && retries < ROOM_RETRIES; ++i) {
-		if (valid_room(win, &rooms[i]) == -1) {
+		if (valid_room(&rooms[i]) == -1) {
 			retries++;
 			gen_room(&rooms[i--]);
 		} else {
@@ -260,10 +280,15 @@ arrange_new(WINDOW *const win)
 	}
 
 	if (i < room_count) {
+		if (i == 0) {
+			cerrx(1, "unable to place any rooms");
+		}
+
 		room_count = (uint16_t)i;
+
 		rooms = realloc(rooms, sizeof(struct room) * room_count);
 
-		if (!rooms && room_count != 0) {
+		if (!rooms) {
 			cerr(1, "realloc rooms");
 		}
 	}
@@ -280,20 +305,8 @@ arrange_new(WINDOW *const win)
 		gen_draw_stair(win, &stairs_dn[i], false);
 	}
 
-	for (i = 0; i < HEIGHT; ++i) {
-		for (j = 0; j < WIDTH; ++j) {
-			tiles[i][j].n = NULL;
-			tiles[i][j].c = mvwinch(win, (uint8_t)i, (uint8_t)j);
-
-			if (i == 0 || j == 0 || i == HEIGHT - 1
-				|| j == WIDTH - 1) {
-				tiles[i][j].h = UINT8_MAX;
-				continue;
-			}
-
-			tiles[i][j].y = (uint8_t)i;
-			tiles[i][j].x = (uint8_t)j;
-
+	for (i = 1; i < HEIGHT - 1; ++i) {
+		for (j = 1; j < WIDTH - 1; ++j) {
 			switch(tiles[i][j].c) {
 			case ROOM:
 			case CORRIDOR:
@@ -311,7 +324,6 @@ arrange_new(WINDOW *const win)
 static void
 arrange_loaded(WINDOW *const win)
 {
-	chtype ch;
 	uint8_t i, j;
 	uint16_t k;
 
@@ -320,27 +332,21 @@ arrange_loaded(WINDOW *const win)
 	}
 
 	for (k = 0; k < stair_up_count; ++k) {
+		tiles[stairs_up[k].y][stairs_up[k].x].c = STAIR_UP;
 		(void)mvwaddch(win, stairs_up[k].y, stairs_up[k].x, STAIR_UP);
 	}
 
 	for (k = 0; k < stair_dn_count; ++k) {
+		tiles[stairs_dn[k].y][stairs_dn[k].x].c = STAIR_DN;
 		(void)mvwaddch(win, stairs_dn[k].y, stairs_dn[k].x, STAIR_DN);
 	}
 
 	for (i = 1; i < HEIGHT - 1; ++i) {
 		for (j = 1; j < WIDTH - 1; ++j) {
-			ch = mvwinch(win, i, j);
-
-			tiles[i][j].y = i;
-			tiles[i][j].x = j;
-
-			if (tiles[i][j].h == 0 && ch == ROCK) {
+			if (tiles[i][j].h == 0 && tiles[i][j].c == ROCK) {
+				tiles[i][j].c = CORRIDOR;
 				(void)mvwaddch(win, i, j, CORRIDOR);
-				ch = mvwinch(win, i, j);
 			}
-
-			tiles[i][j].c = ch;
-			tiles[i][j].n = NULL;
 		}
 	}
 }

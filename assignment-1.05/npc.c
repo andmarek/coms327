@@ -1,5 +1,7 @@
 #define _DEFAULT_SOURCE
+#define _BSD_SOURCE
 #include <unistd.h>
+#undef _BSD_SOURCE
 #undef _DEFAULT_SOURCE
 
 #include <float.h>
@@ -45,7 +47,8 @@ static void	move_dijk_tunneling(WINDOW *const, struct npc *const);
 
 static void	gen_monster(struct npc *const);
 
-static void	move_npc(WINDOW *const, struct npc *const);
+static void	turn_npc(WINDOW *const, struct npc *const);
+static void	turn_pc(WINDOW *const, struct npc *const);
 static int32_t	compare_npc(void const *const, void const *const);
 
 static void	print_deathscreen(WINDOW *const);
@@ -91,6 +94,10 @@ turn_engine(WINDOW *const win, unsigned int const wait,
 	player.turn = 0;
 	player.type_ch = PLAYER;
 
+	tiles[player.y][player.x].n = &player;
+
+	(void)mvwaddch(win, player.y, player.x, player.type_ch);
+
 	if(heap_insert(&heap, &player) == NULL) {
 		cerr(1, "turn_engine heap_insert pc");
 	}
@@ -104,6 +111,8 @@ turn_engine(WINDOW *const win, unsigned int const wait,
 			cerr(1, "turn_engine heap_insert npc");
 		}
 	}
+
+	dijkstra();
 
 	while ((n = heap_remove_min(&heap))) {
 		if (n->type & PLAYER_TYPE) {
@@ -134,7 +143,7 @@ turn_engine(WINDOW *const win, unsigned int const wait,
 		turn = n->turn + 1;
 		n->turn = turn + 1000/n->speed;
 
-		move_npc(win, n);
+		turn_npc(win, n);
 
 		if (heap_insert(&heap, n) == NULL) {
 			cerr(1, "turn_engine re-heap_insert");
@@ -396,22 +405,12 @@ gen_monster(struct npc *const n)
 }
 
 static void
-move_npc(WINDOW *const win, struct npc *const n)
+turn_npc(WINDOW *const win, struct npc *const n)
 {
 	uint8_t y, x;
 
 	if (n->type & PLAYER_TYPE) {
-		y = (uint8_t)(n->y + rrand(-1, 1));
-		x = (uint8_t)(n->x + rrand(-1, 1));
-
-		if (tiles[y][x].h != 0) {
-			return;
-		}
-
-		move_redraw(win, n, y, x);
-
-		dijkstra();
-
+		turn_pc(win, n);
 		return;
 	}
 
@@ -482,6 +481,95 @@ move_npc(WINDOW *const win, struct npc *const n)
 	default:
 		cerrx(1, "gen_monster invalid monster type %d", n->type);
 	}
+}
+
+static void
+turn_pc(WINDOW *const win, struct npc *const n)
+{
+	uint8_t y = n->y;
+	uint8_t x = n->x;
+
+	switch(getch()) {
+	case KEY_A1:
+	case '7':
+	case 'y':
+		// up left
+		y--;
+		x--;
+		break;
+	case KEY_UP:
+	case '8':
+	case 'k':
+		// TODO: scroll up monster list
+		// up
+		y--;
+		break;
+	case KEY_A3:
+	case '9':
+	case 'u':
+		// up right
+		y--;
+		x++;
+		break;
+	case KEY_RIGHT:
+	case '6':
+	case 'l':
+		// right
+		x++;
+		break;
+	case KEY_C3:
+	case '3':
+	case 'n':
+		// down right
+		y++;
+		x++;
+		break;
+	case KEY_DOWN:
+	case '2':
+	case 'j':
+		// TODO: scroll down monster list
+		// down
+		y++;
+		break;
+	case KEY_C1:
+	case '1':
+	case 'b':
+		// down left
+		y++;
+		x--;
+		break;
+	case KEY_LEFT:
+	case '4':
+	case 'h':
+		// left
+		x--;
+		break;
+	case ' ':
+	case '5':
+	case '.':
+		// rest
+		return;
+	case '>':
+		// TODO
+		// go down stairs
+		break;
+	case '<':
+		// TODO
+		// go up stairs
+		break;
+	case 'm':
+		// TODO
+		// monster list
+		break;
+	}
+
+	if (tiles[y][x].h != 0) {
+		return;
+	}
+
+	move_redraw(win, n, y, x);
+
+	dijkstra();
 }
 
 static int32_t
