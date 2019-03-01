@@ -38,7 +38,9 @@ struct tile tiles[HEIGHT][WIDTH];
 
 static void	usage(int const, char const *const);
 
+/*
 static void	handle_input(WINDOW *const, int const, char const *const);
+*/
 
 static void	arrange_new(WINDOW *const);
 static void	arrange_loaded(WINDOW *const);
@@ -143,11 +145,11 @@ main(int const argc, char *const argv[])
 		place_player();
 	}
 
-	handle_input(win, 'n', "['n' to continue]");
+	/* handle_input(win, 'n', "['n' to continue]"); */
 
 	turn_engine(win, nummon);
 
-	handle_input(win, 'q', "['q' to quit]");
+	/* handle_input(win, 'q', "['q' to quit]"); */
 
 	if (delwin(win) == ERR) {
 		cerrx(1, "delwin");
@@ -177,6 +179,7 @@ main(int const argc, char *const argv[])
 	return EXIT_SUCCESS;
 }
 
+/*
 static void
 handle_input(WINDOW *const win, int const disrupt,
 	char const *const str)
@@ -209,6 +212,7 @@ handle_input(WINDOW *const win, int const disrupt,
 
 	(void)box(win, 0, 0);
 }
+*/
 
 static void
 usage(int const status, char const *const name)

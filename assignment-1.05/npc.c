@@ -24,6 +24,14 @@
 #define SPEED_MIN	5
 #define SPEED_MAX	20
 
+#define KEY_ESC	27
+
+enum pc_action {
+	MONSTER_LIST,
+	NONE,
+	QUIT
+};
+
 static int	valid_player(int const, int const);
 static int	valid_npc(int const, int const);
 
@@ -42,9 +50,9 @@ static void	move_dijk_tunneling(WINDOW *const, struct npc *const);
 
 static void	gen_monster(struct npc *const);
 
-static void	turn_npc(WINDOW *const, struct npc *const);
-static void	turn_pc(WINDOW *const, struct npc *const);
-static int32_t	compare_npc(void const *const, void const *const);
+static enum pc_action	turn_npc(WINDOW *const, struct npc *const);
+static enum pc_action	turn_pc(WINDOW *const, struct npc *const);
+static int32_t		compare_npc(void const *const, void const *const);
 
 static void	print_deathscreen(WINDOW *const);
 static void	print_winscreen(WINDOW *const);
@@ -135,12 +143,21 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		turn = n->turn + 1;
 		n->turn = turn + 1000/n->speed;
 
-		turn_npc(win, n);
+		switch(turn_npc(win, n)) {
+		case MONSTER_LIST:
+			break;
+		case NONE:
+			break;
+		case QUIT:
+			goto exit;
+		}
 
 		if (heap_insert(&heap, n) == NULL) {
 			cerr(1, "turn_engine re-heap_insert");
 		}
 	}
+
+	exit:
 
 	heap_delete(&heap);
 
@@ -396,14 +413,13 @@ gen_monster(struct npc *const n)
 	tiles[y][x].n = n;
 }
 
-static void
+static enum pc_action
 turn_npc(WINDOW *const win, struct npc *const n)
 {
 	uint8_t y, x;
 
 	if (n->type & PLAYER_TYPE) {
-		turn_pc(win, n);
-		return;
+		return turn_pc(win, n);
 	}
 
 	if (n->type & ERRATIC && rrand(0, 1) == 0) {
@@ -418,7 +434,7 @@ turn_npc(WINDOW *const win, struct npc *const n)
 			move_redraw(win, n, y, x);
 		}
 
-		return;
+		return NONE;
 	}
 
 	switch(n->type) {
@@ -426,8 +442,10 @@ turn_npc(WINDOW *const win, struct npc *const n)
 	case 0x8:
 	case 0x4:
 	case 0xC:
-		// straight line if can see player
-		// or tunnel: straight line if can see player
+		/*
+		 * straight line if can see player
+		 * or tunnel: straight line if can see player
+		 */
 		if (pc_visible(n)) {
 			move_straight(win, n);
 		}
@@ -436,16 +454,20 @@ turn_npc(WINDOW *const win, struct npc *const n)
 	case 0xA:
 	case 0x6:
 	case 0xE:
-		// straight line, telepathic towards player
-		// or tunnel: straight line, telepathic towards player
+		/*
+		 * straight line, telepathic towards player
+		 * or tunnel: straight line, telepathic towards player
+		 */
 		move_straight(win, n);
 		break;
 	case 0x1:
 	case 0x9:
 	case 0x3:
 	case 0xB:
-		// use nontunneling dijk, remembered location
-		// or use nontunneling dijk, telepathic towards player
+		/*
+		 * use nontunneling dijk, remembered location
+		 * or use nontunneling dijk, telepathic towards player
+		 */
 		if (n->type & TELEPATHIC || pc_visible(n)) {
 			n->p_count = PERSISTANCE;
 		}
@@ -459,8 +481,10 @@ turn_npc(WINDOW *const win, struct npc *const n)
 	case 0xD:
 	case 0x7:
 	case 0xF:
-		// tunnel: use tunneling dijk, remembered location
-		// or tunnel: use tunneling dijk, telepathic towards player
+		/*
+		 * tunnel: use tunneling dijk, remembered location
+		 * or tunnel: use tunneling dijk, telepathic towards player
+		 */
 		if (n->type & TELEPATHIC || pc_visible(n)) {
 			n->p_count = PERSISTANCE;
 		}
@@ -473,9 +497,11 @@ turn_npc(WINDOW *const win, struct npc *const n)
 	default:
 		cerrx(1, "gen_monster invalid monster type %d", n->type);
 	}
+
+	return NONE;
 }
 
-static void
+static enum pc_action
 turn_pc(WINDOW *const win, struct npc *const n)
 {
 	uint8_t y = n->y;
@@ -489,51 +515,51 @@ turn_pc(WINDOW *const win, struct npc *const n)
 		case KEY_A1:
 		case '7':
 		case 'y':
-			// up left
+			/* up left */
 			y--;
 			x--;
 			break;
 		case KEY_UP:
 		case '8':
 		case 'k':
-			// TODO: scroll up monster list
-			// up
+			/* TODO: scroll up monster list */
+			/* up */
 			y--;
 			break;
 		case KEY_PPAGE:
 		case KEY_A3:
 		case '9':
 		case 'u':
-			// up right
+			/* up right */
 			y--;
 			x++;
 			break;
 		case KEY_RIGHT:
 		case '6':
 		case 'l':
-			// right
+			/* right */
 			x++;
 			break;
 		case KEY_NPAGE:
 		case KEY_C3:
 		case '3':
 		case 'n':
-			// down right
+			/* down right */
 			y++;
 			x++;
 			break;
 		case KEY_DOWN:
 		case '2':
 		case 'j':
-			// TODO: scroll down monster list
-			// down
+			/* TODO: scroll down monster list */
+			/* down */
 			y++;
 			break;
 		case KEY_END:
 		case KEY_C1:
 		case '1':
 		case 'b':
-			// down left
+			/* down left */
 			y++;
 			x--;
 			break;
@@ -541,38 +567,40 @@ turn_pc(WINDOW *const win, struct npc *const n)
 		case KEY_B2:
 		case '4':
 		case 'h':
-			// left
+			/* left */
 			x--;
 			break;
 		case ' ':
 		case '5':
 		case '.':
-			// rest
-			return;
+			/* rest */
+			return NONE;
 		case '>':
-			// TODO
-			// go down stairs
+			/* TODO go down stairs */
 			break;
 		case '<':
-			// TODO
-			// go up stairs
+			/* TODO go up stairs */
 			break;
 		case 'm':
-			// TODO
-			// monster list
+			/* TODO monster list */
 			break;
+		case KEY_ESC:
+			/* TODO exit monster list */
+			break;
+		case 'Q':
+			/* quit game */
+			return QUIT;
 		default:
 			exit = false;
 		}
 	}
 
-	if (tiles[y][x].h != 0) {
-		return;
+	if (tiles[y][x].h == 0) {
+		move_redraw(win, n, y, x);
+		dijkstra();
 	}
 
-	move_redraw(win, n, y, x);
-
-	dijkstra();
+	return NONE;
 }
 
 static int32_t
@@ -594,6 +622,13 @@ print_deathscreen(WINDOW *const win)
 		"\t\t-- McCoy, stardate 3468.1");
 	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 4,
 		"You've died. Game over.");
+	(void)mvwprintw(win, HEIGHT - 1, 2, "[ Press any key to exit ]");
+
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "wrefresh on deathscreen");
+	}
+
+	(void)getch();
 }
 
 static void
@@ -616,4 +651,11 @@ print_winscreen(WINDOW *const win)
 	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 12,
 		"\t\t-- Kirk, \"A Taste of Armageddon\", stardate 3193.0");
 	(void)mvwprintw(win, HEIGHT / 2 + 4, WIDTH / 12, "You've won. Game over.");
+	(void)mvwprintw(win, HEIGHT - 1, 2, "[ Press any key to exit ]");
+
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "wrefresh on winscreen");
+	}
+
+	(void)getch();
 }
