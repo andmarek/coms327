@@ -36,7 +36,7 @@ static int	valid_player(int const, int const);
 static int	valid_npc(int const, int const);
 
 static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
-static uint8_t		subu8(unsigned int const, unsigned int const);
+static unsigned int	subu32(unsigned int const, unsigned int const);
 static bool		pc_visible(struct npc const *restrict const);
 static unsigned int	limited_int_to_char(uint8_t const);
 
@@ -57,6 +57,8 @@ static int32_t		compare_npc(void const *const, void const *const);
 static void	print_deathscreen(WINDOW *const);
 static void	print_winscreen(WINDOW *const);
 
+static void	monster_list(WINDOW *const, struct npc *monsters, unsigned int const);
+
 struct npc player;
 
 void
@@ -76,6 +78,7 @@ place_player(void)
 void
 turn_engine(WINDOW *const win, unsigned int const nummon)
 {
+	WINDOW *mwin; /* monster list window */
 	struct heap heap;
 	struct npc *monsters;
 	struct npc *n;
@@ -116,6 +119,14 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	dijkstra();
 
+	if ((mwin = newwin(HEIGHT, WIDTH, 0, 0)) == NULL) {
+		cerrx(1, "turn_engine newwin mwin");
+	}
+
+	if (keypad(mwin, true) == ERR) {
+		cerrx(1, "keypad mwin");
+	}
+
 	while ((n = heap_remove_min(&heap))) {
 		if (n->type & PLAYER_TYPE) {
 			if (wrefresh(win) == ERR) {
@@ -143,9 +154,13 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		turn = n->turn + 1;
 		n->turn = turn + 1000/n->speed;
 
+		retry:
 		switch(turn_npc(win, n)) {
 		case MONSTER_LIST:
-			break;
+			monster_list(mwin, monsters, nummon);
+			touchwin(win);
+			wrefresh(win);
+			goto retry;
 		case NONE:
 			break;
 		case QUIT:
@@ -158,6 +173,8 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	}
 
 	exit:
+
+	delwin(mwin);
 
 	heap_delete(&heap);
 
@@ -191,16 +208,15 @@ distance(uint8_t const x0, uint8_t const y0, uint8_t const x1, uint8_t const y1)
 }
 
 /*
- * Adapted from my branchfree saturating arithmetic library.
+ * From my branchfree saturating arithmetic library.
  * See: https://github.com/esote/bsa
- * Preconditon: a and b are within range of uint8_t.
  */
-static uint8_t
-subu8(unsigned int const a, unsigned int const b)
+static unsigned int
+subu32(unsigned int const a, unsigned int const b)
 {
 	unsigned int res = a - b;
 	res &= (unsigned int) (-(unsigned int) (res <= a));
-	return (uint8_t)res;
+	return res;
 }
 
 /* Bresenham's line algorithm */
@@ -282,7 +298,7 @@ move_tunnel(WINDOW *const win, struct npc *const n, uint8_t const y,
 		return;
 	}
 
-	tiles[y][x].h = subu8(tiles[y][x].h, TUNNEL_STRENGTH);
+	tiles[y][x].h = (uint8_t)subu32(tiles[y][x].h, TUNNEL_STRENGTH);
 
 	dijkstra();
 
@@ -511,6 +527,9 @@ turn_pc(WINDOW *const win, struct npc *const n)
 	while(!exit) {
 		exit = true;
 		switch(wgetch(win)) {
+		case ERR:
+			cerrx(1, "turn_pc wgetch ERR");
+			break;
 		case KEY_HOME:
 		case KEY_A1:
 		case '7':
@@ -522,7 +541,6 @@ turn_pc(WINDOW *const win, struct npc *const n)
 		case KEY_UP:
 		case '8':
 		case 'k':
-			/* TODO: scroll up monster list */
 			/* up */
 			y--;
 			break;
@@ -551,7 +569,6 @@ turn_pc(WINDOW *const win, struct npc *const n)
 		case KEY_DOWN:
 		case '2':
 		case 'j':
-			/* TODO: scroll down monster list */
 			/* down */
 			y++;
 			break;
@@ -582,9 +599,9 @@ turn_pc(WINDOW *const win, struct npc *const n)
 			/* TODO go up stairs */
 			break;
 		case 'm':
-			/* TODO monster list */
-			break;
+			return MONSTER_LIST;
 		case 'Q':
+		case 'q':
 			/* quit game */
 			return QUIT;
 		default:
@@ -655,4 +672,49 @@ print_winscreen(WINDOW *const win)
 	}
 
 	(void)wgetch(win);
+}
+
+static void
+monster_list(WINDOW *const mwin, struct npc *monsters, unsigned int const nummon)
+{
+	unsigned int i;
+	unsigned int cpos = 0;
+
+	while(1) {
+		wclear(mwin);
+		(void)box(mwin, 0, 0);
+
+		for (i = 0; i < HEIGHT - 2 && i + cpos < nummon; ++i) {
+			(void)mvwprintw(mwin, (int)(i + 1U), 2,
+				"%u.\t%c,\tx: %u,\ty: %u,\tspeed: %u",
+				i + cpos, monsters[i + cpos].type_ch,
+				monsters[i + cpos].x, monsters[i + cpos].y,
+				monsters[i + cpos].speed);
+		}
+
+		for (; i < HEIGHT - 2; ++i) {
+			(void)mvwaddch(mwin, (int)(i + 1U), 2, '~');
+		}
+
+		wrefresh(mwin);
+
+		switch(wgetch(mwin)) {
+		case ERR:
+			cerrx(1, "monster_list wgetch ERR");
+			return;
+		case KEY_UP:
+			cpos = subu32(cpos, 1U);
+			break;
+		case KEY_DOWN:
+			if (++cpos > nummon - 1) {
+				cpos = nummon - 1;
+			}
+			break;
+		case 27:
+			return;
+		default:
+			break;
+		}
+
+	}
 }

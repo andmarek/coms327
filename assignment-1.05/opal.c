@@ -133,7 +133,7 @@ main(int const argc, char *const argv[])
 		cerrx(1, "raw");
 	}
 
-	if (keypad(win, TRUE) == ERR) {
+	if (keypad(win, true) == ERR) {
 		cerrx(1, "keypad");
 	}
 
