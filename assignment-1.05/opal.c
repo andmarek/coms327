@@ -133,6 +133,10 @@ main(int const argc, char *const argv[])
 		cerrx(1, "raw");
 	}
 
+	if (keypad(win, TRUE) == ERR) {
+		cerrx(1, "keypad");
+	}
+
 	if (load) {
 		if (load_dungeon() == -1) {
 			cerrx(1, "loading dungeon");
@@ -193,10 +197,10 @@ handle_input(WINDOW *const win, int const disrupt,
 		cerrx(1, "sleep_next wrefresh");
 	}
 
-	while((ch = getch()) != disrupt) {
+	while((ch = wgetch(win)) != disrupt) {
 		switch (ch) {
 		case ERR:
-			cerr(1, "handle_input getch");
+			cerr(1, "handle_input wgetch");
 			break;
 		case KEY_RESIZE:
 			(void)mvwprintw(win, 0, 2,

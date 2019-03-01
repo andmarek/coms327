@@ -510,7 +510,7 @@ turn_pc(WINDOW *const win, struct npc *const n)
 
 	while(!exit) {
 		exit = true;
-		switch(getch()) {
+		switch(wgetch(win)) {
 		case KEY_HOME:
 		case KEY_A1:
 		case '7':
@@ -584,9 +584,6 @@ turn_pc(WINDOW *const win, struct npc *const n)
 		case 'm':
 			/* TODO monster list */
 			break;
-		case KEY_ESC:
-			/* TODO exit monster list */
-			break;
 		case 'Q':
 			/* quit game */
 			return QUIT;
@@ -628,7 +625,7 @@ print_deathscreen(WINDOW *const win)
 		cerrx(1, "wrefresh on deathscreen");
 	}
 
-	(void)getch();
+	(void)wgetch(win);
 }
 
 static void
@@ -657,5 +654,5 @@ print_winscreen(WINDOW *const win)
 		cerrx(1, "wrefresh on winscreen");
 	}
 
-	(void)getch();
+	(void)wgetch(win);
 }
