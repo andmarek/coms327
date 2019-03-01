@@ -6,15 +6,13 @@
 #include <string.h>
 
 #include "cerr.h"
-#include "floor.h"
+#include "gen.h"
 #include "globs.h"
 #include "io.h"
 #include "npc.h"
 #include "rand.h"
 
 #define PROGRAM_NAME	"opal"
-#define NEW_ROOM_COUNT	8
-#define ROOM_RETRIES	150
 
 static struct option const long_opts[] = {
 	{"help", no_argument, NULL, 'h'},
@@ -42,9 +40,6 @@ static void	usage(int const, char const *const);
 static void	handle_input(WINDOW *const, int const, char const *const);
 */
 
-static void	arrange_new(WINDOW *const);
-static void	arrange_loaded(WINDOW *const);
-
 int
 main(int const argc, char *const argv[])
 {
@@ -53,7 +48,6 @@ main(int const argc, char *const argv[])
 	int ch;
 	int load = 0;
 	int save = 0;
-	uint8_t i, j;
 	unsigned int nummon = (unsigned int)rrand(3, 5);
 	unsigned int seed = UINT_MAX;
 	char const *const name = (argc == 0) ? PROGRAM_NAME : argv[0];
@@ -88,27 +82,6 @@ main(int const argc, char *const argv[])
 		seed = init_rand(NULL);
 	}
 
-	for (i = 0; i < HEIGHT; ++i) {
-		for (j = 0; j < WIDTH; ++j) {
-			tiles[i][j] = (struct tile) {
-				.h = 0,
-				.c = 0,
-				.d = 0,
-				.dt = 0,
-				.x = j,
-				.y = i,
-				.n = NULL,
-			};
-
-			if (i == 0 || j == 0 || i == HEIGHT - 1
-				|| j == WIDTH - 1) {
-				tiles[i][j].h = UINT8_MAX;
-			} else {
-				tiles[i][j].c = ROCK;
-			}
-		}
-	}
-
 	(void)initscr();
 
 	if (refresh() == ERR) {
@@ -137,6 +110,8 @@ main(int const argc, char *const argv[])
 		cerrx(1, "keypad");
 	}
 
+	clear_tiles();
+
 	if (load) {
 		if (load_dungeon() == -1) {
 			cerrx(1, "loading dungeon");
@@ -145,8 +120,6 @@ main(int const argc, char *const argv[])
 		arrange_loaded(win);
 	} else {
 		arrange_new(win);
-
-		place_player();
 	}
 
 	/* handle_input(win, 'n', "['n' to continue]"); */
@@ -237,114 +210,4 @@ usage(int const status, char const *const name)
 	}
 
 	exit(status);
-}
-
-static void
-arrange_new(WINDOW *const win)
-{
-	size_t i, j;
-	size_t retries = 0;
-
-	room_count = NEW_ROOM_COUNT;
-	stair_up_count = (uint16_t)rrand(1, (room_count / 4) + 1);
-	stair_dn_count = (uint16_t)rrand(1, (room_count / 4) + 1);
-
-	if (!(rooms = malloc(sizeof(struct room) * room_count))
-		&& room_count != 0) {
-		cerr(1, "gen malloc rooms");
-	}
-
-	if (!(stairs_up = malloc(sizeof(struct stair) * stair_up_count))
-		&& stair_up_count != 0) {
-		cerr(1, "gen malloc stairs_dn");
-	}
-
-	if (!(stairs_dn = malloc(sizeof(struct stair) * stair_dn_count))
-		&& stair_dn_count != 0) {
-		cerr(1, "gen malloc stairs_dn");
-	}
-
-	for (i = 0; i < room_count; ++i) {
-		gen_room(&rooms[i]);
-	}
-
-	for (i = 0; i < room_count && retries < ROOM_RETRIES; ++i) {
-		if (valid_room(&rooms[i]) == -1) {
-			retries++;
-			gen_room(&rooms[i--]);
-		} else {
-			draw_room(win, &rooms[i]);
-		}
-	}
-
-	if (i < room_count) {
-		if (i == 0) {
-			cerrx(1, "unable to place any rooms");
-		}
-
-		room_count = (uint16_t)i;
-
-		rooms = realloc(rooms, sizeof(struct room) * room_count);
-
-		if (!rooms) {
-			cerr(1, "realloc rooms");
-		}
-	}
-
-	for (i = 0; i < room_count - 1U; ++i) {
-		draw_corridor(win, rooms[i], rooms[i+1]);
-	}
-
-	for (i = 0; i < stair_up_count; ++i) {
-		gen_draw_stair(win, &stairs_up[i], true);
-	}
-
-	for (i = 0; i < stair_dn_count; ++i) {
-		gen_draw_stair(win, &stairs_dn[i], false);
-	}
-
-	for (i = 1; i < HEIGHT - 1; ++i) {
-		for (j = 1; j < WIDTH - 1; ++j) {
-			switch(tiles[i][j].c) {
-			case ROOM:
-			case CORRIDOR:
-			case STAIR_UP:
-			case STAIR_DN:
-				tiles[i][j].h = 0;
-				break;
-			default:
-				tiles[i][j].h = (uint8_t)rrand(1, UINT8_MAX-1U);
-			}
-		}
-	}
-}
-
-static void
-arrange_loaded(WINDOW *const win)
-{
-	uint8_t i, j;
-	uint16_t k;
-
-	for (k = 0; k < room_count; ++k) {
-		draw_room(win, &rooms[k]);
-	}
-
-	for (k = 0; k < stair_up_count; ++k) {
-		tiles[stairs_up[k].y][stairs_up[k].x].c = STAIR_UP;
-		(void)mvwaddch(win, stairs_up[k].y, stairs_up[k].x, STAIR_UP);
-	}
-
-	for (k = 0; k < stair_dn_count; ++k) {
-		tiles[stairs_dn[k].y][stairs_dn[k].x].c = STAIR_DN;
-		(void)mvwaddch(win, stairs_dn[k].y, stairs_dn[k].x, STAIR_DN);
-	}
-
-	for (i = 1; i < HEIGHT - 1; ++i) {
-		for (j = 1; j < WIDTH - 1; ++j) {
-			if (tiles[i][j].h == 0 && tiles[i][j].c == ROCK) {
-				tiles[i][j].c = CORRIDOR;
-				(void)mvwaddch(win, i, j, CORRIDOR);
-			}
-		}
-	}
 }

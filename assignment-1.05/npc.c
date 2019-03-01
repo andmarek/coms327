@@ -32,7 +32,6 @@ enum pc_action {
 	QUIT
 };
 
-static int	valid_player(int const, int const);
 static int	valid_npc(int const, int const);
 
 static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
@@ -59,20 +58,6 @@ static void	print_winscreen(WINDOW *const);
 static void	monster_list(WINDOW *const, struct npc *monsters, unsigned int const);
 
 struct npc player;
-
-void
-place_player(void)
-{
-	int x, y;
-
-	do {
-		x = rrand(1, WIDTH - 2);
-		y = rrand(1, HEIGHT - 2);
-	} while (!valid_player(y, x));
-
-	player.x = (uint8_t)x;
-	player.y = (uint8_t)y;
-}
 
 void
 turn_engine(WINDOW *const win, unsigned int const nummon)
@@ -178,14 +163,6 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	heap_delete(&heap);
 
 	free(monsters);
-}
-
-static int
-valid_player(int const y, int const x)
-{
-	return tiles[y][x].h == 0
-		&& tiles[y + 1][x].h == 0 && tiles[y - 1][x].h == 0
-		&& tiles[y][x + 1].h == 0 && tiles[y][x - 1].h == 0;
 }
 
 static int

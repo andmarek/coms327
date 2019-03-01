@@ -13,8 +13,8 @@ CFLAGS_END := -lncurses -lm
 
 DIRTY = *.out vgcore.* error
 
-src = dijk.c cerr.c floor.c heap.c io.c npc.c opal.c rand.c
-hdr = dijk.c cerr.h floor.h globs.h heap.h io.h npc.h rand.h
+src = dijk.c cerr.c floor.c gen.c heap.c io.c npc.c opal.c rand.c
+hdr = dijk.c cerr.h floor.h gen.h globs.h heap.h io.h npc.h rand.h
 
 opal: $(src) $(hdr)
 	$(CC) $(CFLAGS) -o opal.out $(src) $(CFLAGS_END)
