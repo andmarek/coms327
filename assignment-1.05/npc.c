@@ -40,7 +40,6 @@ static unsigned int	subu32(unsigned int const, unsigned int const);
 static bool		pc_visible(struct npc const *restrict const);
 static unsigned int	limited_int_to_char(uint8_t const);
 
-
 static void	move_redraw(WINDOW *const, struct npc *const, uint8_t const, uint8_t const);
 static void	move_tunnel(WINDOW *const, struct npc *const, uint8_t const, uint8_t const);
 
@@ -581,12 +580,12 @@ turn_pc(WINDOW *const win, struct npc *const n)
 			x--;
 			break;
 		case KEY_LEFT:
-		case KEY_B2:
 		case '4':
 		case 'h':
 			/* left */
 			x--;
 			break;
+		case KEY_B2:
 		case ' ':
 		case '5':
 		case '.':
