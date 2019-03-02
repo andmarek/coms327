@@ -1,12 +1,12 @@
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "cerr.h"
 #include "dijk.h"
 #include "globs.h"
 #include "heap.h"
+#include "npc.h"
 #include "rand.h"
 
 #define PLAYER_TYPE	0x80
@@ -16,6 +16,7 @@
 #define ERRATIC		0x8
 
 #define CUTOFF	4.0 /* minimum distance from the PC an NPC can be placed */
+
 #define TUNNEL_STRENGTH	85
 #define PERSISTANCE	5
 
@@ -27,9 +28,10 @@
 #define KEY_ESC	27
 
 enum pc_action {
-	MONSTER_LIST,
-	NONE,
-	QUIT
+	PC_MONSTER_LIST,
+	PC_NEXT,
+	PC_NONE,
+	PC_QUIT
 };
 
 static int	valid_npc(int const, int const);
@@ -52,14 +54,11 @@ static enum pc_action	turn_npc(WINDOW *const, struct npc *const);
 static enum pc_action	turn_pc(WINDOW *const, struct npc *const);
 static int32_t		compare_npc(void const *const, void const *const);
 
-static void	print_deathscreen(WINDOW *const);
-static void	print_winscreen(WINDOW *const);
-
 static void	monster_list(WINDOW *const, struct npc *monsters, unsigned int const);
 
 struct npc player;
 
-void
+enum turn_exit
 turn_engine(WINDOW *const win, unsigned int const nummon)
 {
 	WINDOW *mwin; /* monster list window */
@@ -69,6 +68,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	int32_t turn;
 	unsigned int i;
 	unsigned int alive = nummon;
+	enum turn_exit ret = TURN_NONE;
 
 	monsters = malloc(sizeof(struct npc) * nummon);
 
@@ -119,16 +119,14 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		}
 
 		if (alive == 0) {
-			sleep(1);
-			print_winscreen(win);
-			break;
+			ret = TURN_WIN;
+			goto exit;
 		}
 
 		if (n->dead) {
 			if (n->type & PLAYER_TYPE) {
-				sleep(1);
-				print_deathscreen(win);
-				break;
+				ret = TURN_DEATH;
+				goto exit;
 			} else {
 				alive--;
 			}
@@ -140,14 +138,18 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 		retry:
 		switch(turn_npc(win, n)) {
-		case MONSTER_LIST:
+		case PC_MONSTER_LIST:
 			monster_list(mwin, monsters, nummon);
 			touchwin(win);
 			wrefresh(win);
 			goto retry;
-		case NONE:
+		case PC_NEXT:
+			ret = TURN_NEXT;
+			goto exit;
+		case PC_NONE:
 			break;
-		case QUIT:
+		case PC_QUIT:
+			ret = TURN_QUIT;
 			goto exit;
 		}
 
@@ -163,6 +165,8 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	heap_delete(&heap);
 
 	free(monsters);
+
+	return ret;
 }
 
 static int
@@ -426,7 +430,7 @@ turn_npc(WINDOW *const win, struct npc *const n)
 			move_redraw(win, n, y, x);
 		}
 
-		return NONE;
+		return PC_NONE;
 	}
 
 	switch(n->type) {
@@ -490,7 +494,7 @@ turn_npc(WINDOW *const win, struct npc *const n)
 		cerrx(1, "gen_monster invalid monster type %d", n->type);
 	}
 
-	return NONE;
+	return PC_NONE;
 }
 
 static enum pc_action
@@ -567,19 +571,29 @@ turn_pc(WINDOW *const win, struct npc *const n)
 		case '5':
 		case '.':
 			/* rest */
-			return NONE;
+			return PC_NONE;
 		case '>':
-			/* TODO go down stairs */
+			/* go down stairs */
+			if (tiles[y][x].c == STAIR_DN) {
+				return PC_NEXT;
+			} else {
+				exit = false;
+			}
 			break;
 		case '<':
-			/* TODO go up stairs */
+			/* go up stairs */
+			if (tiles[y][x].c == STAIR_UP) {
+				return PC_NEXT;
+			} else {
+				exit = false;
+			}
 			break;
 		case 'm':
-			return MONSTER_LIST;
+			return PC_MONSTER_LIST;
 		case 'Q':
 		case 'q':
 			/* quit game */
-			return QUIT;
+			return PC_QUIT;
 		default:
 			exit = false;
 		}
@@ -590,7 +604,7 @@ turn_pc(WINDOW *const win, struct npc *const n)
 		dijkstra();
 	}
 
-	return NONE;
+	return PC_NONE;
 }
 
 static int32_t
@@ -600,59 +614,11 @@ compare_npc(void const *const key, void const *const with)
 }
 
 static void
-print_deathscreen(WINDOW *const win)
-{
-	if (wclear(win) == ERR) {
-		cerrx(1, "clear on deathscreen");
-	}
-
-	(void)box(win, 0, 0);
-	(void)mvwprintw(win, HEIGHT / 2 - 1, WIDTH / 4, "You're dead, Jim.");
-	(void)mvwprintw(win, HEIGHT / 2 + 0, WIDTH / 4,
-		"\t\t-- McCoy, stardate 3468.1");
-	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 4,
-		"You've died. Game over.");
-	(void)mvwprintw(win, HEIGHT - 1, 2, "[ Press any key to exit ]");
-
-	if (wrefresh(win) == ERR) {
-		cerrx(1, "wrefresh on deathscreen");
-	}
-
-	(void)wgetch(win);
-}
-
-static void
-print_winscreen(WINDOW *const win)
-{
-	if (wclear(win) == ERR) {
-		cerrx(1, "clear on winscreen");
-	}
-
-	(void)box(win, 0, 0);
-	(void)mvwprintw(win, HEIGHT / 2 - 3, WIDTH / 12,
-		"[War] is instinctive. But the insinct can be fought. We're human");
-	(void)mvwprintw(win, HEIGHT / 2 - 2, WIDTH / 12,
-		"beings with the blood of a million savage years on our hands! But we");
-	(void)mvwprintw(win, HEIGHT / 2 - 1, WIDTH / 12,
-		"can stop it. We can admit that we're killers ... but we're not going");
-	(void)mvwprintw(win, HEIGHT / 2 + 0, WIDTH / 12,
-		"to kill today. That's all it takes! Knowing that we're not going to");
-	(void)mvwprintw(win, HEIGHT / 2 + 1, WIDTH / 12, "kill today!");
-	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 12,
-		"\t\t-- Kirk, \"A Taste of Armageddon\", stardate 3193.0");
-	(void)mvwprintw(win, HEIGHT / 2 + 4, WIDTH / 12, "You've won. Game over.");
-	(void)mvwprintw(win, HEIGHT - 1, 2, "[ Press any key to exit ]");
-
-	if (wrefresh(win) == ERR) {
-		cerrx(1, "wrefresh on winscreen");
-	}
-
-	(void)wgetch(win);
-}
-
-static void
 monster_list(WINDOW *const mwin, struct npc *monsters, unsigned int const nummon)
 {
+	struct npc n;
+	int dx;
+	int dy;
 	unsigned int i;
 	unsigned int cpos = 0;
 
@@ -661,11 +627,14 @@ monster_list(WINDOW *const mwin, struct npc *monsters, unsigned int const nummon
 		(void)box(mwin, 0, 0);
 
 		for (i = 0; i < HEIGHT - 2 && i + cpos < nummon; ++i) {
+			n = monsters[i + cpos];
+			dx = player.x - n.x;
+			dy = player.y - n.y;
+
 			(void)mvwprintw(mwin, (int)(i + 1U), 2,
-				"%u.\t%c,\tx: %u,\ty: %u,\tspeed: %u",
-				i + cpos, monsters[i + cpos].type_ch,
-				monsters[i + cpos].x, monsters[i + cpos].y,
-				monsters[i + cpos].speed);
+				"%u.\t%c, %d %s and %d %s", i + cpos, n.type_ch,
+				abs(dy), dy > 0 ? "north" : "south",
+				abs(dx), dx > 0 ? "east" : "west");
 		}
 
 		for (; i < HEIGHT - 2; ++i) {

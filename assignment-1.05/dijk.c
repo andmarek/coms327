@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include "cerr.h"
 #include "globs.h"
 #include "heap.h"

@@ -1,9 +1,9 @@
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h>
-#include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "cerr.h"
 #include "gen.h"
@@ -35,6 +35,9 @@ struct stair *stairs_dn;
 struct tile tiles[HEIGHT][WIDTH];
 
 static void	usage(int const, char const *const);
+
+static void	print_deathscreen(WINDOW *const);
+static void	print_winscreen(WINDOW *const);
 
 /*
 static void	handle_input(WINDOW *const, int const, char const *const);
@@ -124,7 +127,26 @@ main(int const argc, char *const argv[])
 
 	/* handle_input(win, 'n', "['n' to continue]"); */
 
-	turn_engine(win, nummon);
+	retry:
+	switch(turn_engine(win, nummon)) {
+		case TURN_DEATH:
+			sleep(1);
+			print_deathscreen(win);
+			break;
+		case TURN_NEXT:
+			arrange_renew(win);
+			goto retry;
+			break;
+		case TURN_NONE:
+			cerrx(1, "turn_engine return value invalid");
+			break;
+		case TURN_QUIT:
+			break;
+		case TURN_WIN:
+			sleep(1);
+			print_winscreen(win);
+			break;
+	}
 
 	/* handle_input(win, 'q', "['q' to quit]"); */
 
@@ -156,41 +178,6 @@ main(int const argc, char *const argv[])
 	return EXIT_SUCCESS;
 }
 
-/*
-static void
-handle_input(WINDOW *const win, int const disrupt,
-	char const *const str)
-{
-	int ch;
-
-	(void)box(win, 0, 0);
-	(void)mvwprintw(win, HEIGHT - 1, 2, str);
-
-	if (wrefresh(win) == ERR) {
-		cerrx(1, "sleep_next wrefresh");
-	}
-
-	while((ch = wgetch(win)) != disrupt) {
-		switch (ch) {
-		case ERR:
-			cerr(1, "handle_input wgetch");
-			break;
-		case KEY_RESIZE:
-			(void)mvwprintw(win, 0, 2,
-				"[resizing the screen is undefined behavior]");
-			(void)mvwprintw(win, HEIGHT - 1, 2, str);
-
-			if (wrefresh(win) == ERR) {
-				cerrx(1, "handle_input resize wrefresh");
-			}
-		}
-
-	}
-
-	(void)box(win, 0, 0);
-}
-*/
-
 static void
 usage(int const status, char const *const name)
 {
@@ -210,4 +197,55 @@ usage(int const status, char const *const name)
 	}
 
 	exit(status);
+}
+
+static void
+print_deathscreen(WINDOW *const win)
+{
+	if (wclear(win) == ERR) {
+		cerrx(1, "clear on deathscreen");
+	}
+
+	(void)box(win, 0, 0);
+	(void)mvwprintw(win, HEIGHT / 2 - 1, WIDTH / 4, "You're dead, Jim.");
+	(void)mvwprintw(win, HEIGHT / 2 + 0, WIDTH / 4,
+		"\t\t-- McCoy, stardate 3468.1");
+	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 4,
+		"You've died. Game over.");
+	(void)mvwprintw(win, HEIGHT - 1, 2, "[ Press any key to exit ]");
+
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "wrefresh on deathscreen");
+	}
+
+	(void)wgetch(win);
+}
+
+static void
+print_winscreen(WINDOW *const win)
+{
+	if (wclear(win) == ERR) {
+		cerrx(1, "clear on winscreen");
+	}
+
+	(void)box(win, 0, 0);
+	(void)mvwprintw(win, HEIGHT / 2 - 3, WIDTH / 12,
+		"[War] is instinctive. But the insinct can be fought. We're human");
+	(void)mvwprintw(win, HEIGHT / 2 - 2, WIDTH / 12,
+		"beings with the blood of a million savage years on our hands! But we");
+	(void)mvwprintw(win, HEIGHT / 2 - 1, WIDTH / 12,
+		"can stop it. We can admit that we're killers ... but we're not going");
+	(void)mvwprintw(win, HEIGHT / 2 + 0, WIDTH / 12,
+		"to kill today. That's all it takes! Knowing that we're not going to");
+	(void)mvwprintw(win, HEIGHT / 2 + 1, WIDTH / 12, "kill today!");
+	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 12,
+		"\t\t-- Kirk, \"A Taste of Armageddon\", stardate 3193.0");
+	(void)mvwprintw(win, HEIGHT / 2 + 4, WIDTH / 12, "You've won. Game over.");
+	(void)mvwprintw(win, HEIGHT - 1, 2, "[ Press any key to exit ]");
+
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "wrefresh on winscreen");
+	}
+
+	(void)wgetch(win);
 }
