@@ -98,9 +98,11 @@ arrange_loaded(WINDOW *const win)
 void
 arrange_renew(WINDOW *const win)
 {
-	// TODO move to turn_engine or main, error check
-	wclear(win);
-	box(win, 0, 0);
+	if (wclear(win) == ERR) {
+		cerrx(1, "arrange_renew clear");
+	}
+
+	(void)box(win, 0, 0);
 
 	clear_tiles();
 

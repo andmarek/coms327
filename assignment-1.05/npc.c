@@ -623,8 +623,14 @@ monster_list(WINDOW *const mwin, struct npc *monsters, unsigned int const nummon
 	unsigned int cpos = 0;
 
 	while(1) {
-		wclear(mwin);
+		if (wclear(mwin) == ERR) {
+			cerrx(1, "monster_list clear");
+		}
+
 		(void)box(mwin, 0, 0);
+
+		(void)mvwprintw(mwin, HEIGHT - 1, 2,
+			"[arrow keys to scroll; ESC to exit]");
 
 		for (i = 0; i < HEIGHT - 2 && i + cpos < nummon; ++i) {
 			n = monsters[i + cpos];

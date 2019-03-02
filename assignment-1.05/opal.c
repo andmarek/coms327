@@ -39,10 +39,6 @@ static void	usage(int const, char const *const);
 static void	print_deathscreen(WINDOW *const);
 static void	print_winscreen(WINDOW *const);
 
-/*
-static void	handle_input(WINDOW *const, int const, char const *const);
-*/
-
 int
 main(int const argc, char *const argv[])
 {
@@ -125,8 +121,6 @@ main(int const argc, char *const argv[])
 		arrange_new(win);
 	}
 
-	/* handle_input(win, 'n', "['n' to continue]"); */
-
 	retry:
 	switch(turn_engine(win, nummon)) {
 		case TURN_DEATH:
@@ -147,8 +141,6 @@ main(int const argc, char *const argv[])
 			print_winscreen(win);
 			break;
 	}
-
-	/* handle_input(win, 'q', "['q' to quit]"); */
 
 	if (delwin(win) == ERR) {
 		cerrx(1, "delwin");
@@ -187,11 +179,12 @@ usage(int const status, char const *const name)
 		(void)fprintf(stderr,
 			"Try '%s --help' for more information.\n", name);
 	} else {
-		(void)puts("Generate a dungeon.\n");
+		(void)puts("OPAL's Playable Almost Indefectibly.\n");
+		(void)puts("Traverse a generated dungeon.\n");
 		(void)puts("Options:\n\
   -h, --help            display this help text and exit\n\
   -l, --load            load dungeon file\n\
-  -n, --nummon=[NUM]    number of monsters\n\
+  -n, --nummon=[NUM]    number of monsters per floor\n\
   -s, --save            save dungeon file\n\
   -z, --seed=[SEED]     set rand seed, takes integer or string");
 	}
