@@ -150,9 +150,7 @@ main(int const argc, char *const argv[])
 		cerrx(1, "endwin");
 	}
 
-	if (!load) {
-		printf("seed: %u\n", seed);
-	}
+	printf("seed: %u\n", seed);
 
 	if (save && save_dungeon() == -1) {
 		cerrx(1, "saving dungeon");
