@@ -593,7 +593,7 @@ turn_pc(WINDOW *const win, struct npc *const n)
 		}
 	}
 
-	if (tiles[y][x].h == 0) {
+	if (tiles[y][x].h == 0 && (x != n->x || y != n->y)) {
 		move_redraw(win, n, y, x);
 		dijkstra();
 	}

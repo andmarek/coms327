@@ -1,125 +1,115 @@
+#include <algorithm>
 #include "cerr.h"
 #include "globs.h"
-#include "heap.h"
 
-static int32_t	compare_nontunnel(void const *const, void const *const);
-static int32_t	compare_tunnel(void const *const, void const *const);
+constexpr static void	calc_cost_d(struct tile const *const, struct tile *const);
+constexpr static void	calc_cost_dt(struct tile const *const, struct tile *const);
 
-static void	calc_cost_nontunnel(struct heap *const, struct heap_node *const, struct tile const *const, struct tile *const);
-static void	calc_cost_tunnel(struct heap *const, struct heap_node *const, struct tile const *const, struct tile *const);
+struct compare_d {
+	constexpr bool
+	operator() (struct tile const *const a, struct tile const *const b) const
+	{
+		return a->d > b->d;
+	}
+};
+
+struct compare_dt {
+	constexpr bool
+	operator() (struct tile const *const a, struct tile const *const b) const
+	{
+		return a->dt > b->dt;
+	}
+};
 
 void
 dijkstra(void)
 {
-	struct heap_node *nodes[HEIGHT][WIDTH];
-	struct heap heap;
 	struct tile *t;
 	std::size_t i, j;
+
+	std::vector<struct tile *> heap;
+
+	for (i = 1; i < HEIGHT - 1; ++i) {
+		for (j = 1; j < WIDTH - 1; ++j) {
+			tiles[i][j].d = std::numeric_limits<int32_t>::max();
+			tiles[i][j].dt = std::numeric_limits<int32_t>::max();
+
+			if (tiles[i][j].h != 0) {
+				tiles[i][j].v = false;
+			} else {
+				tiles[i][j].v = true;
+				heap.push_back(&tiles[i][j]);
+			}
+		}
+	}
 
 	tiles[player.y][player.x].d = 0;
 	tiles[player.y][player.x].dt = 0;
 
-	heap_init(&heap, compare_nontunnel, NULL);
+	while(!heap.empty()) {
+		std::make_heap(heap.begin(), heap.end(), compare_d());
 
-	for (i = 0; i < HEIGHT; ++i) {
-		for (j = 0; j < WIDTH; ++j) {
-			if (i != player.y || j != player.x) {
-				tiles[i][j].d = INT32_MAX;
-				tiles[i][j].dt = INT32_MAX;
-			}
+		t = heap.front();
+		std::pop_heap(heap.begin(), heap.end(), compare_d());
+		heap.pop_back();
 
-			if (tiles[i][j].h != 0) {
-				nodes[i][j] = NULL;
-			} else {
-				nodes[i][j] = heap_insert(&heap, &tiles[i][j]);
-				if (nodes[i][j] == NULL) {
-					cerr(1, "dijk nontunnel heap_insert");
-				}
-			}
+		calc_cost_d(t, &tiles[t->y - 1][t->x + 0]);
+		calc_cost_d(t, &tiles[t->y + 1][t->x + 0]);
+
+		calc_cost_d(t, &tiles[t->y + 0][t->x - 1]);
+		calc_cost_d(t, &tiles[t->y + 0][t->x + 1]);
+
+		calc_cost_d(t, &tiles[t->y + 1][t->x + 1]);
+		calc_cost_d(t, &tiles[t->y - 1][t->x - 1]);
+
+		calc_cost_d(t, &tiles[t->y - 1][t->x + 1]);
+		calc_cost_d(t, &tiles[t->y + 1][t->x - 1]);
+
+		t->v = false;
+	}
+
+	for (i = 1; i < HEIGHT - 1; ++i) {
+		for (j = 1; j < WIDTH - 1; ++j) {
+			tiles[i][j].v = true;
+			heap.push_back(&tiles[i][j]);
 		}
 	}
 
-#define CALC_NONTUNNEL(y,x)	calc_cost_nontunnel(&heap, nodes[(y)][(x)], t, &tiles[(y)][(x)])
+	while(!heap.empty()) {
+		std::make_heap(heap.begin(), heap.end(), compare_dt());
 
-	while((t = (struct tile *)heap_remove_min(&heap))) {
-		CALC_NONTUNNEL(t->y-1, t->x+0);
-		CALC_NONTUNNEL(t->y+1, t->x+0);
+		t = heap.front();
+		std::pop_heap(heap.begin(), heap.end(), compare_dt());
+		heap.pop_back();
 
-		CALC_NONTUNNEL(t->y+0, t->x-1);
-		CALC_NONTUNNEL(t->y+0, t->x+1);
+		calc_cost_dt(t, &tiles[t->y - 1][t->x + 0]);
+		calc_cost_dt(t, &tiles[t->y + 1][t->x + 0]);
 
-		CALC_NONTUNNEL(t->y+1, t->x+1);
-		CALC_NONTUNNEL(t->y-1, t->x-1);
+		calc_cost_dt(t, &tiles[t->y + 0][t->x - 1]);
+		calc_cost_dt(t, &tiles[t->y + 0][t->x + 1]);
 
-		CALC_NONTUNNEL(t->y-1, t->x+1);
-		CALC_NONTUNNEL(t->y+1, t->x-1);
+		calc_cost_dt(t, &tiles[t->y + 1][t->x + 1]);
+		calc_cost_dt(t, &tiles[t->y - 1][t->x - 1]);
+
+		calc_cost_dt(t, &tiles[t->y - 1][t->x + 1]);
+		calc_cost_dt(t, &tiles[t->y + 1][t->x - 1]);
+
+		t->v = false;
 	}
-
-	heap_delete(&heap);
-
-	heap_init(&heap, compare_tunnel, NULL);
-
-	for (i = 0; i < HEIGHT; ++i) {
-		for (j = 0; j < WIDTH; ++j) {
-			if (tiles[i][j].h == UINT8_MAX) {
-				nodes[i][j] = NULL;
-			} else {
-				nodes[i][j] = heap_insert(&heap, &tiles[i][j]);
-				if (nodes[i][j] == NULL) {
-					cerr(1, "dijk tunnel heap_insert");
-				}
-			}
-		}
-	}
-
-#define CALC_TUNNEL(y,x)	calc_cost_tunnel(&heap, nodes[y][x], t, &tiles[y][x])
-
-	while((t = (struct tile *)heap_remove_min(&heap))) {
-		CALC_TUNNEL(t->y-1, t->x+0);
-		CALC_TUNNEL(t->y+1, t->x+0);
-
-		CALC_TUNNEL(t->y+0, t->x-1);
-		CALC_TUNNEL(t->y+0, t->x+1);
-
-		CALC_TUNNEL(t->y+1, t->x+1);
-		CALC_TUNNEL(t->y-1, t->x-1);
-
-		CALC_TUNNEL(t->y-1, t->x+1);
-		CALC_TUNNEL(t->y+1, t->x-1);
-	}
-
-	heap_delete(&heap);
 }
 
-static int32_t
-compare_nontunnel(void const *const key, void const *const with)
+constexpr static void
+calc_cost_d(struct tile const *const a, struct tile *const b)
 {
-	return ((struct tile const *) key)->d - ((struct tile const *) with)->d;
-}
-
-static int32_t
-compare_tunnel(void const *const key, void const *const with)
-{
-	return ((struct tile const *) key)->dt - ((struct tile const *) with)->dt;
-}
-
-static void
-calc_cost_nontunnel(struct heap *const h, struct heap_node *const n,
-	struct tile const *const t1, struct tile *const t2)
-{
-	if (n != NULL && t2->d > t1->d) {
-		t2->d = t1->d + 1;
-		(void)heap_decrease_key_no_replace(h, n);
+	if (b->v && b->d > a->d) {
+		b->d = a->d + 1;
 	}
 }
 
-static void
-calc_cost_tunnel(struct heap *const h, struct heap_node *const n,
-	struct tile const *const t1, struct tile *const t2)
+constexpr static void
+calc_cost_dt(struct tile const *const a, struct tile *const b)
 {
-	if (n != NULL && t2->dt > t1->dt + t1->h/85) {
-		t2->dt = t1->dt + 1 + t1->h/85;
-		(void)heap_decrease_key_no_replace(h, n);
+	if (b->v && b->dt > a->dt + a->h/85) {
+		b->dt = a->dt + 1 + a->h/85;
 	}
 }
-

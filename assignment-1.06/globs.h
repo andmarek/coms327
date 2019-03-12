@@ -40,6 +40,9 @@ struct stair {
 };
 
 struct tile {
+	/* turn engine */
+	struct npc	*n;
+
 	uint8_t	h; /* hardness */
 	chtype	c; /* character */
 
@@ -48,9 +51,7 @@ struct tile {
 	int32_t dt; /* tunneling distance cost */
 	uint8_t	x; /* x position */
 	uint8_t	y; /* y position */
-
-	/* turn engine */
-	struct npc	*n;
+	bool	v; /* valid node available for processing */
 };
 
 extern ranged_random rr;

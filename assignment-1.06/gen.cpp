@@ -18,7 +18,6 @@ clear_tiles(void)
 	for (i = 0; i < HEIGHT; ++i) {
 		for (j = 0; j < WIDTH; ++j) {
 			tiles[i][j] = {};
-
 			tiles[i][j].x = j;
 			tiles[i][j].y = i;
 
