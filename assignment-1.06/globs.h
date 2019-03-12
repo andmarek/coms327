@@ -51,7 +51,8 @@ struct tile {
 	int32_t dt; /* tunneling distance cost */
 	uint8_t	x; /* x position */
 	uint8_t	y; /* y position */
-	bool	v; /* valid node available for processing */
+	bool	vd; /* valid non-tunneling node available for processing */
+	bool	vdt; /* valid tunneling node available for processing */
 };
 
 extern ranged_random rr;

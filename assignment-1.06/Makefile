@@ -9,7 +9,9 @@ CFLAGS += -Wundef -Wcast-align=strict -Wstrict-overflow=5
 CFLAGS += -Wwrite-strings -Wcast-qual -Wformat=2
 CFLAGS += -Wswitch-enum -Wunreachable-code
 
-FAST_CFLAGS := -O3 -std=c++17 -pedantic
+CFLAGS += -pthread
+
+FAST_CFLAGS := -O3 -std=c++17 -pedantic -pthread
 
 CFLAGS_END := -lncurses
 
