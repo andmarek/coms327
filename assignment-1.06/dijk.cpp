@@ -6,8 +6,8 @@
 static void	dijkstra_d();
 static void	dijkstra_dt();
 
-constexpr static void	calc_cost_d(tile const *const, tile *const);
-constexpr static void	calc_cost_dt(tile const *const, tile *const);
+constexpr static void	calc_cost_d(tile const &, tile &);
+constexpr static void	calc_cost_dt(tile const &, tile &);
 
 struct compare_d {
 	constexpr bool
@@ -62,17 +62,17 @@ dijkstra_d(void)
 		std::pop_heap(heap.begin(), heap.end(), compare_d());
 		heap.pop_back();
 
-		calc_cost_d(t, &tiles[t->y - 1][t->x + 0]);
-		calc_cost_d(t, &tiles[t->y + 1][t->x + 0]);
+		calc_cost_d(*t, tiles[t->y - 1][t->x + 0]);
+		calc_cost_d(*t, tiles[t->y + 1][t->x + 0]);
 
-		calc_cost_d(t, &tiles[t->y + 0][t->x - 1]);
-		calc_cost_d(t, &tiles[t->y + 0][t->x + 1]);
+		calc_cost_d(*t, tiles[t->y + 0][t->x - 1]);
+		calc_cost_d(*t, tiles[t->y + 0][t->x + 1]);
 
-		calc_cost_d(t, &tiles[t->y + 1][t->x + 1]);
-		calc_cost_d(t, &tiles[t->y - 1][t->x - 1]);
+		calc_cost_d(*t, tiles[t->y + 1][t->x + 1]);
+		calc_cost_d(*t, tiles[t->y - 1][t->x - 1]);
 
-		calc_cost_d(t, &tiles[t->y - 1][t->x + 1]);
-		calc_cost_d(t, &tiles[t->y + 1][t->x - 1]);
+		calc_cost_d(*t, tiles[t->y - 1][t->x + 1]);
+		calc_cost_d(*t, tiles[t->y + 1][t->x - 1]);
 
 		t->vd = false;
 	}
@@ -103,34 +103,34 @@ dijkstra_dt(void)
 		std::pop_heap(heap.begin(), heap.end(), compare_dt());
 		heap.pop_back();
 
-		calc_cost_dt(t, &tiles[t->y - 1][t->x + 0]);
-		calc_cost_dt(t, &tiles[t->y + 1][t->x + 0]);
+		calc_cost_dt(*t, tiles[t->y - 1][t->x + 0]);
+		calc_cost_dt(*t, tiles[t->y + 1][t->x + 0]);
 
-		calc_cost_dt(t, &tiles[t->y + 0][t->x - 1]);
-		calc_cost_dt(t, &tiles[t->y + 0][t->x + 1]);
+		calc_cost_dt(*t, tiles[t->y + 0][t->x - 1]);
+		calc_cost_dt(*t, tiles[t->y + 0][t->x + 1]);
 
-		calc_cost_dt(t, &tiles[t->y + 1][t->x + 1]);
-		calc_cost_dt(t, &tiles[t->y - 1][t->x - 1]);
+		calc_cost_dt(*t, tiles[t->y + 1][t->x + 1]);
+		calc_cost_dt(*t, tiles[t->y - 1][t->x - 1]);
 
-		calc_cost_dt(t, &tiles[t->y - 1][t->x + 1]);
-		calc_cost_dt(t, &tiles[t->y + 1][t->x - 1]);
+		calc_cost_dt(*t, tiles[t->y - 1][t->x + 1]);
+		calc_cost_dt(*t, tiles[t->y + 1][t->x - 1]);
 
 		t->vdt = false;
 	}
 }
 
 constexpr static void
-calc_cost_d(tile const *const a, tile *const b)
+calc_cost_d(tile const &a, tile &b)
 {
-	if (b->vd && b->d > a->d) {
-		b->d = a->d + 1;
+	if (b.vd && b.d > a.d) {
+		b.d = a.d + 1;
 	}
 }
 
 constexpr static void
-calc_cost_dt(tile const *const a, tile *const b)
+calc_cost_dt(tile const &a, tile &b)
 {
-	if (b->vdt && b->dt > a->dt + a->h/85) {
-		b->dt = a->dt + 1 + a->h/85;
+	if (b.vdt && b.dt > a.dt + a.h/85) {
+		b.dt = a.dt + 1 + a.h/85;
 	}
 }
