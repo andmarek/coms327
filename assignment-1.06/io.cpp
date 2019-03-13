@@ -4,23 +4,20 @@
 #undef _BSD_SOURCE
 #undef _DEFAULT_SOURCE
 
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <sys/stat.h>
 
 #include <iostream>
+#include <string>
 
 #include "cerr.h"
 #include "globs.h"
 
-#define DIRECTORY	"/.rlg327"
-#define FILEPATH	"/dungeon"
-int const DF_L = 8;
+static std::string const DIRECTORY = "/.rlg327";
+static std::string const FILEPATH = "/dungeon";
+static int constexpr DF_L = 8;
 
-#define MARK	"RLG327-S2019"
-int const MARK_L = 12;
+static std::string const MARK = "RLG327-S2019";
+static int constexpr MARK_L = 12;
 
 static int
 write_things(FILE *const f)
@@ -28,10 +25,9 @@ write_things(FILE *const f)
 	uint32_t const ver = htobe32(0);
 	uint32_t const filesize = htobe32((uint32_t)(1708 + (room_count * 4)
 		+ (stair_up_count * 2) + (stair_dn_count * 2)));
-	int i, j;
 
 	/* type marker */
-	if (fwrite(MARK, MARK_L, 1, f) != 1) {
+	if (fwrite(MARK.c_str(), MARK_L, 1, f) != 1) {
 		return -1;
 	}
 
@@ -54,8 +50,8 @@ write_things(FILE *const f)
 	}
 
 	/* hardness */
-	for (i = 0; i < HEIGHT; ++i) {
-		for (j = 0; j < WIDTH; ++j) {
+	for (std::size_t i = 0; i < HEIGHT; ++i) {
+		for (std::size_t j = 0; j < WIDTH; ++j) {
 			if (fwrite(&tiles[i][j].h, sizeof(uint8_t), 1, f) != 1) {
 				return -1;
 			}
@@ -70,7 +66,7 @@ write_things(FILE *const f)
 	room_count = be16toh(room_count);
 
 	/* room data */
-	for (struct room const &r : rooms) {
+	for (auto const &r : rooms) {
 		if (fwrite(&r, sizeof(struct room), 1, f) != 1) {
 			return -1;
 		}
@@ -84,7 +80,7 @@ write_things(FILE *const f)
 	stair_up_count = be16toh(stair_up_count);
 
 	/* stars_up coords */
-	for (struct stair const &s : stairs_up) {
+	for (auto const &s : stairs_up) {
 		if (fwrite(&s, sizeof(struct stair), 1, f) != 1) {
 			return -1;
 		}
@@ -98,7 +94,7 @@ write_things(FILE *const f)
 	stair_dn_count = be16toh(stair_dn_count);
 
 	/* stairs_dn coords */
-	for (struct stair const &s : stairs_dn) {
+	for (auto const &s : stairs_dn) {
 		if (fwrite(&s, sizeof(struct stair), 1, f) != 1) {
 			return -1;
 		}
@@ -108,7 +104,7 @@ write_things(FILE *const f)
 }
 
 int
-save_dungeon(void)
+save_dungeon()
 {
 	struct stat st;
 	FILE *f;
@@ -155,8 +151,6 @@ save_dungeon(void)
 
 static int
 load_things(FILE *const f) {
-	int i, j;
-
 	/* skip type marker, version, and size */
 	if (fseek(f, MARK_L + 2 * sizeof(uint32_t), SEEK_SET) == -1) {
 		return -1;
@@ -171,8 +165,8 @@ load_things(FILE *const f) {
 	}
 
 	/* hardness */
-	for (i = 0; i < HEIGHT; ++i) {
-		for (j = 0; j < WIDTH; ++j) {
+	for (std::size_t i = 0; i < HEIGHT; ++i) {
+		for (std::size_t j = 0; j < WIDTH; ++j) {
 			if (fread(&tiles[i][j].h, sizeof(uint8_t), 1, f) != 1) {
 				return -1;
 			}
@@ -188,7 +182,7 @@ load_things(FILE *const f) {
 	rooms.resize(room_count);
 
 	/* room data */
-	for (struct room &r : rooms) {
+	for (auto &r : rooms) {
 		if (fread(&r, sizeof(struct room), 1, f) != 1) {
 			return -1;
 		}
@@ -203,7 +197,7 @@ load_things(FILE *const f) {
 	stairs_up.resize(stair_up_count);
 
 	/* stair_up coords */
-	for (struct stair &s : stairs_up) {
+	for (auto &s : stairs_up) {
 		if (fread(&s, sizeof(struct stair), 1, f) != 1) {
 			return -1;
 		}
@@ -218,7 +212,7 @@ load_things(FILE *const f) {
 	stairs_dn.resize(stair_dn_count);
 
 	/* stair_dn_coords */
-	for (struct stair &s : stairs_dn) {
+	for (auto &s : stairs_dn) {
 		if (fread(&s, sizeof(struct stair), 1, f) != 1) {
 			return -1;
 		}
@@ -228,7 +222,7 @@ load_things(FILE *const f) {
 }
 
 int
-load_dungeon(void)
+load_dungeon()
 {
 	FILE *f;
 	char *home;

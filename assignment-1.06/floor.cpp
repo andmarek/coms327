@@ -17,10 +17,8 @@ gen_room(struct room *const r)
 bool
 valid_room(struct room const *const r)
 {
-	int i, j;
-
-	for (i = r->x - 1; i <= r->x + r->size_x + 1; ++i) {
-		for (j = r->y - 1; j <= r->y + r->size_y + 1; ++j) {
+	for (int i = r->x - 1; i <= r->x + r->size_x + 1; ++i) {
+		for (int j = r->y - 1; j <= r->y + r->size_y + 1; ++j) {
 			if (tiles[j][i].c != ROCK) {
 				return false;
 			}
@@ -33,10 +31,8 @@ valid_room(struct room const *const r)
 void
 draw_room(WINDOW *const win, struct room const *const r)
 {
-	int i, j;
-
-	for (i = r->x; i < r->x + r->size_x; ++i) {
-		for (j = r->y; j < r->y + r->size_y; ++j) {
+	for (int i = r->x; i < r->x + r->size_x; ++i) {
+		for (int j = r->y; j < r->y + r->size_y; ++j) {
 			tiles[j][i].c = ROOM;
 			(void)mvwaddch(win, j, i, ROOM);
 		}

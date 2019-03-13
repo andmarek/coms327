@@ -26,7 +26,7 @@ public:
 		gen.seed(seed);
 	}
 
-	ranged_random(long unsigned int s)
+	ranged_random(long unsigned int const s)
 	{
 		seed = s;
 		gen.seed(seed);

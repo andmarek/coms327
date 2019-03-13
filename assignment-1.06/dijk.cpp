@@ -3,8 +3,8 @@
 #include "cerr.h"
 #include "globs.h"
 
-static void	dijkstra_d(void);
-static void	dijkstra_dt(void);
+static void	dijkstra_d();
+static void	dijkstra_dt();
 
 constexpr static void	calc_cost_d(struct tile const *const, struct tile *const);
 constexpr static void	calc_cost_dt(struct tile const *const, struct tile *const);
@@ -26,7 +26,7 @@ struct compare_dt {
 };
 
 void
-dijkstra(void)
+dijkstra()
 {
 	std::thread t1(dijkstra_d);
 	std::thread t2(dijkstra_dt);
@@ -39,12 +39,11 @@ static void
 dijkstra_d(void)
 {
 	struct tile *t;
-	std::size_t i, j;
 
 	std::vector<struct tile *> heap;
 
-	for (i = 1; i < HEIGHT - 1; ++i) {
-		for (j = 1; j < WIDTH - 1; ++j) {
+	for (std::size_t i = 1; i < HEIGHT - 1; ++i) {
+		for (std::size_t j = 1; j < WIDTH - 1; ++j) {
 			tiles[i][j].d = std::numeric_limits<int32_t>::max();
 
 			if (tiles[i][j].h == 0) {
@@ -83,13 +82,12 @@ static void
 dijkstra_dt(void)
 {
 	struct tile *t;
-	std::size_t i, j;
 
 	std::vector<struct tile *> heap;
 	heap.reserve((HEIGHT - 1) * (WIDTH - 1));
 
-	for (i = 1; i < HEIGHT - 1; ++i) {
-		for (j = 1; j < WIDTH - 1; ++j) {
+	for (std::size_t i = 1; i < HEIGHT - 1; ++i) {
+		for (std::size_t j = 1; j < WIDTH - 1; ++j) {
 			tiles[i][j].dt = std::numeric_limits<int32_t>::max();
 			tiles[i][j].vdt = true;
 			heap.push_back(&tiles[i][j]);

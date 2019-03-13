@@ -7,11 +7,11 @@ static int constexpr ROOM_RETRIES = 150;
 
 static void	init_fresh(WINDOW *const win);
 
-static void	place_player(void);
+static void	place_player();
 static int	valid_player(int const, int const);
 
 void
-clear_tiles(void)
+clear_tiles()
 {
 	uint8_t i, j;
 
@@ -48,8 +48,6 @@ arrange_new(WINDOW *const win)
 void
 arrange_loaded(WINDOW *const win)
 {
-	uint8_t i, j;
-
 	for (auto &r : rooms) {
 		draw_room(win, &r);
 	}
@@ -64,8 +62,8 @@ arrange_loaded(WINDOW *const win)
 		(void)mvwaddch(win, s.y, s.x, STAIR_DN);
 	}
 
-	for (i = 1; i < HEIGHT - 1; ++i) {
-		for (j = 1; j < WIDTH - 1; ++j) {
+	for (int i = 1; i < HEIGHT - 1; ++i) {
+		for (int j = 1; j < WIDTH - 1; ++j) {
 			if (tiles[i][j].h == 0 && tiles[i][j].c == ROCK) {
 				tiles[i][j].c = CORRIDOR;
 				(void)mvwaddch(win, i, j, CORRIDOR);
@@ -95,8 +93,8 @@ arrange_renew(WINDOW *const win)
 static void
 init_fresh(WINDOW *const win)
 {
-	size_t i = 0, j;
-	size_t retries = 0;
+	std::size_t i = 0;
+	std::size_t retries = 0;
 
 	for (auto it = rooms.begin(); it != rooms.end()
 		&& retries < ROOM_RETRIES; ++it) {
@@ -134,7 +132,7 @@ init_fresh(WINDOW *const win)
 	}
 
 	for (i = 1; i < HEIGHT - 1; ++i) {
-		for (j = 1; j < WIDTH - 1; ++j) {
+		for (std::size_t j = 1; j < WIDTH - 1; ++j) {
 			switch(tiles[i][j].c) {
 			case ROOM:
 			case CORRIDOR:
@@ -152,7 +150,7 @@ init_fresh(WINDOW *const win)
 }
 
 static void
-place_player(void)
+place_player()
 {
 	uint8_t x, y;
 

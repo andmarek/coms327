@@ -6,23 +6,24 @@
 #include "globs.h"
 #include "npc.h"
 
-#define PLAYER_TYPE	0x80
-#define INTELLIGENT	0x1
-#define TELEPATHIC	0x2
-#define TUNNELING	0x4
-#define ERRATIC		0x8
+static int constexpr PLAYER_TYPE = 0x80;
+static int constexpr INTELLIGENT = 0x1;
+static int constexpr TELEPATHIC = 0x2;
+static int constexpr TUNNELING = 0x4;
+static int constexpr ERRATIC = 0x8;
 
-#define CUTOFF	4.0 /* minimum distance from the PC an NPC can be placed */
+/* minimum distance from the PC an NPC can be placed */
+static double constexpr CUTOFF = 4.0;
 
-#define TUNNEL_STRENGTH	85
-#define PERSISTANCE	5
+static int constexpr TUNNEL_STRENGTH = 85;
+static int constexpr PERSISTANCE = 5;
 
-#define TYPE_MIN	0x0
-#define TYPE_MAX	0xF
-#define SPEED_MIN	5
-#define SPEED_MAX	20
+static int constexpr TYPE_MIN = 0x0;
+static int constexpr TYPE_MAX = 0xF;
+static int constexpr SPEED_MIN = 5;
+static int constexpr SPEED_MAX = 20;
 
-#define KEY_ESC	27
+static int constexpr KEY_ESC = 27;
 
 enum pc_action {
 	PC_MONSTER_LIST,
@@ -31,12 +32,13 @@ enum pc_action {
 	PC_QUIT
 };
 
-static int	valid_npc(uint8_t const, uint8_t const);
+static bool	valid_npc(uint8_t const, uint8_t const);
 
 static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
 static unsigned int	subu32(unsigned int const, unsigned int const);
 static bool		pc_visible(struct npc const *const);
-static unsigned int	limited_int_to_char(uint8_t const);
+
+constexpr static unsigned int	limited_int_to_char(uint8_t const);
 
 static void	move_redraw(WINDOW *const, struct npc *const, uint8_t const, uint8_t const);
 static void	move_tunnel(WINDOW *const, struct npc *const, uint8_t const, uint8_t const);
@@ -56,8 +58,8 @@ struct npc player;
 
 class compare_npc {
 public:
-	bool
-	operator() (struct npc *x, struct npc *y)
+	constexpr bool
+	operator() (struct npc *x, struct npc *y) const
 	{
 		return x->turn > y->turn;
 	}
@@ -86,7 +88,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	heap.push(&player);
 
-	for (auto & npc : monsters) {
+	for (auto &npc : monsters) {
 		npc = gen_monster();
 		tiles[npc.y][npc.x].n = &npc;
 
@@ -160,7 +162,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	return ret;
 }
 
-static int
+static bool
 valid_npc(uint8_t const y, uint8_t const x)
 {
 	if (tiles[y][x].h != 0) {
@@ -175,7 +177,7 @@ distance(uint8_t const x0, uint8_t const y0, uint8_t const x1, uint8_t const y1)
 {
 	int const dx = x1 - x0;
 	int const dy = y1 - y0;
-	return sqrt(dx * dx + dy * dy);
+	return std::sqrt(dx * dx + dy * dy);
 }
 
 /*
@@ -200,8 +202,8 @@ pc_visible(struct npc const *const n)
 	int const x1 = n->x;
 	int const y1 = n->y;
 
-	int const dx = (uint_fast8_t) abs(x1 - x0);
-	int const dy = (uint_fast8_t) abs(y1 - y0);
+	int const dx = std::abs(x1 - x0);
+	int const dy = std::abs(y1 - y0);
 	int const sx = x0 < x1 ? 1 : -1;
 	int const sy = y0 < y1 ? 1 : -1;
 
@@ -233,7 +235,7 @@ pc_visible(struct npc const *const n)
 	return true;
 }
 
-static unsigned int
+constexpr static unsigned int
 limited_int_to_char(uint8_t const i)
 {
 	return (unsigned int)((i < 0xA) ? i + '0' : i + 'a' - 0xA);
@@ -288,22 +290,19 @@ static void
 move_straight(WINDOW *const win, struct npc *const n)
 {
 	double min = std::numeric_limits<double>::max();
-	double dist;
-	int i, j;
-	uint8_t x, y;
 	uint8_t minx = n->x;
 	uint8_t miny = n->y;
 
-	for (i = -1; i <= 1; ++i) {
-		for (j = -1; j <= 1; ++j) {
-			x = (uint8_t)(n->x + i);
-			y = (uint8_t)(n->y + j);
+	for (int i = -1; i <= 1; ++i) {
+		for (int j = -1; j <= 1; ++j) {
+			uint8_t x = (uint8_t)(n->x + i);
+			uint8_t y = (uint8_t)(n->y + j);
 
 			if (!(n->type & TUNNELING) && tiles[y][x].h != 0) {
 				continue;
 			}
 
-			dist = distance(player.x, player.y, x, y);
+			double dist = distance(player.x, player.y, x, y);
 
 			if (dist < min) {
 				min = dist;
@@ -324,15 +323,13 @@ static void
 move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
 {
 	int32_t min_d = tiles[n->y][n->x].d;
-	int i, j;
-	uint8_t x, y;
 	uint8_t minx = n->x;
 	uint8_t miny = n->y;
 
-	for (i = -1; i <= 1; ++i) {
-		for (j = -1; j <= 1; ++j) {
-			x = (uint8_t)(n->x + i);
-			y = (uint8_t)(n->y + j);
+	for (int i = -1; i <= 1; ++i) {
+		for (int j = -1; j <= 1; ++j) {
+			uint8_t x = (uint8_t)(n->x + i);
+			uint8_t y = (uint8_t)(n->y + j);
 
 
 			if (tiles[y][x].h != 0) {
@@ -354,15 +351,13 @@ static void
 move_dijk_tunneling(WINDOW *const win, struct npc *const n)
 {
 	int32_t min_dt = tiles[n->y][n->x].dt;
-	int i, j;
-	uint8_t x, y;
 	uint8_t minx = n->x;
 	uint8_t miny = n->y;
 
-	for (i = -1; i <= 1; ++i) {
-		for (j = -1; j <= 1; ++j) {
-			x = (uint8_t)(n->x + i);
-			y = (uint8_t)(n->y + j);
+	for (int i = -1; i <= 1; ++i) {
+		for (int j = -1; j <= 1; ++j) {
+			uint8_t x = (uint8_t)(n->x + i);
+			uint8_t y = (uint8_t)(n->y + j);
 
 			if (tiles[y][x].dt < min_dt) {
 				min_dt = tiles[y][x].dt;
@@ -406,13 +401,13 @@ gen_monster()
 static enum pc_action
 turn_npc(WINDOW *const win, struct npc *const n)
 {
-	uint8_t y, x;
-
 	if (n->type & PLAYER_TYPE) {
 		return turn_pc(win, n);
 	}
 
 	if (n->type & ERRATIC && rr.rrand<int>(0, 1) == 0) {
+		uint8_t y, x;
+
 		do {
 			y = (uint8_t)(n->y + rr.rrand<int>(-1, 1));
 			x = (uint8_t)(n->x + rr.rrand<int>(-1, 1));
@@ -604,11 +599,8 @@ turn_pc(WINDOW *const win, struct npc *const n)
 static void
 monster_list(WINDOW *const mwin, std::vector<struct npc> const &monsters)
 {
-	struct npc n;
-	int dx;
-	int dy;
-	unsigned int i;
 	std::vector<struct npc>::size_type cpos = 0;
+	std::size_t i;
 
 	while(1) {
 		if (wclear(mwin) == ERR) {
@@ -621,9 +613,9 @@ monster_list(WINDOW *const mwin, std::vector<struct npc> const &monsters)
 			"[arrow keys to scroll; ESC to exit]");
 
 		for (i = 0; i < HEIGHT - 2 && i + cpos < monsters.size(); ++i) {
-			n = monsters[i + cpos];
-			dx = player.x - n.x;
-			dy = player.y - n.y;
+			struct npc n = monsters[i + cpos];
+			int dx = player.x - n.x;
+			int dy = player.y - n.y;
 
 			(void)mvwprintw(mwin, (int)(i + 1U), 2,
 				"%u.\t%c, %d %s and %d %s", i + cpos, n.type_ch,

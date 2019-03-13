@@ -3,7 +3,7 @@
 
 #include <ncurses.h>
 
-void	clear_tiles(void);
+void	clear_tiles();
 
 void	arrange_new(WINDOW *const);
 void	arrange_loaded(WINDOW *const);

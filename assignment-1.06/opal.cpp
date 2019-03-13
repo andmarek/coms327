@@ -247,7 +247,7 @@ print_winscreen(WINDOW *const win)
 bool
 is_number(std::string const &s)
 {
-	return !s.empty() && std::find_if(s.begin(), s.end(), [](char c) {
+	return !s.empty() && std::find_if(s.begin(), s.end(), [](char const c) {
 		return !std::isdigit(c);
 	}) == s.end();
 }
