@@ -1,7 +1,7 @@
 #include "globs.h"
 
 void
-gen_room(struct room *const r)
+gen_room(room *const r)
 {
 	static int constexpr MINROOMH = 4;
 	static int constexpr MINROOMW = 3;
@@ -15,7 +15,7 @@ gen_room(struct room *const r)
 }
 
 bool
-valid_room(struct room const *const r)
+valid_room(room const *const r)
 {
 	for (int i = r->x - 1; i <= r->x + r->size_x + 1; ++i) {
 		for (int j = r->y - 1; j <= r->y + r->size_y + 1; ++j) {
@@ -29,7 +29,7 @@ valid_room(struct room const *const r)
 }
 
 void
-draw_room(WINDOW *const win, struct room const *const r)
+draw_room(WINDOW *const win, room const *const r)
 {
 	for (int i = r->x; i < r->x + r->size_x; ++i) {
 		for (int j = r->y; j < r->y + r->size_y; ++j) {
@@ -56,7 +56,7 @@ valid_corridor_y(int const y, int const x)
 }
 
 void
-draw_corridor(WINDOW *const win, struct room const r1, struct room const r2)
+draw_corridor(WINDOW *const win, room const r1, room const r2)
 {
 	int i;
 
@@ -86,7 +86,7 @@ valid_stair(int const y, int const x)
 }
 
 void
-gen_draw_stair(WINDOW *const win, struct stair *const s, bool const up)
+gen_draw_stair(WINDOW *const win, stair *const s, bool const up)
 {
 	uint8_t x, y;
 

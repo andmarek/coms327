@@ -67,7 +67,7 @@ write_things(FILE *const f)
 
 	/* room data */
 	for (auto const &r : rooms) {
-		if (fwrite(&r, sizeof(struct room), 1, f) != 1) {
+		if (fwrite(&r, sizeof(room), 1, f) != 1) {
 			return -1;
 		}
 	}
@@ -81,7 +81,7 @@ write_things(FILE *const f)
 
 	/* stars_up coords */
 	for (auto const &s : stairs_up) {
-		if (fwrite(&s, sizeof(struct stair), 1, f) != 1) {
+		if (fwrite(&s, sizeof(stair), 1, f) != 1) {
 			return -1;
 		}
 	}
@@ -95,7 +95,7 @@ write_things(FILE *const f)
 
 	/* stairs_dn coords */
 	for (auto const &s : stairs_dn) {
-		if (fwrite(&s, sizeof(struct stair), 1, f) != 1) {
+		if (fwrite(&s, sizeof(stair), 1, f) != 1) {
 			return -1;
 		}
 	}
@@ -183,7 +183,7 @@ load_things(FILE *const f) {
 
 	/* room data */
 	for (auto &r : rooms) {
-		if (fread(&r, sizeof(struct room), 1, f) != 1) {
+		if (fread(&r, sizeof(room), 1, f) != 1) {
 			return -1;
 		}
 	}
@@ -198,7 +198,7 @@ load_things(FILE *const f) {
 
 	/* stair_up coords */
 	for (auto &s : stairs_up) {
-		if (fread(&s, sizeof(struct stair), 1, f) != 1) {
+		if (fread(&s, sizeof(stair), 1, f) != 1) {
 			return -1;
 		}
 	}
@@ -213,7 +213,7 @@ load_things(FILE *const f) {
 
 	/* stair_dn_coords */
 	for (auto &s : stairs_dn) {
-		if (fread(&s, sizeof(struct stair), 1, f) != 1) {
+		if (fread(&s, sizeof(stair), 1, f) != 1) {
 			return -1;
 		}
 	}

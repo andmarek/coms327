@@ -3,6 +3,7 @@
 
 #include <ncurses.h>
 #include <cstdint>
+#include <vector>
 
 #include "rand.h"
 
@@ -16,7 +17,8 @@ char constexpr ROCK = ' ';
 char constexpr STAIR_UP = '<';
 char constexpr STAIR_DN = '>';
 
-struct npc {
+class npc {
+public:
 	uint8_t		x;
 	uint8_t		y;
 	uint8_t		speed;
@@ -27,21 +29,24 @@ struct npc {
 	bool		dead;
 };
 
-struct room {
+class room {
+public:
 	uint8_t x;
 	uint8_t y;
 	uint8_t size_x;
 	uint8_t size_y;
 };
 
-struct stair {
+class stair {
+public:
 	uint8_t x;
 	uint8_t y;
 };
 
-struct tile {
+class tile {
+public:
 	/* turn engine */
-	struct npc	*n;
+	npc	*n;
 
 	uint8_t	h; /* hardness */
 	chtype	c; /* character */
@@ -57,17 +62,17 @@ struct tile {
 
 extern ranged_random rr;
 
-extern struct npc player;
+extern npc player;
 
-extern struct tile tiles[HEIGHT][WIDTH];
+extern tile tiles[HEIGHT][WIDTH];
 
 extern uint16_t room_count;
-extern std::vector<struct room> rooms;
+extern std::vector<room> rooms;
 
 extern uint16_t stair_up_count;
 extern uint16_t stair_dn_count;
 
-extern std::vector<struct stair> stairs_up;
-extern std::vector<struct stair> stairs_dn;
+extern std::vector<stair> stairs_up;
+extern std::vector<stair> stairs_dn;
 
 #endif /* GLOBS_H */

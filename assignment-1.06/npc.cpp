@@ -1,5 +1,6 @@
 #include <limits>
 #include <queue>
+#include <vector>
 
 #include "cerr.h"
 #include "dijk.h"
@@ -36,30 +37,30 @@ static bool	valid_npc(uint8_t const, uint8_t const);
 
 static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
 static unsigned int	subu32(unsigned int const, unsigned int const);
-static bool		pc_visible(struct npc const *const);
+static bool		pc_visible(npc const *const);
 
 constexpr static unsigned int	limited_int_to_char(uint8_t const);
 
-static void	move_redraw(WINDOW *const, struct npc *const, uint8_t const, uint8_t const);
-static void	move_tunnel(WINDOW *const, struct npc *const, uint8_t const, uint8_t const);
+static void	move_redraw(WINDOW *const, npc *const, uint8_t const, uint8_t const);
+static void	move_tunnel(WINDOW *const, npc *const, uint8_t const, uint8_t const);
 
-static void	move_straight(WINDOW *const, struct npc *const);
-static void	move_dijk_nontunneling(WINDOW *const, struct npc *const);
-static void	move_dijk_tunneling(WINDOW *const, struct npc *const);
+static void	move_straight(WINDOW *const, npc *const);
+static void	move_dijk_nontunneling(WINDOW *const, npc *const);
+static void	move_dijk_tunneling(WINDOW *const, npc *const);
 
-static struct npc	gen_monster();
+static npc	gen_monster();
 
-static enum pc_action	turn_npc(WINDOW *const, struct npc *const);
-static enum pc_action	turn_pc(WINDOW *const, struct npc *const);
+static enum pc_action	turn_npc(WINDOW *const, npc *const);
+static enum pc_action	turn_pc(WINDOW *const, npc *const);
 
-static void	monster_list(WINDOW *const, std::vector<struct npc> const &);
+static void	monster_list(WINDOW *const, std::vector<npc> const &);
 
-struct npc player;
+npc player;
 
 class compare_npc {
 public:
 	constexpr bool
-	operator() (struct npc *x, struct npc *y) const
+	operator() (npc *x, npc *y) const
 	{
 		return x->turn > y->turn;
 	}
@@ -68,10 +69,10 @@ public:
 enum turn_exit
 turn_engine(WINDOW *const win, unsigned int const nummon)
 {
-	std::priority_queue<struct npc *, std::vector<struct npc *>, compare_npc> heap;
-	std::vector<struct npc> monsters;
+	std::priority_queue<npc *, std::vector<npc *>, compare_npc> heap;
+	std::vector<npc> monsters;
 	WINDOW *mwin; /* monster list window */
-	struct npc *n;
+	npc *n;
 	int32_t turn;
 	unsigned int alive = nummon;
 	enum turn_exit ret = TURN_NONE;
@@ -194,7 +195,7 @@ subu32(unsigned int const a, unsigned int const b)
 
 /* Bresenham's line algorithm */
 static bool
-pc_visible(struct npc const *const n)
+pc_visible(npc const *const n)
 {
 	int x0 = player.x;
 	int y0 = player.y;
@@ -208,7 +209,6 @@ pc_visible(struct npc const *const n)
 	int const sy = y0 < y1 ? 1 : -1;
 
 	int err = (dx > dy ? dx : -dy) / 2;
-	int e2;
 
 	while(1) {
 		if (tiles[y0][x0].h != 0) {
@@ -219,7 +219,7 @@ pc_visible(struct npc const *const n)
 			break;
 		}
 
-		e2 = err;
+		int e2 = err;
 
 		if (e2 > -dx) {
 			err -= dy;
@@ -242,7 +242,7 @@ limited_int_to_char(uint8_t const i)
 }
 
 static void
-move_redraw(WINDOW *const win, struct npc *const n, uint8_t const y,
+move_redraw(WINDOW *const win, npc *const n, uint8_t const y,
 	uint8_t const x)
 {
 	if (n->x == x && n->y == y) {
@@ -264,7 +264,7 @@ move_redraw(WINDOW *const win, struct npc *const n, uint8_t const y,
 }
 
 static void
-move_tunnel(WINDOW *const win, struct npc *const n, uint8_t const y,
+move_tunnel(WINDOW *const win, npc *const n, uint8_t const y,
 	uint8_t const x)
 {
 	if (tiles[y][x].h == UINT8_MAX) {
@@ -287,7 +287,7 @@ move_tunnel(WINDOW *const win, struct npc *const n, uint8_t const y,
 }
 
 static void
-move_straight(WINDOW *const win, struct npc *const n)
+move_straight(WINDOW *const win, npc *const n)
 {
 	double min = std::numeric_limits<double>::max();
 	uint8_t minx = n->x;
@@ -320,7 +320,7 @@ move_straight(WINDOW *const win, struct npc *const n)
 }
 
 static void
-move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
+move_dijk_nontunneling(WINDOW *const win, npc *const n)
 {
 	int32_t min_d = tiles[n->y][n->x].d;
 	uint8_t minx = n->x;
@@ -348,7 +348,7 @@ move_dijk_nontunneling(WINDOW *const win, struct npc *const n)
 }
 
 static void
-move_dijk_tunneling(WINDOW *const win, struct npc *const n)
+move_dijk_tunneling(WINDOW *const win, npc *const n)
 {
 	int32_t min_dt = tiles[n->y][n->x].dt;
 	uint8_t minx = n->x;
@@ -370,11 +370,11 @@ move_dijk_tunneling(WINDOW *const win, struct npc *const n)
 	move_tunnel(win, n, miny, minx);
 }
 
-static struct npc
+static npc
 gen_monster()
 {
 	uint8_t x, y;
-	struct npc n;
+	npc n;
 
 	do {
 		x = rr.rrand<uint8_t>(1, WIDTH - 2);
@@ -399,7 +399,7 @@ gen_monster()
 }
 
 static enum pc_action
-turn_npc(WINDOW *const win, struct npc *const n)
+turn_npc(WINDOW *const win, npc *const n)
 {
 	if (n->type & PLAYER_TYPE) {
 		return turn_pc(win, n);
@@ -487,7 +487,7 @@ turn_npc(WINDOW *const win, struct npc *const n)
 }
 
 static enum pc_action
-turn_pc(WINDOW *const win, struct npc *const n)
+turn_pc(WINDOW *const win, npc *const n)
 {
 	uint8_t y = n->y;
 	uint8_t x = n->x;
@@ -597,9 +597,9 @@ turn_pc(WINDOW *const win, struct npc *const n)
 }
 
 static void
-monster_list(WINDOW *const mwin, std::vector<struct npc> const &monsters)
+monster_list(WINDOW *const mwin, std::vector<npc> const &monsters)
 {
-	std::vector<struct npc>::size_type cpos = 0;
+	std::vector<npc>::size_type cpos = 0;
 	std::size_t i;
 
 	while(1) {
@@ -613,7 +613,7 @@ monster_list(WINDOW *const mwin, std::vector<struct npc> const &monsters)
 			"[arrow keys to scroll; ESC to exit]");
 
 		for (i = 0; i < HEIGHT - 2 && i + cpos < monsters.size(); ++i) {
-			struct npc n = monsters[i + cpos];
+			npc n = monsters[i + cpos];
 			int dx = player.x - n.x;
 			int dy = player.y - n.y;
 

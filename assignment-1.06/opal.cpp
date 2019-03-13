@@ -26,15 +26,15 @@ static struct option const long_opts[] = {
 ranged_random rr;
 
 uint16_t room_count;
-std::vector<struct room> rooms;
+std::vector<room> rooms;
 
 uint16_t stair_up_count;
 uint16_t stair_dn_count;
 
-std::vector<struct stair> stairs_up;
-std::vector<struct stair> stairs_dn;
+std::vector<stair> stairs_up;
+std::vector<stair> stairs_dn;
 
-struct tile tiles[HEIGHT][WIDTH];
+tile tiles[HEIGHT][WIDTH];
 
 static void	usage(int const, std::string const &);
 

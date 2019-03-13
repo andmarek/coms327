@@ -6,12 +6,12 @@
 static void	dijkstra_d();
 static void	dijkstra_dt();
 
-constexpr static void	calc_cost_d(struct tile const *const, struct tile *const);
-constexpr static void	calc_cost_dt(struct tile const *const, struct tile *const);
+constexpr static void	calc_cost_d(tile const *const, tile *const);
+constexpr static void	calc_cost_dt(tile const *const, tile *const);
 
 struct compare_d {
 	constexpr bool
-	operator() (struct tile const *const a, struct tile const *const b) const
+	operator() (tile const *const a, tile const *const b) const
 	{
 		return a->d > b->d;
 	}
@@ -19,7 +19,7 @@ struct compare_d {
 
 struct compare_dt {
 	constexpr bool
-	operator() (struct tile const *const a, struct tile const *const b) const
+	operator() (tile const *const a, tile const *const b) const
 	{
 		return a->dt > b->dt;
 	}
@@ -38,9 +38,9 @@ dijkstra()
 static void
 dijkstra_d(void)
 {
-	struct tile *t;
+	tile *t;
 
-	std::vector<struct tile *> heap;
+	std::vector<tile *> heap;
 
 	for (std::size_t i = 1; i < HEIGHT - 1; ++i) {
 		for (std::size_t j = 1; j < WIDTH - 1; ++j) {
@@ -81,9 +81,9 @@ dijkstra_d(void)
 static void
 dijkstra_dt(void)
 {
-	struct tile *t;
+	tile *t;
 
-	std::vector<struct tile *> heap;
+	std::vector<tile *> heap;
 	heap.reserve((HEIGHT - 1) * (WIDTH - 1));
 
 	for (std::size_t i = 1; i < HEIGHT - 1; ++i) {
@@ -120,7 +120,7 @@ dijkstra_dt(void)
 }
 
 constexpr static void
-calc_cost_d(struct tile const *const a, struct tile *const b)
+calc_cost_d(tile const *const a, tile *const b)
 {
 	if (b->vd && b->d > a->d) {
 		b->d = a->d + 1;
@@ -128,7 +128,7 @@ calc_cost_d(struct tile const *const a, struct tile *const b)
 }
 
 constexpr static void
-calc_cost_dt(struct tile const *const a, struct tile *const b)
+calc_cost_dt(tile const *const a, tile *const b)
 {
 	if (b->vdt && b->dt > a->dt + a->h/85) {
 		b->dt = a->dt + 1 + a->h/85;

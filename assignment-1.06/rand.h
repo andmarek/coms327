@@ -14,7 +14,7 @@ public:
 		gen.seed(seed);
 	}
 
-	ranged_random(std::string const &s)
+	explicit ranged_random(std::string const &s)
 	{
 		long unsigned int hash = 5381;
 
@@ -26,7 +26,7 @@ public:
 		gen.seed(seed);
 	}
 
-	ranged_random(long unsigned int const s)
+	explicit ranged_random(long unsigned int const s)
 	{
 		seed = s;
 		gen.seed(seed);
