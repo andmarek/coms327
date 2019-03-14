@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <functional>
 #include <thread>
 #include "cerr.h"
 #include "globs.h"
@@ -11,17 +12,17 @@ constexpr static void	calc_cost_dt(tile const &, tile &);
 
 struct compare_d {
 	constexpr bool
-	operator() (tile const *const a, tile const *const b) const
+	operator() (tile const &a, tile const &b) const
 	{
-		return a->d > b->d;
+		return a.d > b.d;
 	}
 };
 
 struct compare_dt {
 	constexpr bool
-	operator() (tile const *const a, tile const *const b) const
+	operator() (tile const &a, tile const &b) const
 	{
-		return a->dt > b->dt;
+		return a.dt > b.dt;
 	}
 };
 
@@ -38,9 +39,7 @@ dijkstra()
 static void
 dijkstra_d(void)
 {
-	tile *t;
-
-	std::vector<tile *> heap;
+	std::vector<std::reference_wrapper<tile>> heap;
 
 	for (std::size_t i = 1; i < HEIGHT - 1; ++i) {
 		for (std::size_t j = 1; j < WIDTH - 1; ++j) {
@@ -48,7 +47,7 @@ dijkstra_d(void)
 
 			if (tiles[i][j].h == 0) {
 				tiles[i][j].vd = true;
-				heap.push_back(&tiles[i][j]);
+				heap.push_back(tiles[i][j]);
 			}
 		}
 	}
@@ -58,39 +57,37 @@ dijkstra_d(void)
 	while(!heap.empty()) {
 		std::make_heap(heap.begin(), heap.end(), compare_d());
 
-		t = heap.front();
+		tile &t = heap.front();
 		std::pop_heap(heap.begin(), heap.end(), compare_d());
 		heap.pop_back();
 
-		calc_cost_d(*t, tiles[t->y - 1][t->x + 0]);
-		calc_cost_d(*t, tiles[t->y + 1][t->x + 0]);
+		calc_cost_d(t, tiles[t.y - 1][t.x + 0]);
+		calc_cost_d(t, tiles[t.y + 1][t.x + 0]);
 
-		calc_cost_d(*t, tiles[t->y + 0][t->x - 1]);
-		calc_cost_d(*t, tiles[t->y + 0][t->x + 1]);
+		calc_cost_d(t, tiles[t.y + 0][t.x - 1]);
+		calc_cost_d(t, tiles[t.y + 0][t.x + 1]);
 
-		calc_cost_d(*t, tiles[t->y + 1][t->x + 1]);
-		calc_cost_d(*t, tiles[t->y - 1][t->x - 1]);
+		calc_cost_d(t, tiles[t.y + 1][t.x + 1]);
+		calc_cost_d(t, tiles[t.y - 1][t.x - 1]);
 
-		calc_cost_d(*t, tiles[t->y - 1][t->x + 1]);
-		calc_cost_d(*t, tiles[t->y + 1][t->x - 1]);
+		calc_cost_d(t, tiles[t.y - 1][t.x + 1]);
+		calc_cost_d(t, tiles[t.y + 1][t.x - 1]);
 
-		t->vd = false;
+		t.vd = false;
 	}
 }
 
 static void
 dijkstra_dt(void)
 {
-	tile *t;
-
-	std::vector<tile *> heap;
+	std::vector<std::reference_wrapper<tile>> heap;
 	heap.reserve((HEIGHT - 1) * (WIDTH - 1));
 
 	for (std::size_t i = 1; i < HEIGHT - 1; ++i) {
 		for (std::size_t j = 1; j < WIDTH - 1; ++j) {
 			tiles[i][j].dt = std::numeric_limits<int32_t>::max();
 			tiles[i][j].vdt = true;
-			heap.push_back(&tiles[i][j]);
+			heap.push_back(tiles[i][j]);
 		}
 	}
 
@@ -99,23 +96,23 @@ dijkstra_dt(void)
 	while(!heap.empty()) {
 		std::make_heap(heap.begin(), heap.end(), compare_dt());
 
-		t = heap.front();
+		tile &t = heap.front();
 		std::pop_heap(heap.begin(), heap.end(), compare_dt());
 		heap.pop_back();
 
-		calc_cost_dt(*t, tiles[t->y - 1][t->x + 0]);
-		calc_cost_dt(*t, tiles[t->y + 1][t->x + 0]);
+		calc_cost_dt(t, tiles[t.y - 1][t.x + 0]);
+		calc_cost_dt(t, tiles[t.y + 1][t.x + 0]);
 
-		calc_cost_dt(*t, tiles[t->y + 0][t->x - 1]);
-		calc_cost_dt(*t, tiles[t->y + 0][t->x + 1]);
+		calc_cost_dt(t, tiles[t.y + 0][t.x - 1]);
+		calc_cost_dt(t, tiles[t.y + 0][t.x + 1]);
 
-		calc_cost_dt(*t, tiles[t->y + 1][t->x + 1]);
-		calc_cost_dt(*t, tiles[t->y - 1][t->x - 1]);
+		calc_cost_dt(t, tiles[t.y + 1][t.x + 1]);
+		calc_cost_dt(t, tiles[t.y - 1][t.x - 1]);
 
-		calc_cost_dt(*t, tiles[t->y - 1][t->x + 1]);
-		calc_cost_dt(*t, tiles[t->y + 1][t->x - 1]);
+		calc_cost_dt(t, tiles[t.y - 1][t.x + 1]);
+		calc_cost_dt(t, tiles[t.y + 1][t.x - 1]);
 
-		t->vdt = false;
+		t.vdt = false;
 	}
 }
 
