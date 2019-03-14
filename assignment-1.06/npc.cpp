@@ -127,9 +127,13 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 			if (n.type & PLAYER_TYPE) {
 				ret = TURN_DEATH;
 				goto exit;
-			} else {
-				alive--;
 			}
+
+			monsters.erase(std::remove_if(monsters.begin(),
+				monsters.end(),
+				[&n](npc const &o) { return &o == &n; }),
+				monsters.end());
+			alive--;
 			continue;
 		}
 
