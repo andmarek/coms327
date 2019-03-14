@@ -24,6 +24,8 @@ clear_tiles()
 			if (i == 0 || j == 0 || i == HEIGHT - 1
 				|| j == WIDTH - 1) {
 				tiles[i][j].h = UINT8_MAX;
+				tiles[i][j].d = INT32_MAX;
+				tiles[i][j].dt = INT32_MAX;
 			} else {
 				tiles[i][j].c = ROCK;
 			}

@@ -1,3 +1,4 @@
+#include <functional>
 #include <limits>
 #include <queue>
 #include <vector>
@@ -37,21 +38,21 @@ static bool	valid_npc(uint8_t const, uint8_t const);
 
 static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
 static unsigned int	subu32(unsigned int const, unsigned int const);
-static bool		pc_visible(npc const *const);
+static bool		pc_visible(npc const &);
 
 constexpr static unsigned int	limited_int_to_char(uint8_t const);
 
-static void	move_redraw(WINDOW *const, npc *const, uint8_t const, uint8_t const);
-static void	move_tunnel(WINDOW *const, npc *const, uint8_t const, uint8_t const);
+static void	move_redraw(WINDOW *const, npc &, uint8_t const, uint8_t const);
+static void	move_tunnel(WINDOW *const, npc &, uint8_t const, uint8_t const);
 
-static void	move_straight(WINDOW *const, npc *const);
-static void	move_dijk_nontunneling(WINDOW *const, npc *const);
-static void	move_dijk_tunneling(WINDOW *const, npc *const);
+static void	move_straight(WINDOW *const, npc &);
+static void	move_dijk_nontunneling(WINDOW *const, npc &);
+static void	move_dijk_tunneling(WINDOW *const, npc &);
 
 static npc	gen_monster();
 
-static enum pc_action	turn_npc(WINDOW *const, npc *const);
-static enum pc_action	turn_pc(WINDOW *const, npc *const);
+static enum pc_action	turn_npc(WINDOW *const, npc &);
+static enum pc_action	turn_pc(WINDOW *const, npc &);
 
 static void	monster_list(WINDOW *const, std::vector<npc> const &);
 
@@ -60,19 +61,18 @@ npc player;
 class compare_npc {
 public:
 	constexpr bool
-	operator() (npc *x, npc *y) const
+	operator() (npc const &x, npc const &y) const
 	{
-		return x->turn > y->turn;
+		return x.turn > y.turn;
 	}
 };
 
 enum turn_exit
 turn_engine(WINDOW *const win, unsigned int const nummon)
 {
-	std::priority_queue<npc *, std::vector<npc *>, compare_npc> heap;
+	std::priority_queue<npc, std::vector<std::reference_wrapper<npc>>, compare_npc> heap;
 	std::vector<npc> monsters;
 	WINDOW *mwin; /* monster list window */
-	npc *n;
 	int32_t turn;
 	unsigned int alive = nummon;
 	enum turn_exit ret = TURN_NONE;
@@ -87,7 +87,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	(void)mvwaddch(win, player.y, player.x, player.type_ch);
 
-	heap.push(&player);
+	heap.push(player);
 
 	for (auto &npc : monsters) {
 		npc = gen_monster();
@@ -95,7 +95,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 		(void)mvwaddch(win, npc.y, npc.x, npc.type_ch);
 
-		heap.push(&npc);
+		heap.push(npc);
 	}
 
 	dijkstra();
@@ -109,10 +109,10 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	}
 
 	while (!heap.empty()) {
-		n = heap.top();
+		npc &n = heap.top();
 		heap.pop();
 
-		if (n->type & PLAYER_TYPE) {
+		if (n.type & PLAYER_TYPE) {
 			if (wrefresh(win) == ERR) {
 				cerrx(1, "turn_engine wrefresh");
 			}
@@ -123,8 +123,8 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 			goto exit;
 		}
 
-		if (n->dead) {
-			if (n->type & PLAYER_TYPE) {
+		if (n.dead) {
+			if (n.type & PLAYER_TYPE) {
 				ret = TURN_DEATH;
 				goto exit;
 			} else {
@@ -133,8 +133,8 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 			continue;
 		}
 
-		turn = n->turn + 1;
-		n->turn = turn + 1000/n->speed;
+		turn = n.turn + 1;
+		n.turn = turn + 1000/n.speed;
 
 		retry:
 		switch(turn_npc(win, n)) {
@@ -195,13 +195,13 @@ subu32(unsigned int const a, unsigned int const b)
 
 /* Bresenham's line algorithm */
 static bool
-pc_visible(npc const *const n)
+pc_visible(npc const &n)
 {
 	int x0 = player.x;
 	int y0 = player.y;
 
-	int const x1 = n->x;
-	int const y1 = n->y;
+	int const x1 = n.x;
+	int const y1 = n.y;
 
 	int const dx = std::abs(x1 - x0);
 	int const dy = std::abs(y1 - y0);
@@ -242,10 +242,9 @@ limited_int_to_char(uint8_t const i)
 }
 
 static void
-move_redraw(WINDOW *const win, npc *const n, uint8_t const y,
-	uint8_t const x)
+move_redraw(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 {
-	if (n->x == x && n->y == y) {
+	if (n.x == x && n.y == y) {
 		return;
 	}
 
@@ -253,19 +252,18 @@ move_redraw(WINDOW *const win, npc *const n, uint8_t const y,
 		(tiles[y][x].n)->dead = true;
 	}
 
-	tiles[n->y][n->x].n = NULL;
-	tiles[y][x].n = n;
+	tiles[n.y][n.x].n = NULL;
+	tiles[y][x].n = &n;
 
-	(void)mvwaddch(win, n->y, n->x, tiles[n->y][n->x].c);
-	(void)mvwaddch(win, y, x, n->type_ch);
+	(void)mvwaddch(win, n.y, n.x, tiles[n.y][n.x].c);
+	(void)mvwaddch(win, y, x, n.type_ch);
 
-	n->y = y;
-	n->x = x;
+	n.y = y;
+	n.x = x;
 }
 
 static void
-move_tunnel(WINDOW *const win, npc *const n, uint8_t const y,
-	uint8_t const x)
+move_tunnel(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 {
 	if (tiles[y][x].h == UINT8_MAX) {
 		return;
@@ -287,18 +285,18 @@ move_tunnel(WINDOW *const win, npc *const n, uint8_t const y,
 }
 
 static void
-move_straight(WINDOW *const win, npc *const n)
+move_straight(WINDOW *const win, npc &n)
 {
 	double min = std::numeric_limits<double>::max();
-	uint8_t minx = n->x;
-	uint8_t miny = n->y;
+	uint8_t minx = n.x;
+	uint8_t miny = n.y;
 
 	for (int i = -1; i <= 1; ++i) {
 		for (int j = -1; j <= 1; ++j) {
-			uint8_t x = (uint8_t)(n->x + i);
-			uint8_t y = (uint8_t)(n->y + j);
+			uint8_t x = (uint8_t)(n.x + i);
+			uint8_t y = (uint8_t)(n.y + j);
 
-			if (!(n->type & TUNNELING) && tiles[y][x].h != 0) {
+			if (!(n.type & TUNNELING) && tiles[y][x].h != 0) {
 				continue;
 			}
 
@@ -312,7 +310,7 @@ move_straight(WINDOW *const win, npc *const n)
 		}
 	}
 
-	if (n->type & TUNNELING) {
+	if (n.type & TUNNELING) {
 		move_tunnel(win, n, miny, minx);
 	} else {
 		move_redraw(win, n, miny, minx);
@@ -320,16 +318,16 @@ move_straight(WINDOW *const win, npc *const n)
 }
 
 static void
-move_dijk_nontunneling(WINDOW *const win, npc *const n)
+move_dijk_nontunneling(WINDOW *const win, npc &n)
 {
-	int32_t min_d = tiles[n->y][n->x].d;
-	uint8_t minx = n->x;
-	uint8_t miny = n->y;
+	int32_t min_d = tiles[n.y][n.x].d;
+	uint8_t minx = n.x;
+	uint8_t miny = n.y;
 
 	for (int i = -1; i <= 1; ++i) {
 		for (int j = -1; j <= 1; ++j) {
-			uint8_t x = (uint8_t)(n->x + i);
-			uint8_t y = (uint8_t)(n->y + j);
+			uint8_t x = (uint8_t)(n.x + i);
+			uint8_t y = (uint8_t)(n.y + j);
 
 
 			if (tiles[y][x].h != 0) {
@@ -348,16 +346,16 @@ move_dijk_nontunneling(WINDOW *const win, npc *const n)
 }
 
 static void
-move_dijk_tunneling(WINDOW *const win, npc *const n)
+move_dijk_tunneling(WINDOW *const win, npc &n)
 {
-	int32_t min_dt = tiles[n->y][n->x].dt;
-	uint8_t minx = n->x;
-	uint8_t miny = n->y;
+	int32_t min_dt = tiles[n.y][n.x].dt;
+	uint8_t minx = n.x;
+	uint8_t miny = n.y;
 
 	for (int i = -1; i <= 1; ++i) {
 		for (int j = -1; j <= 1; ++j) {
-			uint8_t x = (uint8_t)(n->x + i);
-			uint8_t y = (uint8_t)(n->y + j);
+			uint8_t x = (uint8_t)(n.x + i);
+			uint8_t y = (uint8_t)(n.y + j);
 
 			if (tiles[y][x].dt < min_dt) {
 				min_dt = tiles[y][x].dt;
@@ -399,21 +397,21 @@ gen_monster()
 }
 
 static enum pc_action
-turn_npc(WINDOW *const win, npc *const n)
+turn_npc(WINDOW *const win, npc &n)
 {
-	if (n->type & PLAYER_TYPE) {
+	if (n.type & PLAYER_TYPE) {
 		return turn_pc(win, n);
 	}
 
-	if (n->type & ERRATIC && rr.rrand<int>(0, 1) == 0) {
+	if (n.type & ERRATIC && rr.rrand<int>(0, 1) == 0) {
 		uint8_t y, x;
 
 		do {
-			y = (uint8_t)(n->y + rr.rrand<int>(-1, 1));
-			x = (uint8_t)(n->x + rr.rrand<int>(-1, 1));
-		} while(!(n->type & TUNNELING) && tiles[y][x].h != 0);
+			y = (uint8_t)(n.y + rr.rrand<int>(-1, 1));
+			x = (uint8_t)(n.x + rr.rrand<int>(-1, 1));
+		} while(!(n.type & TUNNELING) && tiles[y][x].h != 0);
 
-		if (n->type & TUNNELING) {
+		if (n.type & TUNNELING) {
 			move_tunnel(win, n, y, x);
 		} else {
 			move_redraw(win, n, y, x);
@@ -422,7 +420,7 @@ turn_npc(WINDOW *const win, npc *const n)
 		return PC_NONE;
 	}
 
-	switch(n->type) {
+	switch(n.type) {
 	case 0x0:
 	case 0x8:
 	case 0x4:
@@ -453,13 +451,13 @@ turn_npc(WINDOW *const win, npc *const n)
 		 * use nontunneling dijk, remembered location
 		 * or use nontunneling dijk, telepathic towards player
 		 */
-		if (n->type & TELEPATHIC || pc_visible(n)) {
-			n->p_count = PERSISTANCE;
+		if (n.type & TELEPATHIC || pc_visible(n)) {
+			n.p_count = PERSISTANCE;
 		}
 
-		if (n->p_count != 0) {
+		if (n.p_count != 0) {
 			move_dijk_nontunneling(win, n);
-			n->p_count--;
+			n.p_count--;
 		}
 		break;
 	case 0x5:
@@ -470,27 +468,27 @@ turn_npc(WINDOW *const win, npc *const n)
 		 * tunnel: use tunneling dijk, remembered location
 		 * or tunnel: use tunneling dijk, telepathic towards player
 		 */
-		if (n->type & TELEPATHIC || pc_visible(n)) {
-			n->p_count = PERSISTANCE;
+		if (n.type & TELEPATHIC || pc_visible(n)) {
+			n.p_count = PERSISTANCE;
 		}
 
-		if (n->p_count != 0) {
+		if (n.p_count != 0) {
 			move_dijk_tunneling(win, n);
-			n->p_count--;
+			n.p_count--;
 		}
 		break;
 	default:
-		cerrx(1, "gen_monster invalid monster type %d", n->type);
+		cerrx(1, "gen_monster invalid monster type %d", n.type);
 	}
 
 	return PC_NONE;
 }
 
 static enum pc_action
-turn_pc(WINDOW *const win, npc *const n)
+turn_pc(WINDOW *const win, npc &n)
 {
-	uint8_t y = n->y;
-	uint8_t x = n->x;
+	uint8_t y = n.y;
+	uint8_t x = n.x;
 	bool exit = false;
 
 	while(!exit) {
@@ -588,7 +586,7 @@ turn_pc(WINDOW *const win, npc *const n)
 		}
 	}
 
-	if (tiles[y][x].h == 0 && (x != n->x || y != n->y)) {
+	if (tiles[y][x].h == 0 && (x != n.x || y != n.y)) {
 		move_redraw(win, n, y, x);
 		dijkstra();
 	}
