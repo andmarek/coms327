@@ -18,7 +18,7 @@ CFLAGS_END := -lncurses
 
 DIRTY = *.gcda *.gcno *.gcov *.out error vgcore.*
 
-src = dijk.cpp cerr.cpp floor.cpp gen.cpp io.cpp npc.cpp opal.cpp
+src = dijk.cpp cerr.cpp floor.cpp gen.cpp io.cpp npc.cpp rand.cpp opal.cpp
 hdr = dijk.h cerr.h floor.h gen.h globs.h io.h npc.h rand.h
 
 opal: $(src) $(hdr)
