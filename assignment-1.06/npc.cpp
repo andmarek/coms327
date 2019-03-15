@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <functional>
 #include <limits>
 #include <queue>
