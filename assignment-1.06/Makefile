@@ -1,20 +1,20 @@
-CC = g++
+CXX = g++
 
-CFLAGS := -g
-CFLAGS += -std=c++17 -pedantic
-CFLAGS += -Wextra -Wall -Wshadow -Wconversion
+CXXFLAGS := -g
+CXXFLAGS += -std=c++17 -pedantic
+CXXFLAGS += -Wextra -Wall -Wshadow -Wconversion
 
-CFLAGS += -ftrapv -fverbose-asm
-CFLAGS += -Wundef -Wcast-align=strict -Wstrict-overflow=5
-CFLAGS += -Wwrite-strings -Wcast-qual -Wformat=2
-CFLAGS += -Wswitch-enum -Wunreachable-code
-CFLAGS += -pthread
+CXXFLAGS += -ftrapv -fverbose-asm
+CXXFLAGS += -Wundef -Wcast-align=strict -Wstrict-overflow=5
+CXXFLAGS += -Wwrite-strings -Wcast-qual -Wformat=2
+CXXFLAGS += -Wswitch-enum -Wunreachable-code
+CXXFLAGS += -pthread
 
-FAST_CFLAGS := -O3 -std=c++17 -pedantic -pthread
+FAST_CXXFLAGS := -O3 -std=c++17 -pedantic -pthread
 
-BENCH_CFLAGS := -pg -fprofile-arcs -ftest-coverage -pthread
+BENCH_CXXFLAGS := -pg -fprofile-arcs -ftest-coverage -pthread
 
-CFLAGS_END := -lncurses
+CXXFLAGS_END := -lncurses
 
 DIRTY = *.gcda *.gcno *.gcov *.out error vgcore.*
 
@@ -22,13 +22,13 @@ src = dijk.cpp cerr.cpp floor.cpp gen.cpp io.cpp npc.cpp rand.cpp opal.cpp
 hdr = dijk.h cerr.h floor.h gen.h globs.h io.h npc.h rand.h
 
 opal: $(src) $(hdr)
-	$(CC) $(FAST_CFLAGS) -o opal.out $(src) $(CFLAGS_END)
+	$(CXX) $(FAST_CXXFLAGS) -o opal.out $(src) $(CXXFLAGS_END)
 
 debug:
-	$(CC) $(CFLAGS) -o opal.out $(src) $(CFLAGS_END)
+	$(CXX) $(CXXFLAGS) -o opal.out $(src) $(CXXFLAGS_END)
 
 bench:
-	$(CC) $(BENCH_CFLAGS) -o opal.out $(src) $(CFLAGS_END)
+	$(CXX) $(BENCH_CXXFLAGS) -o opal.out $(src) $(CXXFLAGS_END)
 
 clean:
 	rm -f $(DIRTY)

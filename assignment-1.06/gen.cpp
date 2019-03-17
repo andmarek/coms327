@@ -5,7 +5,7 @@
 static int constexpr NEW_ROOM_COUNT = 8;
 static int constexpr ROOM_RETRIES = 150;
 
-static void	init_fresh(WINDOW *const win);
+static void	init_fresh();
 
 static void	place_player();
 static int	valid_player(int const, int const);
@@ -13,19 +13,17 @@ static int	valid_player(int const, int const);
 void
 clear_tiles()
 {
-	uint8_t i, j;
-
-	for (i = 0; i < HEIGHT; ++i) {
-		for (j = 0; j < WIDTH; ++j) {
+	for (uint8_t i = 0; i < HEIGHT; ++i) {
+		for (uint8_t j = 0; j < WIDTH; ++j) {
 			tiles[i][j] = {};
 			tiles[i][j].x = j;
 			tiles[i][j].y = i;
 
 			if (i == 0 || j == 0 || i == HEIGHT - 1
 				|| j == WIDTH - 1) {
-				tiles[i][j].h = UINT8_MAX;
-				tiles[i][j].d = INT32_MAX;
-				tiles[i][j].dt = INT32_MAX;
+				tiles[i][j].h = std::numeric_limits<uint8_t>::max();
+				tiles[i][j].d = std::numeric_limits<int32_t>::max();
+				tiles[i][j].dt = std::numeric_limits<int32_t>::max();
 			} else {
 				tiles[i][j].c = ROCK;
 			}
@@ -34,7 +32,7 @@ clear_tiles()
 }
 
 void
-arrange_new(WINDOW *const win)
+arrange_new()
 {
 	room_count = NEW_ROOM_COUNT;
 	stair_up_count = rr.rrand<uint16_t>(1, (uint16_t)((room_count / 4) + 1));
@@ -44,70 +42,59 @@ arrange_new(WINDOW *const win)
 	stairs_up.resize(stair_up_count);
 	stairs_dn.resize(stair_dn_count);
 
-	init_fresh(win);
+	init_fresh();
 }
 
 void
-arrange_loaded(WINDOW *const win)
+arrange_loaded()
 {
-	for (auto &r : rooms) {
-		draw_room(win, &r);
+	for (auto const &r : rooms) {
+		draw_room(r);
 	}
 
 	for (auto const &s : stairs_up) {
 		tiles[s.y][s.x].c = STAIR_UP;
-		(void)mvwaddch(win, s.y, s.x, STAIR_UP);
 	}
 
 	for (auto const &s : stairs_dn) {
 		tiles[s.y][s.x].c = STAIR_DN;
-		(void)mvwaddch(win, s.y, s.x, STAIR_DN);
 	}
 
 	for (int i = 1; i < HEIGHT - 1; ++i) {
 		for (int j = 1; j < WIDTH - 1; ++j) {
 			if (tiles[i][j].h == 0 && tiles[i][j].c == ROCK) {
 				tiles[i][j].c = CORRIDOR;
-				(void)mvwaddch(win, i, j, CORRIDOR);
 			}
 		}
 	}
 }
 
 void
-arrange_renew(WINDOW *const win)
+arrange_renew()
 {
-	if (wclear(win) == ERR) {
-		cerrx(1, "arrange_renew clear");
-	}
-
-	(void)box(win, 0, 0);
-
 	clear_tiles();
 
 	rooms.clear();
 	stairs_up.clear();
 	stairs_dn.clear();
 
-	arrange_new(win);
+	arrange_new();
 }
 
 static void
-init_fresh(WINDOW *const win)
+init_fresh()
 {
 	std::size_t i = 0;
 	std::size_t retries = 0;
 
 	for (auto it = rooms.begin(); it != rooms.end()
 		&& retries < ROOM_RETRIES; ++it) {
-		gen_room(&*it);
-
-		if (!valid_room(&*it)) {
+		if (!gen_room(*it)) {
 			retries++;
 			it--;
 		} else {
 			i++;
-			draw_room(win, &*it);
+			draw_room(*it);
 		}
 	}
 
@@ -117,20 +104,19 @@ init_fresh(WINDOW *const win)
 		}
 
 		room_count = (uint16_t)i;
-
 		rooms.resize(room_count);
 	}
 
 	for (i = 0; i < room_count - 1U; ++i) {
-		draw_corridor(win, rooms[i], rooms[i+1]);
+		gen_corridor(rooms[i], rooms[i+1]);
 	}
 
 	for (auto &s : stairs_up) {
-		gen_draw_stair(win, &s, true);
+		gen_stair(s, true);
 	}
 
 	for (auto &s : stairs_dn) {
-		gen_draw_stair(win, &s, true);
+		gen_stair(s, true);
 	}
 
 	for (i = 1; i < HEIGHT - 1; ++i) {
@@ -143,7 +129,8 @@ init_fresh(WINDOW *const win)
 				tiles[i][j].h = 0;
 				break;
 			default:
-				tiles[i][j].h = rr.rrand<uint8_t>(1, UINT8_MAX-1U);
+				tiles[i][j].h = rr.rrand<uint8_t>(1,
+					std::numeric_limits<uint8_t>::max() - 1);
 			}
 		}
 	}

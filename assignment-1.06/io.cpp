@@ -6,17 +6,14 @@
 
 #include <sys/stat.h>
 
-#include <iostream>
-#include <string>
-
 #include "cerr.h"
 #include "globs.h"
 
-static std::string const DIRECTORY = "/.rlg327";
-static std::string const FILEPATH = "/dungeon";
+static char const *const DIRECTORY = "/.rlg327";
+static char const *const FILEPATH = "/dungeon";
 static int constexpr DF_L = 8;
 
-static std::string const MARK = "RLG327-S2019";
+static char const *const MARK = "RLG327-S2019";
 static int constexpr MARK_L = 12;
 
 static int
@@ -27,7 +24,7 @@ write_things(FILE *const f)
 		+ (stair_up_count * 2) + (stair_dn_count * 2)));
 
 	/* type marker */
-	if (fwrite(MARK.c_str(), MARK_L, 1, f) != 1) {
+	if (fwrite(MARK, MARK_L, 1, f) != 1) {
 		return -1;
 	}
 
@@ -150,7 +147,8 @@ save_dungeon()
 }
 
 static int
-load_things(FILE *const f) {
+load_things(FILE *const f)
+{
 	/* skip type marker, version, and size */
 	if (fseek(f, MARK_L + 2 * sizeof(uint32_t), SEEK_SET) == -1) {
 		return -1;

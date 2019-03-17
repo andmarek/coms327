@@ -3,10 +3,9 @@
 
 #include "globs.h"
 
-void	gen_room(room *const);
-bool	valid_room(room const *const);
-void	draw_room(WINDOW *const, room const *const);
-void	draw_corridor(WINDOW *const, room const, room const);
-void	gen_draw_stair(WINDOW *const, stair *const, bool const);
+bool	gen_room(room &);
+void	draw_room(room const &);
+void	gen_corridor(room const &, room const &);
+void	gen_stair(stair &, bool const);
 
 #endif /* ROOM_H */

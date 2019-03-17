@@ -10,6 +10,8 @@
 int constexpr WIDTH = 80;
 int constexpr HEIGHT = 21;
 
+int constexpr TUNNEL_STRENGTH = 85;
+
 char constexpr PLAYER = '@';
 char constexpr ROOM = '.';
 char constexpr CORRIDOR = '#';
@@ -51,13 +53,19 @@ public:
 	uint8_t	h; /* hardness */
 	chtype	c; /* character */
 
-	/* dijstra */
-	int32_t	d; /* non-tunneling distance cost */
-	int32_t dt; /* tunneling distance cost */
-	uint8_t	x; /* x position */
-	uint8_t	y; /* y position */
-	bool	vd; /* valid non-tunneling node available for processing */
-	bool	vdt; /* valid tunneling node available for processing */
+	uint8_t	x;
+	uint8_t	y;
+
+	/* dijkstra distance cost */
+	int32_t	d;
+	int32_t	dt;
+
+	/* dijkstra valid node */
+	bool	vd;
+	bool	vdt;
+
+	/* visited by PC */
+	bool	v;
 };
 
 extern ranged_random rr;

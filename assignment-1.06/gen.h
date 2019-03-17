@@ -1,13 +1,9 @@
 #ifndef GEN_H
 #define GEN_H
 
-#include <ncurses.h>
-
 void	clear_tiles();
-
-void	arrange_new(WINDOW *const);
-void	arrange_loaded(WINDOW *const);
-
-void	arrange_renew(WINDOW *const);
+void	arrange_new();
+void	arrange_loaded();
+void	arrange_renew();
 
 #endif /* GEN_H */

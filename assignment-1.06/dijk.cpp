@@ -7,11 +7,11 @@
 static void	dijkstra_d();
 static void	dijkstra_dt();
 
-constexpr static void	calc_cost_d(tile const &, tile &);
-constexpr static void	calc_cost_dt(tile const &, tile &);
+static void constexpr	calc_cost_d(tile const &, tile &);
+static void constexpr	calc_cost_dt(tile const &, tile &);
 
 struct compare_d {
-	constexpr bool
+	bool constexpr
 	operator() (tile const &a, tile const &b) const
 	{
 		return a.d > b.d;
@@ -19,7 +19,7 @@ struct compare_d {
 };
 
 struct compare_dt {
-	constexpr bool
+	bool constexpr
 	operator() (tile const &a, tile const &b) const
 	{
 		return a.dt > b.dt;
@@ -37,7 +37,7 @@ dijkstra()
 }
 
 static void
-dijkstra_d(void)
+dijkstra_d()
 {
 	std::vector<std::reference_wrapper<tile>> heap;
 
@@ -78,7 +78,7 @@ dijkstra_d(void)
 }
 
 static void
-dijkstra_dt(void)
+dijkstra_dt()
 {
 	std::vector<std::reference_wrapper<tile>> heap;
 	heap.reserve((HEIGHT - 1) * (WIDTH - 1));
@@ -116,7 +116,7 @@ dijkstra_dt(void)
 	}
 }
 
-constexpr static void
+static void constexpr
 calc_cost_d(tile const &a, tile &b)
 {
 	if (b.vd && b.d > a.d) {
@@ -124,10 +124,10 @@ calc_cost_d(tile const &a, tile &b)
 	}
 }
 
-constexpr static void
+static void constexpr
 calc_cost_dt(tile const &a, tile &b)
 {
-	if (b.vdt && b.dt > a.dt + a.h/85) {
-		b.dt = a.dt + 1 + a.h/85;
+	if (b.vdt && b.dt > a.dt + a.h/TUNNEL_STRENGTH) {
+		b.dt = a.dt + 1 + a.h/TUNNEL_STRENGTH;
 	}
 }

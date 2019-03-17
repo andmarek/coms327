@@ -12,7 +12,7 @@
 #include "io.h"
 #include "npc.h"
 
-std::string const PROGRAM_NAME = "opal";
+static char const *const PROGRAM_NAME = "opal";
 
 static struct option const long_opts[] = {
 	{"help", no_argument, NULL, 'h'},
@@ -128,29 +128,46 @@ main(int const argc, char *const argv[])
 			cerrx(1, "loading dungeon");
 		}
 
-		arrange_loaded(win);
+		arrange_loaded();
 	} else {
-		arrange_new(win);
+		arrange_new();
 	}
 
 	retry:
 	switch(turn_engine(win, nummon)) {
 	case TURN_DEATH:
 		std::this_thread::sleep_for(std::chrono::seconds(1));
+
 		print_deathscreen(win);
+
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+
 		break;
 	case TURN_NEXT:
-		arrange_renew(win);
+		if (wclear(win) == ERR) {
+			cerrx(1, "arrange_renew clear");
+		}
+
+		(void)box(win, 0, 0);
+
+		arrange_renew();
+
 		goto retry;
+
 		break;
 	case TURN_NONE:
 		cerrx(1, "turn_engine return value invalid");
+
 		break;
 	case TURN_QUIT:
 		break;
 	case TURN_WIN:
 		std::this_thread::sleep_for(std::chrono::seconds(1));
+
 		print_winscreen(win);
+
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+
 		break;
 	}
 
