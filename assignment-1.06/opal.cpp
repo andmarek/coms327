@@ -9,7 +9,6 @@
 #include "cerr.h"
 #include "gen.h"
 #include "globs.h"
-#include "io.h"
 #include "npc.h"
 
 static void	usage(int const, std::string const &);

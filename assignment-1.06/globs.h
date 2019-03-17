@@ -74,13 +74,4 @@ extern npc player;
 
 extern tile tiles[HEIGHT][WIDTH];
 
-extern uint16_t room_count;
-extern std::vector<room> rooms;
-
-extern uint16_t stair_up_count;
-extern uint16_t stair_dn_count;
-
-extern std::vector<stair> stairs_up;
-extern std::vector<stair> stairs_dn;
-
 #endif /* GLOBS_H */
