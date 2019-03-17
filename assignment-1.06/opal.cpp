@@ -12,6 +12,13 @@
 #include "io.h"
 #include "npc.h"
 
+static void	usage(int const, std::string const &);
+
+static void	print_deathscreen(WINDOW *const);
+static void	print_winscreen(WINDOW *const);
+
+static bool	is_number(std::string const &);
+
 static char const *const PROGRAM_NAME = "opal";
 
 static struct option const long_opts[] = {
@@ -22,26 +29,6 @@ static struct option const long_opts[] = {
 	{"seed", required_argument, NULL, 'z'},
 	{NULL, 0, NULL, 0}
 };
-
-ranged_random rr;
-
-uint16_t room_count;
-std::vector<room> rooms;
-
-uint16_t stair_up_count;
-uint16_t stair_dn_count;
-
-std::vector<stair> stairs_up;
-std::vector<stair> stairs_dn;
-
-tile tiles[HEIGHT][WIDTH];
-
-static void	usage(int const, std::string const &);
-
-static void	print_deathscreen(WINDOW *const);
-static void	print_winscreen(WINDOW *const);
-
-static bool	is_number(std::string const &);
 
 int
 main(int const argc, char *const argv[])
@@ -124,7 +111,7 @@ main(int const argc, char *const argv[])
 	clear_tiles();
 
 	if (load) {
-		if (load_dungeon() == -1) {
+		if (!load_dungeon()) {
 			cerrx(1, "loading dungeon");
 		}
 
@@ -140,7 +127,7 @@ main(int const argc, char *const argv[])
 
 		print_deathscreen(win);
 
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 		break;
 	case TURN_NEXT:
@@ -157,7 +144,6 @@ main(int const argc, char *const argv[])
 		break;
 	case TURN_NONE:
 		cerrx(1, "turn_engine return value invalid");
-
 		break;
 	case TURN_QUIT:
 		break;
@@ -166,7 +152,7 @@ main(int const argc, char *const argv[])
 
 		print_winscreen(win);
 
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 		break;
 	}
@@ -181,7 +167,7 @@ main(int const argc, char *const argv[])
 
 	std::cout << "seed: " << rr.seed << '\n';
 
-	if (save && save_dungeon() == -1) {
+	if (save && !save_dungeon()) {
 		cerrx(1, "saving dungeon");
 	}
 

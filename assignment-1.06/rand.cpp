@@ -1,5 +1,7 @@
 #include "rand.h"
 
+ranged_random rr;
+
 ranged_random::ranged_random()
 {
 	seed = std::random_device{}();

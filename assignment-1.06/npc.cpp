@@ -9,6 +9,48 @@
 #include "globs.h"
 #include "npc.h"
 
+static bool	valid_npc(uint8_t const, uint8_t const);
+
+static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
+static unsigned int	subu32(unsigned int const, unsigned int const);
+
+static bool	pc_visible(int const, int const);
+
+static unsigned int constexpr	limited_int_to_char(uint8_t const);
+
+static void	move_redraw(WINDOW *const, npc &, uint8_t const, uint8_t const);
+static void	move_tunnel(WINDOW *const, npc &, uint8_t const, uint8_t const);
+
+static void	move_straight(WINDOW *const, npc &);
+static void	move_dijk_nontunneling(WINDOW *const, npc &);
+static void	move_dijk_tunneling(WINDOW *const, npc &);
+
+static npc	gen_monster();
+
+enum pc_action {
+	PC_MONSTER_LIST,
+	PC_NEXT,
+	PC_NONE,
+	PC_QUIT
+};
+
+static enum pc_action	turn_npc(WINDOW *const, npc &);
+static enum pc_action	turn_pc(WINDOW *const, npc &);
+
+static void	monster_list(WINDOW *const, std::vector<npc> const &);
+
+static bool	viewable(int const, int const);
+static void	pc_viewbox(WINDOW *const, int const);
+
+class compare_npc {
+public:
+	bool constexpr
+	operator() (npc const &x, npc const &y) const
+	{
+		return x.turn > y.turn;
+	}
+};
+
 static int constexpr PLAYER_TYPE = 0x80;
 static int constexpr INTELLIGENT = 0x1;
 static int constexpr TELEPATHIC = 0x2;
@@ -29,49 +71,7 @@ static int constexpr KEY_ESC = 27;
 
 static int constexpr DEFAULT_LUMINANCE = 5;
 
-enum pc_action {
-	PC_MONSTER_LIST,
-	PC_NEXT,
-	PC_NONE,
-	PC_QUIT
-};
-
-static bool	valid_npc(uint8_t const, uint8_t const);
-
-static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
-static unsigned int	subu32(unsigned int const, unsigned int const);
-
-static bool	pc_visible(int const, int const);
-
-static unsigned int constexpr	limited_int_to_char(uint8_t const);
-
-static void	move_redraw(WINDOW *const, npc &, uint8_t const, uint8_t const);
-static void	move_tunnel(WINDOW *const, npc &, uint8_t const, uint8_t const);
-
-static void	move_straight(WINDOW *const, npc &);
-static void	move_dijk_nontunneling(WINDOW *const, npc &);
-static void	move_dijk_tunneling(WINDOW *const, npc &);
-
-static npc	gen_monster();
-
-static enum pc_action	turn_npc(WINDOW *const, npc &);
-static enum pc_action	turn_pc(WINDOW *const, npc &);
-
-static void	monster_list(WINDOW *const, std::vector<npc> const &);
-
-static bool	viewable(int const, int const);
-static void	pc_viewbox(WINDOW *const, int const);
-
 npc player;
-
-class compare_npc {
-public:
-	bool constexpr
-	operator() (npc const &x, npc const &y) const
-	{
-		return x.turn > y.turn;
-	}
-};
 
 enum turn_exit
 turn_engine(WINDOW *const win, unsigned int const nummon)
@@ -680,10 +680,14 @@ viewable(int const y, int const x)
 static void
 pc_viewbox(WINDOW *const win, int const lum)
 {
-	for (int i = subu32(player.x, lum) + 1; i <= player.x + lum
-		&& i >= 1 && i < WIDTH - 1; ++i) {
-		for (int j = subu32(player.y, lum) + 1; j <= player.y + lum
-			&& j >= 1 && j < HEIGHT - 1; ++j) {
+	int const start_x = subu32(player.x, lum) + 1;
+	int const end_x = player.x + lum;
+
+	int const start_y = subu32(player.y, lum) + 1;
+	int const end_y = player.y + lum;
+
+	for (int i = start_x; i <= end_x && i < WIDTH - 1; ++i) {
+		for (int j = start_y; j <= end_y && j < HEIGHT - 1; ++j) {
 			if (viewable(j, i)) {
 				chtype ch = (tiles[j][i].n == NULL)
 					? tiles[j][i].c

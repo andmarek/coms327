@@ -9,9 +9,9 @@ public:
 
 	ranged_random();
 
-	explicit ranged_random(std::string const &s);
+	explicit ranged_random(std::string const &);
 
-	explicit ranged_random(long unsigned int const s);
+	explicit ranged_random(long unsigned int const);
 
 	template<typename T> T
 	rrand(T a, T b)

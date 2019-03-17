@@ -2,13 +2,23 @@
 #include "floor.h"
 #include "globs.h"
 
+static void	init_fresh();
+static void	place_player();
+static int	valid_player(int const, int const);
+
 static int constexpr NEW_ROOM_COUNT = 8;
 static int constexpr ROOM_RETRIES = 150;
 
-static void	init_fresh();
+std::vector<stair> stairs_up;
+std::vector<stair> stairs_dn;
 
-static void	place_player();
-static int	valid_player(int const, int const);
+uint16_t room_count;
+std::vector<room> rooms;
+
+uint16_t stair_up_count;
+uint16_t stair_dn_count;
+
+tile tiles[HEIGHT][WIDTH];
 
 void
 clear_tiles()
@@ -26,6 +36,8 @@ clear_tiles()
 				tiles[i][j].dt = std::numeric_limits<int32_t>::max();
 			} else {
 				tiles[i][j].c = ROCK;
+				tiles[i][j].h = rr.rrand<uint8_t>(1,
+					std::numeric_limits<uint8_t>::max() - 1);
 			}
 		}
 	}
@@ -117,22 +129,6 @@ init_fresh()
 
 	for (auto &s : stairs_dn) {
 		gen_stair(s, true);
-	}
-
-	for (i = 1; i < HEIGHT - 1; ++i) {
-		for (std::size_t j = 1; j < WIDTH - 1; ++j) {
-			switch(tiles[i][j].c) {
-			case ROOM:
-			case CORRIDOR:
-			case STAIR_UP:
-			case STAIR_DN:
-				tiles[i][j].h = 0;
-				break;
-			default:
-				tiles[i][j].h = rr.rrand<uint8_t>(1,
-					std::numeric_limits<uint8_t>::max() - 1);
-			}
-		}
 	}
 
 	place_player();
