@@ -28,6 +28,7 @@ static void	move_dijk_tunneling(WINDOW *const, npc &);
 static void	gen_monster(npc &);
 
 static void	monster_list(WINDOW *const, std::vector<npc *> const &);
+static void	defog(WINDOW *const, std::vector<npc *> const &);
 
 static bool	viewable(int const, int const);
 static void	pc_viewbox(WINDOW *const, int const);
@@ -81,8 +82,9 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	std::priority_queue<npc, std::vector<std::reference_wrapper<npc>>, compare_npc> heap;
 	std::vector<npc *> monsters;
 
-	/* monster list window */
-	WINDOW *mwin;
+	/* monster list, defogged windows */
+	WINDOW *mwin, *fwin;
+
 	int32_t turn;
 	int alive = nummon;
 	enum turn_exit ret = TURN_NONE;
@@ -109,13 +111,16 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	dijkstra();
 
-	if ((mwin = newwin(HEIGHT, WIDTH, 0, 0)) == NULL) {
-		cerrx(1, "turn_engine newwin mwin");
+	if ((mwin = newwin(HEIGHT, WIDTH, 0, 0)) == NULL
+		|| (fwin = newwin(HEIGHT, WIDTH, 0, 0)) == NULL) {
+		cerrx(1, "turn_engine newwin mwin, fwin");
 	}
 
 	if (keypad(mwin, true) == ERR) {
 		cerrx(1, "keypad mwin");
 	}
+
+	(void)box(fwin, 0, 0);
 
 	pc_viewbox(win, DEFAULT_LUMINANCE);
 
@@ -125,15 +130,6 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 		if (n.type & PLAYER_TYPE && wrefresh(win) == ERR) {
 			cerrx(1, "turn_engine wrefresh");
-		}
-
-		if (alive <= 0) {
-			if (n.type & PLAYER_TYPE) {
-				ret = TURN_WIN;
-				goto exit;
-			}
-
-			continue;
 		}
 
 		monsters.erase(std::remove_if(monsters.begin(), monsters.end(),
@@ -146,6 +142,16 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 					return false;
 				}
 			}), monsters.end());
+
+		if (alive <= 0) {
+			if (n.type & PLAYER_TYPE) {
+				ret = TURN_WIN;
+				goto exit;
+			}
+
+			continue;
+		}
+
 
 		if (n.dead) {
 			if (n.type & PLAYER_TYPE) {
@@ -162,12 +168,18 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		retry:
 		switch(turn_npc(win, n)) {
 		case PC_DEFOG:
-			/* TODO defog */
+			defog(fwin, monsters);
+
+			if (touchwin(win) == ERR) {
+				cerrx(1, "touchwin fwin");
+			}
+
 			goto retry;
 		case PC_MONSTER_LIST:
 			monster_list(mwin, monsters);
+
 			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin");
+				cerrx(1, "touchwin mwin");
 			}
 
 			goto retry;
@@ -684,6 +696,28 @@ monster_list(WINDOW *const mwin, std::vector<npc *> const &monsters)
 			break;
 		}
 	}
+}
+
+static void
+defog(WINDOW *const fwin, std::vector<npc *> const &monsters)
+{
+	for (int x = 1; x < WIDTH - 1; ++x) {
+		for (int y = 1; y < HEIGHT - 1; ++y) {
+			mvwaddch(fwin, y, x, tiles[y][x].c);
+		}
+	}
+
+	for (auto const &n : monsters) {
+		mvwaddch(fwin, n->y, n->x, n->type_ch);
+	}
+
+	mvwaddch(fwin, player.y, player.x, player.type_ch);
+
+	if (wrefresh(fwin) == ERR) {
+		cerrx(1, "defog wrefresh");
+	}
+
+	wgetch(fwin);
 }
 
 static bool
