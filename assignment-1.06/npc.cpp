@@ -27,6 +27,11 @@ static void	move_dijk_tunneling(WINDOW *const, npc &);
 
 static void	gen_monster(npc &);
 
+static void	monster_list(WINDOW *const, std::vector<npc *> const &);
+
+static bool	viewable(int const, int const);
+static void	pc_viewbox(WINDOW *const, int const);
+
 enum pc_action {
 	PC_DEFOG,
 	PC_MONSTER_LIST,
@@ -38,11 +43,6 @@ enum pc_action {
 
 static enum pc_action	turn_npc(WINDOW *const, npc &);
 static enum pc_action	turn_pc(WINDOW *const, npc &);
-
-static void	monster_list(WINDOW *const, std::vector<npc *> const &);
-
-static bool	viewable(int const, int const);
-static void	pc_viewbox(WINDOW *const, int const);
 
 class compare_npc {
 public:
@@ -117,16 +117,23 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		cerrx(1, "keypad mwin");
 	}
 
+	pc_viewbox(win, DEFAULT_LUMINANCE);
+
 	while (!heap.empty()) {
 		npc &n = heap.top();
 		heap.pop();
 
-		if (n.type & PLAYER_TYPE) {
-			pc_viewbox(win, DEFAULT_LUMINANCE);
+		if (n.type & PLAYER_TYPE && wrefresh(win) == ERR) {
+			cerrx(1, "turn_engine wrefresh");
+		}
 
-			if (wrefresh(win) == ERR) {
-				cerrx(1, "turn_engine wrefresh");
+		if (alive <= 0) {
+			if (n.type & PLAYER_TYPE) {
+				ret = TURN_WIN;
+				goto exit;
 			}
+
+			continue;
 		}
 
 		monsters.erase(std::remove_if(monsters.begin(), monsters.end(),
@@ -139,11 +146,6 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 					return false;
 				}
 			}), monsters.end());
-
-		if (alive <= 0) {
-			ret = TURN_WIN;
-			goto exit;
-		}
 
 		if (n.dead) {
 			if (n.type & PLAYER_TYPE) {
@@ -164,8 +166,10 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 			goto retry;
 		case PC_MONSTER_LIST:
 			monster_list(mwin, monsters);
-			touchwin(win);
-			wrefresh(win);
+			if (touchwin(win) == ERR) {
+				cerrx(1, "touchwin");
+			}
+
 			goto retry;
 		case PC_NEXT:
 			ret = TURN_NEXT;
@@ -424,6 +428,7 @@ static enum pc_action
 turn_npc(WINDOW *const win, npc &n)
 {
 	if (n.type & PLAYER_TYPE) {
+		pc_viewbox(win, DEFAULT_LUMINANCE);
 		return turn_pc(win, n);
 	}
 
@@ -648,14 +653,16 @@ monster_list(WINDOW *const mwin, std::vector<npc *> const &monsters)
 			(void)mvwprintw(mwin, static_cast<int>(i + 1U), 2,
 				"%u.\t%c, %d %s and %d %s", i + cpos, n.type_ch,
 				abs(dy), dy > 0 ? "north" : "south",
-				abs(dx), dx > 0 ? "east" : "west");
+				abs(dx), dx > 0 ? "west" : "east");
 		}
 
 		for (; i < HEIGHT - 2; ++i) {
 			(void)mvwaddch(mwin, static_cast<int>(i + 1U), 2, '~');
 		}
 
-		wrefresh(mwin);
+		if (wrefresh(mwin) == ERR) {
+			cerrx(1, "monster_list wrefresh");
+		}
 
 		switch(wgetch(mwin)) {
 		case ERR:
