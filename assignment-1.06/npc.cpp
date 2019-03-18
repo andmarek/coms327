@@ -28,10 +28,12 @@ static void	move_dijk_tunneling(WINDOW *const, npc &);
 static npc	gen_monster();
 
 enum pc_action {
+	PC_DEFOG,
 	PC_MONSTER_LIST,
 	PC_NEXT,
 	PC_NONE,
-	PC_QUIT
+	PC_QUIT,
+	PC_TELE
 };
 
 static enum pc_action	turn_npc(WINDOW *const, npc &);
@@ -150,6 +152,9 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 		retry:
 		switch(turn_npc(win, n)) {
+		case PC_DEFOG:
+			/* TODO defog */
+			goto retry;
 		case PC_MONSTER_LIST:
 			monster_list(mwin, monsters);
 			touchwin(win);
@@ -163,6 +168,9 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		case PC_QUIT:
 			ret = TURN_QUIT;
 			goto exit;
+		case PC_TELE:
+			/* TODO teleport */
+			goto retry;
 		}
 
 		heap.push(n);
@@ -595,6 +603,12 @@ turn_pc(WINDOW *const win, npc &n)
 		case 'q':
 			/* quit game */
 			return PC_QUIT;
+		case 'f':
+			/* defog */
+			return PC_DEFOG;
+		case 't':
+			/* teleport */
+			return PC_TELE;
 		default:
 			exit = false;
 		}
