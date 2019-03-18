@@ -34,4 +34,4 @@ clean:
 	rm -f $(DIRTY)
 
 val:
-	valgrind --track-origins=yes ./opal.out
+	valgrind -v --track-origins=yes --log-file=error ./opal.out

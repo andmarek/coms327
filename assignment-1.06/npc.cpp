@@ -25,7 +25,7 @@ static void	move_straight(WINDOW *const, npc &);
 static void	move_dijk_nontunneling(WINDOW *const, npc &);
 static void	move_dijk_tunneling(WINDOW *const, npc &);
 
-static npc	gen_monster();
+static void	gen_monster(npc &);
 
 enum pc_action {
 	PC_DEFOG,
@@ -39,7 +39,7 @@ enum pc_action {
 static enum pc_action	turn_npc(WINDOW *const, npc &);
 static enum pc_action	turn_pc(WINDOW *const, npc &);
 
-static void	monster_list(WINDOW *const, std::vector<npc> const &);
+static void	monster_list(WINDOW *const, std::vector<npc *> const &);
 
 static bool	viewable(int const, int const);
 static void	pc_viewbox(WINDOW *const, int const);
@@ -79,12 +79,12 @@ enum turn_exit
 turn_engine(WINDOW *const win, unsigned int const nummon)
 {
 	std::priority_queue<npc, std::vector<std::reference_wrapper<npc>>, compare_npc> heap;
-	std::vector<npc> monsters;
+	std::vector<npc *> monsters;
 
 	/* monster list window */
 	WINDOW *mwin;
 	int32_t turn;
-	unsigned int alive = nummon;
+	int alive = nummon;
 	enum turn_exit ret = TURN_NONE;
 
 	monsters.resize(nummon);
@@ -99,11 +99,12 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	heap.push(player);
 
-	for (auto &npc : monsters) {
-		npc = gen_monster();
-		tiles[npc.y][npc.x].n = &npc;
+	for (auto &n: monsters) {
+		n = new npc();
+		gen_monster(*n);
+		tiles[n->y][n->x].n = n;
 
-		heap.push(npc);
+		heap.push(*n);
 	}
 
 	dijkstra();
@@ -128,7 +129,18 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 			}
 		}
 
-		if (alive == 0) {
+		monsters.erase(std::remove_if(monsters.begin(), monsters.end(),
+			[&alive](auto o)
+			{
+				if (o->dead) {
+					alive--;
+					return true;
+				} else {
+					return false;
+				}
+			}), monsters.end());
+
+		if (alive <= 0) {
 			ret = TURN_WIN;
 			goto exit;
 		}
@@ -139,11 +151,6 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 				goto exit;
 			}
 
-			monsters.erase(std::remove_if(monsters.begin(),
-				monsters.end(),
-				[&n](npc const &o) { return &o == &n; }),
-				monsters.end());
-			alive--;
 			continue;
 		}
 
@@ -390,11 +397,10 @@ move_dijk_tunneling(WINDOW *const win, npc &n)
 	move_tunnel(win, n, miny, minx);
 }
 
-static npc
-gen_monster()
+static void
+gen_monster(npc &n)
 {
 	uint8_t x, y;
-	npc n;
 
 	do {
 		x = rr.rrand<uint8_t>(1, WIDTH - 2);
@@ -412,10 +418,6 @@ gen_monster()
 	n.dead = false;
 
 	n.type_ch = limited_int_to_char(n.type);
-
-	tiles[y][x].n = &n;
-
-	return n;
 }
 
 static enum pc_action
@@ -623,7 +625,7 @@ turn_pc(WINDOW *const win, npc &n)
 }
 
 static void
-monster_list(WINDOW *const mwin, std::vector<npc> const &monsters)
+monster_list(WINDOW *const mwin, std::vector<npc *> const &monsters)
 {
 	std::vector<npc>::size_type cpos = 0;
 	std::size_t i;
@@ -639,7 +641,7 @@ monster_list(WINDOW *const mwin, std::vector<npc> const &monsters)
 			"[arrow keys to scroll; ESC to exit]");
 
 		for (i = 0; i < HEIGHT - 2 && i + cpos < monsters.size(); ++i) {
-			npc n = monsters[i + cpos];
+			npc n = *monsters[i + cpos];
 			int dx = player.x - n.x;
 			int dy = player.y - n.y;
 
