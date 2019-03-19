@@ -208,7 +208,7 @@ print_deathscreen(WINDOW *const win)
 		"\t\t-- McCoy, stardate 3468.1");
 	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 4,
 		"You've died. Game over.");
-	(void)mvwprintw(win, HEIGHT - 1, 2, "[ Press any key to exit ]");
+	(void)mvwprintw(win, HEIGHT - 1, 2, "[ press any key to exit ]");
 
 	if (wrefresh(win) == ERR) {
 		cerrx(1, "wrefresh on deathscreen");
@@ -237,7 +237,7 @@ print_winscreen(WINDOW *const win)
 	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 12,
 		"\t\t-- Kirk, \"A Taste of Armageddon\", stardate 3193.0");
 	(void)mvwprintw(win, HEIGHT / 2 + 4, WIDTH / 12, "You've won. Game over.");
-	(void)mvwprintw(win, HEIGHT - 1, 2, "[ Press any key to exit ]");
+	(void)mvwprintw(win, HEIGHT - 1, 2, "[ press any key to exit ]");
 
 	if (wrefresh(win) == ERR) {
 		cerrx(1, "wrefresh on winscreen");

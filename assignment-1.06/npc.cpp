@@ -28,7 +28,11 @@ static void	move_dijk_tunneling(WINDOW *const, npc &);
 static void	gen_monster(npc &);
 
 static void	monster_list(WINDOW *const, std::vector<npc *> const &);
+
 static void	defog(WINDOW *const, std::vector<npc *> const &);
+
+static void	crosshair(WINDOW *const, uint8_t const, uint8_t const);
+static bool	teleport(WINDOW *const);
 
 static bool	viewable(int const, int const);
 static void	pc_viewbox(WINDOW *const, int const);
@@ -192,8 +196,17 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 			ret = TURN_QUIT;
 			goto exit;
 		case PC_TELE:
-			/* TODO teleport */
-			goto retry;
+			bool act = teleport(win);
+
+			if (touchwin(win) == ERR) {
+				cerrx(1, "touchwin twin");
+			}
+
+			if (act) {
+				break;
+			} else {
+				goto retry;
+			}
 		}
 
 		heap.push(n);
@@ -201,7 +214,13 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	exit:
 
-	delwin(mwin);
+	if (delwin(mwin) == ERR) {
+		cerrx(1, "turn_engine delwin mwin");
+	}
+
+	if (delwin(fwin) == ERR) {
+		cerrx(1, "turn_engine delwin fwin");
+	}
 
 	return ret;
 }
@@ -645,7 +664,6 @@ static void
 monster_list(WINDOW *const mwin, std::vector<npc *> const &monsters)
 {
 	std::vector<npc>::size_type cpos = 0;
-	std::size_t i;
 
 	while(1) {
 		if (wclear(mwin) == ERR) {
@@ -655,8 +673,9 @@ monster_list(WINDOW *const mwin, std::vector<npc *> const &monsters)
 		(void)box(mwin, 0, 0);
 
 		(void)mvwprintw(mwin, HEIGHT - 1, 2,
-			"[arrow keys to scroll; ESC to exit]");
+			"[ arrow keys to scroll; ESC to exit ]");
 
+		std::size_t i;
 		for (i = 0; i < HEIGHT - 2 && i + cpos < monsters.size(); ++i) {
 			npc n = *monsters[i + cpos];
 			int dx = player.x - n.x;
@@ -690,7 +709,7 @@ monster_list(WINDOW *const mwin, std::vector<npc *> const &monsters)
 				cpos = monsters.size() - 1;
 			}
 			break;
-		case 27:
+		case KEY_ESC:
 			return;
 		default:
 			break;
@@ -703,21 +722,183 @@ defog(WINDOW *const fwin, std::vector<npc *> const &monsters)
 {
 	for (int x = 1; x < WIDTH - 1; ++x) {
 		for (int y = 1; y < HEIGHT - 1; ++y) {
-			mvwaddch(fwin, y, x, tiles[y][x].c);
+			(void)mvwaddch(fwin, y, x, tiles[y][x].c);
 		}
 	}
 
 	for (auto const &n : monsters) {
-		mvwaddch(fwin, n->y, n->x, n->type_ch);
+		(void)mvwaddch(fwin, n->y, n->x, n->type_ch);
 	}
 
-	mvwaddch(fwin, player.y, player.x, player.type_ch);
+	(void)mvwaddch(fwin, player.y, player.x, player.type_ch);
+
+	(void)mvwprintw(fwin, HEIGHT - 1, 2, "[ press any key to exit ]");
 
 	if (wrefresh(fwin) == ERR) {
 		cerrx(1, "defog wrefresh");
 	}
 
-	wgetch(fwin);
+	if (wgetch(fwin) == ERR) {
+		cerrx(1, "defog wgetch ERR");
+	}
+}
+
+static void
+crosshair(WINDOW *const twin, uint8_t const y, uint8_t const x)
+{
+	for (int i = 1; i < HEIGHT - 1; ++i) {
+		if (i != y) {
+			(void)mvwaddch(twin, i, x, ACS_VLINE);
+		}
+	}
+
+	for (int i = 1; i < WIDTH - 1; ++i) {
+		if (i != x) {
+			(void)mvwaddch(twin, y, i, ACS_HLINE);
+		}
+	}
+
+	(void)mvwaddch(twin, y, 0, ACS_LTEE);
+	(void)mvwaddch(twin, y, WIDTH - 1, ACS_RTEE);
+	(void)mvwaddch(twin, 0, x, ACS_TTEE);
+	(void)mvwaddch(twin, HEIGHT - 1, x, ACS_BTEE);
+
+	(void)mvwaddch(twin, y + 1, x + 0, ACS_TTEE);
+	(void)mvwaddch(twin, y - 1, x + 0, ACS_BTEE);
+	(void)mvwaddch(twin, y + 0, x - 1, ACS_RTEE);
+	(void)mvwaddch(twin, y + 0, x + 1, ACS_LTEE);
+
+	(void)mvwaddch(twin, y - 1, x - 1, ACS_ULCORNER);
+	(void)mvwaddch(twin, y - 1, x + 1, ACS_URCORNER);
+	(void)mvwaddch(twin, y + 1, x - 1, ACS_LLCORNER);
+	(void)mvwaddch(twin, y + 1, x + 1, ACS_LRCORNER);
+}
+
+static bool
+teleport(WINDOW *const win)
+{
+	WINDOW *twin;
+	uint8_t y = player.y;
+	uint8_t x = player.x;
+	bool ret = true;
+
+	while(1) {
+		if ((twin = dupwin(win)) == NULL) {
+			cerrx(1, "crosshair dupwin");
+		}
+
+		if (touchwin(twin) == ERR) {
+			cerrx(1, "teleport touchwin");
+		}
+
+		crosshair(twin, y, x);
+
+		(void)mvwprintw(twin, HEIGHT - 1, 2,
+			"[ PC control keys; 'r' for random location; "
+			"'t' to teleport; ESC to exit ]");
+
+
+		if (wrefresh(twin) == ERR) {
+			cerrx(1, "teleport wrefresh");
+		}
+
+		switch(wgetch(win)) {
+		case ERR:
+			cerrx(1, "teleport wgetch ERR");
+			break;
+		case KEY_HOME:
+		case KEY_A1:
+		case '7':
+		case 'y':
+			/* up left */
+			y--;
+			x--;
+			break;
+		case KEY_UP:
+		case '8':
+		case 'k':
+			/* up */
+			y--;
+			break;
+		case KEY_PPAGE:
+		case KEY_A3:
+		case '9':
+		case 'u':
+			/* up right */
+			y--;
+			x++;
+			break;
+		case KEY_RIGHT:
+		case '6':
+		case 'l':
+			/* right */
+			x++;
+			break;
+		case KEY_NPAGE:
+		case KEY_C3:
+		case '3':
+		case 'n':
+			/* down right */
+			y++;
+			x++;
+			break;
+		case KEY_DOWN:
+		case '2':
+		case 'j':
+			/* down */
+			y++;
+			break;
+		case KEY_END:
+		case KEY_C1:
+		case '1':
+		case 'b':
+			/* down left */
+			y++;
+			x--;
+			break;
+		case KEY_LEFT:
+		case '4':
+		case 'h':
+			/* left */
+			x--;
+			break;
+		case 'r':
+			/* random teleport location */
+			x = rr.rrand<uint8_t>(2, WIDTH - 1);
+			y = rr.rrand<uint8_t>(2, HEIGHT - 1);
+			break;
+		case 't':
+			/* complete teleport */
+			tiles[y][x].v = true;
+			move_redraw(win, player, y, x);
+			goto exit;
+		case KEY_ESC:
+			ret = false;
+			goto exit;
+		default:
+			break;
+		}
+
+		if (x >= WIDTH - 1) {
+			x = WIDTH - 2;
+		} else if (x < 1) {
+			x = 1;
+		}
+
+		if (y >= HEIGHT - 1) {
+			y = HEIGHT - 2;
+		} else if (y < 1) {
+			y = 1;
+		}
+	}
+
+	exit:
+
+	if (delwin(twin) == ERR) {
+		cerrx(1, "teleport delwin");
+	}
+
+	return ret;
 }
 
 static bool
@@ -746,7 +927,7 @@ pc_viewbox(WINDOW *const win, int const lum)
 	for (int i = start_x; i <= end_x && i < WIDTH - 1; ++i) {
 		for (int j = start_y; j <= end_y && j < HEIGHT - 1; ++j) {
 			if (viewable(j, i)) {
-				chtype ch = (tiles[j][i].n == NULL)
+				chtype const ch = (tiles[j][i].n == NULL)
 					? tiles[j][i].c
 					: tiles[j][i].n->type_ch;
 				tiles[j][i].v = true;
