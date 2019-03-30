@@ -1,0 +1,11 @@
+*.gcda
+*.gcno
+*.gcov
+*.out
+*.swp
+error
+lex.yy.c
+vgcore.*
+y.tab.c
+y.tab.h
+

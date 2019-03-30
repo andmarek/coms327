@@ -1,0 +1,3 @@
+OPAL's Playable Almost Indefectibly. Get flag info using ./opal.out -h.
+
+Requires support for C++17 and POSIX threads.
