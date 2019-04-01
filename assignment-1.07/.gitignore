@@ -5,6 +5,7 @@
 *.swp
 *.tab.c
 *.tab.h
+*.txt
 error
 lex.yy.c
 vgcore.*

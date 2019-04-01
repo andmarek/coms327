@@ -5,30 +5,56 @@
 
 %option noyywrap
 
-S	[A-Za-z0-9+'\",]
+S	[A-Za-z0-9+'\",(){}\[\]]
 
-COLORS	RED|GREEN|BLUE|CYAN|YELLOW|MAGENTA|WHITE|BLACK
-ABILS	SMART|TELE|TUNNEL|ERRATIC|PASS|PICKUP|DESTROY|UNIQ|BOSS
+COLORS	BLACK|BLUE|CYAN|GREEN|MAGENTA|RED|WHITE|YELLOW
+ABILS	BOSS|DESTROY|ERRATIC|PASS|PICKUP|SMART|TELE|TUNNEL|UNIQ
+
+TYPES_1	AMMUNITION|AMULET|ARMOR|BOOK|BOOTS|CLOAK|CONTAINER|FLASK|FOOD|GLOVES
+TYPES_2	GOLD|HELMET|LIGHT|OFFHAND|RANGED|RING|SCROLL|WAND|WEAPON
+
+TYPES	{TYPES_1}|{TYPES_2}
+
+BOOLEAN	TRUE|FALSE
 
 %%
 
-^"RLG327 MONSTER DESCRIPTION 1"$	return BEGIN_FILE;
+^"RLG327 MONSTER DESCRIPTION 1"$	npc = true; return BEGIN_MONSTER_FILE;
+^"RLG327 OBJECT DESCRIPTION 1"$		obj = true; return BEGIN_OBJECT_FILE;
 
 ^"BEGIN MONSTER"$	{ c_npc = {}; return BEGIN_MONSTER; }
-^"END"$	{ npcs_parsed.push_back(c_npc); return END_MONSTER; }
+^"BEGIN OBJECT"$	{ c_obj = {}; return BEGIN_OBJECT; }
 
-^NAME	return NAME;
-^SYMB	return SYMB;
+^"END"$	{
+		if (npc) npcs_parsed.push_back(c_npc);
+		if (obj) objs_parsed.push_back(c_obj);
+		return END;
+	}
+
 ^COLOR	return COLOR;
-^SPEED	return SPEED;
 ^DAM	return DAM;
-^HP	return HP;
-^ABIL	return ABIL;
-^RRTY	return RRTY;
 ^DESC	return DESC;
+^NAME	return NAME;
+^RRTY	return RRTY;
+^SPEED	return SPEED;
 
-{COLORS}	{ yylval.str = yytext; return COLORS; }
+^ABIL	return ABIL;
+^HP	return HP;
+^SYMB	return SYMB;
+
+^ART	return ART;
+^ATTR	return ATTR;
+^DEF	return DEF;
+^DODGE	return DODGE;
+^HIT	return HIT;
+^TYPE	return TYPE;
+^VAL	return VAL;
+^WEIGHT	return WEIGHT;
+
 {ABILS}		{ yylval.str = yytext; return ABILS; }
+{BOOLEAN}	{ yylval.str = yytext; return BOOLEAN; }
+{COLORS}	{ yylval.str = yytext; return COLORS; }
+{TYPES}		{ yylval.str = yytext; return TYPES; }
 
 {S}+	{ yylval.str = yytext; return STR; }
 

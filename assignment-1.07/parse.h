@@ -5,26 +5,26 @@
 #include <vector>
 
 enum color {
-	red,
-	green,
+	black,
 	blue,
 	cyan,
-	yellow,
+	green,
 	magenta,
+	red,
 	white,
-	black
+	yellow
 };
 
 enum ability {
-	smart,
-	tele,
-	tunnel,
+	boss,
+	destroy,
 	erratic,
 	pass,
 	pickup,
-	destroy,
-	uniq,
-	boss
+	smart,
+	tele,
+	tunnel,
+	uniq
 };
 
 struct dice {
@@ -34,24 +34,72 @@ struct dice {
 };
 
 struct parser_npc {
-	std::string		name;
-	std::string		desc;
+	std::vector<ability>	abils;
 	std::vector<color>	colors;
-	struct dice		speed;
-	std::vector<ability>	abilities;
-	struct dice		hp;
 	struct dice		dam;
-	char			symb;
+	std::string		desc;
+	struct dice		hp;
+	std::string		name;
 	int			rrty;
+	struct dice		speed;
+	char			symb;
 };
+
+enum type {
+	ammunition,
+	amulet,
+	armor,
+	book,
+	boots,
+	cloak,
+	container,
+	flask,
+	food,
+	gloves,
+	gold,
+	helmet,
+	light,
+	offhand,
+	ranged,
+	ring,
+	scroll,
+	wand,
+	weapon,
+};
+
+struct parser_obj {
+	struct dice		attr;
+	std::vector<color>	colors;
+	struct dice		dam;
+	struct dice		def;
+	std::string		desc;
+	struct dice		dodge;
+	struct dice		hit;
+	std::string		name;
+	int			rrty;
+	struct dice		speed;
+	type			obj_type;
+	struct dice		val;
+	struct dice		weight;
+
+	bool			art;
+};
+
+extern bool npc;
+extern bool obj;
 
 extern std::vector<parser_npc> npcs_parsed;
 extern parser_npc c_npc;
+
+extern std::vector<parser_obj> objs_parsed;
+extern parser_obj c_obj;
 
 void	parse_dice(struct dice *const, char *const);
 void	read_desc(std::string &);
 
 enum color	parse_color(char const *const);
 enum ability	parse_ability(char const *const);
+enum type	parse_type(char const *const);
+bool		parse_boolean(char const *const);
 
 #endif /* PARSE_H */
