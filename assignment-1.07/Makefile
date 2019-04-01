@@ -37,12 +37,12 @@ clean:
 val:
 	valgrind -v --track-origins=yes --log-file=error ./opal.out
 
-yl-monster-debug: monster.l monster.y
-	lex -v -d monster.l
-	yacc -v -d monster.y
-	$(CXX) -g -Wextra -Wall -o monster.out y.tab.c lex.yy.c cerr.cpp
+yl-parse-debug: parse.l parse.y parse.cpp
+	lex -v -d parse.l
+	yacc -v -d parse.y
+	$(CXX) -g -Wextra -Wall -o parse.out y.tab.c lex.yy.c cerr.cpp parse.cpp
 
-yl-monster: monster.l monster.y
-	lex --fast monster.l
-	yacc -d -l monster.y
-	$(CXX) -O3 -o monster.out y.tab.c lex.yy.c cerr.cpp
+yl-parse: parse.l parse.y parse.cpp
+	lex --fast parse.l
+	yacc -d -l parse.y
+	$(CXX) -O3 -o parse.out y.tab.c lex.yy.c cerr.cpp parse.cpp

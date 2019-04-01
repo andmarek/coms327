@@ -1,8 +1,8 @@
-#ifndef MONSTER_H
-#define MONSTER_H
+#ifndef PARSE_H
+#define PARSE_H
 
-#include <vector>
 #include <string>
+#include <vector>
 
 enum color {
 	red,
@@ -33,7 +33,7 @@ struct dice {
 	int	sides;
 };
 
-struct monster {
+struct parser_npc {
 	std::string		name;
 	std::string		desc;
 	std::vector<color>	colors;
@@ -45,7 +45,13 @@ struct monster {
 	int			rrty;
 };
 
-extern std::vector<struct monster> npcs_parsed;
-extern struct monster c_npc;
+extern std::vector<parser_npc> npcs_parsed;
+extern parser_npc c_npc;
 
-#endif /* MONSTER_H */
+void	parse_dice(struct dice *const, char *const);
+void	read_desc(std::string &);
+
+enum color	parse_color(char const *const);
+enum ability	parse_ability(char const *const);
+
+#endif /* PARSE_H */

@@ -1,7 +1,9 @@
 %{
-#include "monster.h"
+#include "parse.h"
 #include "y.tab.h"
 %}
+
+%option noyywrap
 
 S	[A-Za-z0-9+'\",]
 
@@ -33,9 +35,3 @@ ABILS	SMART|TELE|TUNNEL|ERRATIC|PASS|PICKUP|DESTROY|UNIQ|BOSS
 .|\n	;
 
 %%
-
-int
-yywrap(void)
-{
-	return 1;
-}
