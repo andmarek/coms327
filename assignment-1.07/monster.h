@@ -4,8 +4,6 @@
 #include <vector>
 #include <string>
 
-void	read_desc(std::string &);
-
 enum color {
 	red,
 	green,

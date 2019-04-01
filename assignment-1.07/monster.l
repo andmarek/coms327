@@ -3,11 +3,10 @@
 #include "y.tab.h"
 %}
 
-SP	[A-Za-z0-9+'\",]
-WS	[ \t\v\n\f]
+S	[A-Za-z0-9+'\",]
 
-COLORS	(RED|GREEN|BLUE|CYAN|YELLOW|MAGENTA|WHITE|BLACK)
-ABILS	(SMART|TELE|TUNNEL|ERRATIC|PASS|PICKUP|DESTROY|UNIQ|BOSS)
+COLORS	RED|GREEN|BLUE|CYAN|YELLOW|MAGENTA|WHITE|BLACK
+ABILS	SMART|TELE|TUNNEL|ERRATIC|PASS|PICKUP|DESTROY|UNIQ|BOSS
 
 %%
 
@@ -24,16 +23,14 @@ ABILS	(SMART|TELE|TUNNEL|ERRATIC|PASS|PICKUP|DESTROY|UNIQ|BOSS)
 ^HP	return HP;
 ^ABIL	return ABIL;
 ^RRTY	return RRTY;
+^DESC	return DESC;
 
-^DESC	{ read_desc(c_npc.desc); return DESC; }
+{COLORS}	{ yylval.str = yytext; return COLORS; }
+{ABILS}		{ yylval.str = yytext; return ABILS; }
 
-{COLORS}	{ yylval.str = strdup(yytext); return COLORS; }
-{ABILS}		{ yylval.str = strdup(yytext); return ABILS; }
+{S}+	{ yylval.str = yytext; return STR; }
 
-{SP}+	{ yylval.str = strdup(yytext); return STR; }
-
-{WS}+	;
-.	;
+.|\n	;
 
 %%
 

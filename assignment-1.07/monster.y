@@ -36,14 +36,14 @@ keywords
 
 keyword
 	: NAME name
-	| SYMB STR	{ c_npc.symb = $2[0]; free($2); }
+	| SYMB STR	{ c_npc.symb = $2[0]; }
 	| COLOR color
-	| DESC		/* c_npc.desc is handled in read_desc() */
-	| SPEED STR	{ parse_dice(&c_npc.speed, $2); free($2); }
-	| DAM STR	{ parse_dice(&c_npc.dam, $2); free($2); }
-	| HP STR	{ parse_dice(&c_npc.hp, $2); free($2); }
+	| DESC		{ read_desc(c_npc.desc); }
+	| SPEED STR	{ parse_dice(&c_npc.speed, $2); }
+	| DAM STR	{ parse_dice(&c_npc.dam, $2); }
+	| HP STR	{ parse_dice(&c_npc.hp, $2); }
 	| ABIL abil
-	| RRTY STR	{ c_npc.rrty = atoi($2); free($2); }
+	| RRTY STR	{ c_npc.rrty = atoi($2); }
 	;
 
 name
@@ -52,13 +52,13 @@ name
 	;
 
 color
-	: COLORS	{ c_npc.colors.push_back(parse_color($1)); free($1); }
-	| color COLORS	{ c_npc.colors.push_back(parse_color($2)); free($2); }
+	: COLORS	{ c_npc.colors.push_back(parse_color($1)); }
+	| color COLORS	{ c_npc.colors.push_back(parse_color($2)); }
 	;
 
 abil
-	: ABILS		{ c_npc.abilities.push_back(parse_ability($1)); free ($1); }
-	| abil ABILS	{ c_npc.abilities.push_back(parse_ability($2)); free ($2); }
+	: ABILS		{ c_npc.abilities.push_back(parse_ability($1)); }
+	| abil ABILS	{ c_npc.abilities.push_back(parse_ability($2)); }
 	;
 
 %%
@@ -67,6 +67,7 @@ abil
 
 #include <cstring>
 #include <iostream>
+#include <string>
 #include <unordered_map>
 
 #include "cerr.h"
@@ -98,38 +99,19 @@ static std::unordered_map<std::string, enum ability> const ability_map = {
 std::vector<struct monster> npcs_parsed;
 struct monster c_npc;
 
-extern int	yylex();
+constexpr static int const line_max = 77;
 
+extern int	yylex();
 static void	parse_dice(struct dice *const, char *const);
+static void	read_desc(std::string &);
 
 static enum color	parse_color(char const *const);
 static enum ability	parse_ability(char const *const);
-
-constexpr static int const line_max = 77;
 
 void
 yyerror(char const *const s)
 {
 	cerrx(2, "%s", s);
-}
-
-void
-read_desc(std::string &desc)
-{
-	std::string line;
-
-	while (std::getline(std::cin, line)) {
-		if (line == ".") {
-			break;
-		} else if (line.length() > line_max) {
-			cerrx(2, "desc line too long (%d)", line.length());
-		}
-
-		desc += line;
-		desc.push_back('\n');
-	}
-
-	desc.pop_back();
 }
 
 int
@@ -186,6 +168,25 @@ parse_dice(struct dice *const d, char *const s)
 	}
 
 	d->sides = std::atoi(p);
+}
+
+static void
+read_desc(std::string &desc)
+{
+	std::string line;
+
+	while (std::getline(std::cin, line)) {
+		if (line == ".") {
+			break;
+		} else if (line.length() > line_max) {
+			cerrx(2, "desc line too long (%d)", line.length());
+		}
+
+		desc += line;
+		desc.push_back('\n');
+	}
+
+	desc.pop_back();
 }
 
 static enum color
