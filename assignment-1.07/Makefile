@@ -16,7 +16,8 @@ BENCH_CXXFLAGS := -pg -fprofile-arcs -ftest-coverage -pthread
 
 CXXFLAGS_END := -lncurses
 
-DIRTY = *.gcda *.gcno *.gcov *.out error lex.yy.c vgcore.* y.tab.c y.tab.h
+DIRTY := *.gcda *.gcno *.gcov *.out error vgcore.*
+DIRTY += *.tab.c *.tab.h lex.yy.c y.dot y.output
 
 src = dijk.cpp cerr.cpp floor.cpp gen.cpp npc.cpp rand.cpp opal.cpp
 hdr = dijk.h cerr.h floor.h gen.h globs.h npc.h rand.h
@@ -35,3 +36,13 @@ clean:
 
 val:
 	valgrind -v --track-origins=yes --log-file=error ./opal.out
+
+yl-monster-debug: monster.l monster.y
+	lex -v -d monster.l
+	yacc -v -d monster.y
+	$(CXX) -g -Wextra -Wall -o monster.out y.tab.c lex.yy.c cerr.cpp
+
+yl-monster: monster.l monster.y
+	lex --fast monster.l
+	yacc -d -l monster.y
+	$(CXX) -O3 -o monster.out y.tab.c lex.yy.c cerr.cpp
