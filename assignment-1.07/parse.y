@@ -1,4 +1,5 @@
 %{
+#include "cerr.h"
 #include "parse.h"
 extern int	yylex();
 extern void	yyerror(char const *const);
@@ -52,7 +53,13 @@ npc_keyword
 	| DESC		{ read_desc(c_npc.desc); }
 	| HP STR	{ parse_dice(&c_npc.hp, $2); }
 	| NAME name
-	| RRTY STR	{ c_npc.rrty = atoi($2); }
+	| RRTY STR	{
+				c_npc.rrty = atoi($2);
+				if (c_npc.rrty < 1 || c_npc.rrty > 100) {
+					cerrx(2, "rrty '%d' invalid: out of "
+						"bounds [1, 100]", c_npc.rrty);
+				}
+			}
 	| SPEED STR	{ parse_dice(&c_npc.speed, $2); }
 	| SYMB STR	{ c_npc.symb = $2[0]; }
 	;
@@ -86,7 +93,13 @@ obj_keyword
 	| DODGE STR	{ parse_dice(&c_obj.dodge, $2); }
 	| HIT STR	{ parse_dice(&c_obj.hit, $2); }
 	| NAME name
-	| RRTY STR	{ c_npc.rrty = atoi($2); }
+	| RRTY STR	{
+				c_obj.rrty = atoi($2);
+				if (c_obj.rrty < 1 || c_obj.rrty > 100) {
+					cerrx(2, "rrty '%d' invalid: out of "
+						"bounds [1, 100]", c_obj.rrty);
+				}
+			}
 	| SPEED STR	{ parse_dice(&c_obj.speed, $2); }
 	| TYPE TYPES	{ c_obj.obj_type = parse_type($2); }
 	| VAL STR	{ parse_dice(&c_obj.val, $2); }

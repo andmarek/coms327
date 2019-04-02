@@ -46,7 +46,7 @@ static std::unordered_map<std::string, enum type> const type_map = {
 	{"OFFHAND", offhand},
 	{"RANGED", ranged},
 	{"RING", ring},
-	{"SCROLL", scroll},
+	{"SCROLL", scroll_type}, /* avoid conflict with ncurses */
 	{"WAND", wand},
 	{"WEAPON", weapon}
 };
@@ -60,55 +60,6 @@ std::vector<parser_obj> objs_parsed;
 parser_obj c_obj;
 
 constexpr static int const line_max = 77;
-
-extern FILE	*yyin;
-
-extern int	yyparse();
-static void	print_dice(std::string const &, struct dice const &);
-static void	print_npcs();
-static void	print_objs();
-
-int
-main()
-{
-	int ret;
-
-	yyin = fopen("monster_desc.txt", "r");
-
-	if (yyin == NULL) {
-		return 3;
-	}
-
-	ret = yyparse();
-
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (npc) {
-		print_npcs();
-	}
-
-	fclose(yyin);
-
-	yyin = fopen("object_desc.txt", "r");
-
-	if (yyin == NULL) {
-		return 3;
-	}
-
-	ret = yyparse();
-
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (obj) {
-		print_objs();
-	}
-
-	return 0;
-}
 
 void
 yyerror(char const *const s)
@@ -194,14 +145,14 @@ parse_boolean(char const *const s)
 	return std::string(s) == "TRUE";
 }
 
-static void
+void
 print_dice(std::string const &name, struct dice const &d)
 {
 	std::cout << name << ": (" << d.base << ", " << d.dice << ", "
 		<< d.sides << ")\n";
 }
 
-static void
+void
 print_npcs()
 {
 	for (auto const &n: npcs_parsed) {
@@ -231,7 +182,7 @@ print_npcs()
 	}
 }
 
-static void
+void
 print_objs()
 {
 	for (auto const &o: objs_parsed) {

@@ -10,6 +10,9 @@
 #include "gen.h"
 #include "globs.h"
 #include "npc.h"
+#include "parse.h"
+
+extern int	yyparse();
 
 static void	usage(int const, std::string const &);
 
@@ -32,6 +35,43 @@ static struct option const long_opts[] = {
 int
 main(int const argc, char *const argv[])
 {
+	int ret;
+
+	yyin = fopen("monster_desc.txt", "r");
+
+	if (yyin == NULL) {
+		return 3;
+	}
+
+	ret = yyparse();
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (npc) {
+		print_npcs();
+	}
+
+	fclose(yyin);
+
+	yyin = fopen("object_desc.txt", "r");
+
+	if (yyin == NULL) {
+		return 3;
+	}
+
+	ret = yyparse();
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (obj) {
+		print_objs();
+	}
+
+	return 0;
 	WINDOW *win;
 	char *end;
 	int ch;
