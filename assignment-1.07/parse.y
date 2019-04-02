@@ -27,8 +27,8 @@ files
 	| files file
 
 file
-	: BEGIN_MONSTER_FILE npcs	{ npc = false; }
-	| BEGIN_OBJECT_FILE objs	{ obj = false; }
+	: BEGIN_MONSTER_FILE npcs
+	| BEGIN_OBJECT_FILE objs
 	;
 
 npcs

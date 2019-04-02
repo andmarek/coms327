@@ -1,8 +1,23 @@
 %{
 #include "parse.h"
 #include "y.tab.h"
+
+#undef YY_INPUT
+#define YY_INPUT(b, r, s) do { \
+	int c = '*'; \
+	int n; \
+	for (n = 0; n < s && (c = getc(yyin)) != EOF && c != '\n'; ++n) \
+		b[n] = (char)c; \
+	if (c == '\n') \
+		b[n++] = (char)c; \
+	if (c == EOF && ferror(yyin)) \
+		YY_FATAL_ERROR("scanner failed"); \
+	r = (yy_size_t)n; \
+	} while(0)
+
 %}
 
+%option nounput
 %option noyywrap
 
 S	[A-Za-z0-9+'\",(){}\[\]]
@@ -19,8 +34,16 @@ BOOLEAN	TRUE|FALSE
 
 %%
 
-^"RLG327 MONSTER DESCRIPTION 1"$	npc = true; return BEGIN_MONSTER_FILE;
-^"RLG327 OBJECT DESCRIPTION 1"$		obj = true; return BEGIN_OBJECT_FILE;
+^"RLG327 MONSTER DESCRIPTION 1"$	{
+						npc = true;
+						obj = false;
+						return BEGIN_MONSTER_FILE;
+					}
+^"RLG327 OBJECT DESCRIPTION 1"$		{
+						obj = true;
+						npc = false;
+						return BEGIN_OBJECT_FILE;
+					}
 
 ^"BEGIN MONSTER"$	{ c_npc = {}; return BEGIN_MONSTER; }
 ^"BEGIN OBJECT"$	{ c_obj = {}; return BEGIN_OBJECT; }
