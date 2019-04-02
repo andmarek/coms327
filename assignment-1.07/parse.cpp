@@ -2,9 +2,15 @@
 #include <iostream>
 #include <unordered_map>
 
+#include <sys/stat.h>
+
 #include "cerr.h"
+#include "gen.h"
 #include "parse.h"
 #include "y.tab.h"
+
+static char const *const MONSTER_FILE = "/monster_desc.txt";
+static char const *const OBJECT_FILE = "/object_desc.txt";
 
 static std::unordered_map<std::string, enum color> const color_map = {
 	{"BLACK", black},
@@ -119,46 +125,70 @@ yyerror(char const *const s)
 	cerrx(1, "%s", s);
 }
 
-bool
-parse()
+void
+parse_monster()
 {
-	bool ret = true;
+	struct stat st;
+	std::string const path = rlg_path() + MONSTER_FILE;
 
-	yyin = fopen("monster_desc.txt", "r");
+	if (stat(path.c_str(), &st) == -1) {
+		if (errno == ENOENT) {
+			cerr(1, "no monster file, run with '-m' to skip "
+				"monster file parsing");
+		} else {
+			cerr(1, "stat monster file");
+		}
+	}
+
+	yyin = fopen(path.c_str(), "r");
 
 	if (yyin == NULL) {
-		return false;
+		cerr(1, "monster file fopen");
 	}
 
 	if (yyparse() != 0) {
-		ret = false;
+		cerrx(1, "yyparse monster");
 	}
 
 	if (fclose(yyin) == EOF) {
-		ret = false;
-	}
-
-	yyin = fopen("object_desc.txt", "r");
-
-	if (yyin == NULL) {
-		ret = false;
-	}
-
-	if (yyparse() != 0) {
-		ret = false;
-	}
-
-	if (fclose(yyin) == EOF) {
-		ret = false;
+		cerr(1, "monster fclose");
 	}
 
 	std::cout << "<===== NPCs =====>\n\n";
 	print_npcs();
+}
+
+void
+parse_object()
+{
+	struct stat st;
+	std::string const path = rlg_path() + OBJECT_FILE;
+
+	if (stat(path.c_str(), &st) == -1) {
+		if (errno == ENOENT) {
+			cerr(1, "no object file, run with '-o' to skip object "
+				"parsing");
+		} else {
+			cerr(1, "stat object file");
+		}
+	}
+
+	yyin = fopen(path.c_str(), "r");
+
+	if (yyin == NULL) {
+		cerr(1, "object file fopen");
+	}
+
+	if (yyparse() != 0) {
+		cerrx(1, "yyparse object");
+	}
+
+	if (fclose(yyin) == EOF) {
+		cerr(1, "object fclose");
+	}
 
 	std::cout << "<===== OBJs =====>\n\n";
 	print_objs();
-
-	return ret;
 }
 
 void

@@ -38,15 +38,10 @@ static uint16_t stair_dn_count;
 
 tile tiles[HEIGHT][WIDTH];
 
-bool
-save_dungeon()
+std::string
+rlg_path()
 {
-	struct stat st;
-	FILE *f;
 	char *home;
-	bool ret;
-	std::string path;
-
 #ifdef _GNU_SOURCE
 	home = secure_getenv("HOME");
 #else
@@ -54,10 +49,20 @@ save_dungeon()
 #endif
 
 	if (home == NULL) {
-		return false;
+		return NULL;
 	}
 
-	path = std::string(home) + DIRECTORY;
+	return std::string(home) + DIRECTORY;
+}
+
+bool
+save_dungeon()
+{
+	struct stat st;
+	FILE *f;
+	bool ret;
+
+	std::string path = rlg_path();
 
 	if (stat(path.c_str(), &st) == -1) {
 		if (errno == ENOENT) {
@@ -88,21 +93,8 @@ bool
 load_dungeon()
 {
 	FILE *f;
-	char *home;
 	bool ret;
-	std::string path;
-
-#ifdef _GNU_SOURCE
-	home = secure_getenv("HOME");
-#else
-	home = getenv("HOME");
-#endif
-
-	if (home == NULL) {
-		return false;
-	}
-
-	path = std::string(home) + DIRECTORY + FILEPATH;
+	std::string path = rlg_path() + FILEPATH;
 
 	if (!(f = fopen(path.c_str(), "r"))) {
 		cerr(1, "load fopen");

@@ -22,9 +22,12 @@ static bool	is_number(std::string const &);
 static char const *const PROGRAM_NAME = "opal";
 
 static struct option const long_opts[] = {
+	{"continue", no_argument, NULL, 'c'},
 	{"help", no_argument, NULL, 'h'},
 	{"load", no_argument, NULL, 'l'},
+	{"mno", no_argument, NULL, 'm'},
 	{"nummon", required_argument, NULL, 'n'},
+	{"ono", no_argument, NULL, 'o'},
 	{"save", no_argument, NULL, 's'},
 	{"seed", required_argument, NULL, 'z'},
 	{NULL, 0, NULL, 0}
@@ -36,24 +39,27 @@ main(int const argc, char *const argv[])
 	WINDOW *win;
 	char *end;
 	int ch;
+	bool cont = false;
 	bool load = false;
 	bool save = false;
+	bool no_m_file = false;
+	bool no_o_file = false;
 	unsigned int nummon = std::numeric_limits<unsigned int>::max();
 	std::string const name = (argc == 0) ? PROGRAM_NAME : argv[0];
 
-	if (!parse()) {
-		cerrx(1, "parse NPCs and OBJs");
-	}
-
-	return 0;
-
-	while ((ch = getopt_long(argc, argv, "hln:sz:", long_opts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "chlmn:osz:", long_opts, NULL)) != -1) {
 		switch(ch) {
+		case 'c':
+			cont = true;
+			break;
 		case 'h':
 			usage(EXIT_SUCCESS, name);
 			break;
 		case 'l':
 			load = true;
+			break;
+		case 'm':
+			no_m_file = true;
 			break;
 		case 'n':
 			nummon = (unsigned int)strtoul(optarg, &end, 10);
@@ -61,6 +67,9 @@ main(int const argc, char *const argv[])
 			if (optarg == end || errno == EINVAL || errno == ERANGE) {
 				cerr(1, "nummon invalid");
 			}
+			break;
+		case 'o':
+			no_o_file = true;
 			break;
 		case 's':
 			save = true;
@@ -80,6 +89,18 @@ main(int const argc, char *const argv[])
 		default:
 			usage(EXIT_FAILURE, name);
 		}
+	}
+
+	if (!no_m_file) {
+		parse_monster();
+	}
+
+	if (!no_o_file) {
+		parse_object();
+	}
+
+	if (!cont) {
+		cerrx(0, "exiting game after parsing, use '-c' to continue");
 	}
 
 	if (nummon == std::numeric_limits<unsigned int>::max()) {
@@ -192,9 +213,12 @@ usage(int const status, std::string const &name)
 		std::cout << "OPAL's Playable Almost Indefectibly.\n\n"
 			<< "Traverse a generated dungeon.\n\n"
 			<< "Options:\n\
+  -c, --continue        continue after parsing (temporary flag)\n\
   -h, --help            display this help text and exit\n\
   -l, --load            load dungeon file\n\
+  -m, --mno             skip monster file parsing\n\
   -n, --nummon=[NUM]    number of monsters per floor\n\
+  -o, --ono             skip object file parsing\n\
   -s, --save            save dungeon file\n\
   -z, --seed=[SEED]     set rand seed, takes integer or string\n";
 	}

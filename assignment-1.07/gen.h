@@ -1,6 +1,10 @@
 #ifndef GEN_H
 #define GEN_H
 
+#include <string>
+
+std::string	rlg_path();
+
 /* io */
 bool	save_dungeon();
 bool	load_dungeon();

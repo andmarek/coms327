@@ -102,6 +102,7 @@ enum ability	parse_ability(char const *const);
 enum type	parse_type(char const *const);
 bool		parse_boolean(char const *const);
 
-bool	parse();
+void	parse_monster();
+void	parse_object();
 
 #endif /* PARSE_H */
