@@ -292,6 +292,8 @@ print_npcs()
 
 		print_dice("speed", n.speed);
 
+		std::cout << "abil: ";
+
 		for(auto const &a: n.abils) {
 			std::cout << ability_map_r[a] << ", ";
 		}
@@ -330,6 +332,6 @@ print_objs()
 
 		std::cout << "desc:\n" << o.desc << '\n'
 			<< "rrty: " << o.rrty << '\n'
-			<< "art: " << o.art << "\n\n";
+			<< "art: " << (o.art ? "true" : "false") << "\n\n";
 	}
 }

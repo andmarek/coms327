@@ -20,7 +20,7 @@
 %option nounput
 %option noyywrap
 
-S	[A-Za-z0-9+'\",(){}\[\]]
+S	[[:graph:]]
 
 COLORS	BLACK|BLUE|CYAN|GREEN|MAGENTA|RED|WHITE|YELLOW
 ABILS	BOSS|DESTROY|ERRATIC|PASS|PICKUP|SMART|TELE|TUNNEL|UNIQ
