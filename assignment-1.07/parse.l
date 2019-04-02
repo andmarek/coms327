@@ -4,15 +4,15 @@
 
 #undef YY_INPUT
 #define YY_INPUT(b, r, s) do { \
-	int c = '*'; \
-	int n; \
-	for (n = 0; n < s && (c = getc(yyin)) != EOF && c != '\n'; ++n) \
-		b[n] = (char)c; \
-	if (c == '\n') \
-		b[n++] = (char)c; \
-	if (c == EOF && ferror(yyin)) \
-		YY_FATAL_ERROR("scanner failed"); \
-	r = (yy_size_t)n; \
+		int c = '*'; \
+		int n; \
+		for (n = 0; n < s && (c = getc(yyin)) != EOF && c != '\n'; ++n)\
+			b[n] = (char)c; \
+		if (c == '\n') \
+			b[n++] = (char)c; \
+		if (c == EOF && ferror(yyin)) \
+			YY_FATAL_ERROR("scanner failed"); \
+		r = n; \
 	} while(0)
 
 %}
