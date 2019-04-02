@@ -17,6 +17,17 @@ static std::unordered_map<std::string, enum color> const color_map = {
 	{"YELLOW", yellow}
 };
 
+static char const *const color_map_r[] = {
+	"BLACK",
+	"BLUE",
+	"CYAN",
+	"GREEN",
+	"MAGENTA",
+	"RED",
+	"WHITE",
+	"YELLOW"
+};
+
 static std::unordered_map<std::string, enum ability> const ability_map = {
 	{"BOSS", boss},
 	{"DESTROY", destroy},
@@ -27,6 +38,18 @@ static std::unordered_map<std::string, enum ability> const ability_map = {
 	{"TELE", tele},
 	{"TUNNEL", tunnel},
 	{"UNIQ", uniq}
+};
+
+static char const *const ability_map_r[] = {
+	"BOSS",
+	"DESTROY",
+	"ERRATIC",
+	"PASS",
+	"PICKUP",
+	"SMART",
+	"TELE",
+	"TUNNEL",
+	"UNIQ"
 };
 
 static std::unordered_map<std::string, enum type> const type_map = {
@@ -51,20 +74,91 @@ static std::unordered_map<std::string, enum type> const type_map = {
 	{"WEAPON", weapon}
 };
 
-bool npc;
-bool obj;
+static char const *const type_map_r[] = {
+	"AMMUNITION",
+	"AMULET",
+	"ARMOR",
+	"BOOK",
+	"BOOTS",
+	"CLOAK",
+	"CONTAINER",
+	"FLASK",
+	"FOOD",
+	"GLOVES",
+	"GOLD",
+	"HELMET",
+	"LIGHT",
+	"OFFHAND",
+	"RANGED",
+	"RING",
+	"SCROLL",
+	"WAND",
+	"WEAPON"
+};
+
+static void	print_dice(std::string const &, struct dice const &);
+static void	print_npcs();
+static void	print_objs();
+
+extern int	yyparse();
+extern FILE	*yyin;
 
 std::vector<parser_npc> npcs_parsed;
 parser_npc c_npc;
 std::vector<parser_obj> objs_parsed;
 parser_obj c_obj;
 
+bool npc;
+bool obj;
+
 constexpr static int const line_max = 77;
 
 void
 yyerror(char const *const s)
 {
-	cerrx(2, "%s", s);
+	cerrx(1, "%s", s);
+}
+
+bool
+parse()
+{
+	bool ret = true;
+
+	yyin = fopen("monster_desc.txt", "r");
+
+	if (yyin == NULL) {
+		return false;
+	}
+
+	if (yyparse() != 0) {
+		ret = false;
+	}
+
+	if (fclose(yyin) == EOF) {
+		ret = false;
+	}
+
+	yyin = fopen("object_desc.txt", "r");
+
+	if (yyin == NULL) {
+		ret = false;
+	}
+
+	if (yyparse() != 0) {
+		ret = false;
+	}
+
+	if (fclose(yyin) == EOF) {
+		ret = false;
+	}
+
+	std::cout << "<===== NPCs =====>\n\n";
+	print_npcs();
+
+	std::cout << "<===== OBJs =====>\n\n";
+	print_objs();
+
+	return ret;
 }
 
 void
@@ -75,7 +169,7 @@ parse_dice(struct dice *const d, char *const s)
 	p = strtok_r(s, "+", &last);
 
 	if (p == NULL) {
-		cerrx(2, "dice formatted incorrectly");
+		cerrx(1, "dice formatted incorrectly");
 	}
 
 	d->base = std::atoi(p);
@@ -83,7 +177,7 @@ parse_dice(struct dice *const d, char *const s)
 	p = strtok_r(NULL, "d", &last);
 
 	if (p == NULL) {
-		cerrx(2, "dice formatted incorrectly");
+		cerrx(1, "dice formatted incorrectly");
 	}
 
 	d->dice = std::atoi(p);
@@ -91,7 +185,7 @@ parse_dice(struct dice *const d, char *const s)
 	p = strtok_r(NULL, "\0", &last);
 
 	if (p == NULL) {
-		cerrx(2, "dice format missing '+'");
+		cerrx(1, "dice format missing '+'");
 	}
 
 	d->sides = std::atoi(p);
@@ -110,7 +204,7 @@ read_desc(std::string &desc)
 		if (ln == ".\n") {
 			break;
 		} else if (ln.length() > line_max + 1) {
-			cerrx(2, "desc line too long (%d)", ln.length());
+			cerrx(1, "desc line too long (%d)", ln.length());
 		}
 
 		desc += ln;
@@ -145,14 +239,14 @@ parse_boolean(char const *const s)
 	return std::string(s) == "TRUE";
 }
 
-void
+static void
 print_dice(std::string const &name, struct dice const &d)
 {
-	std::cout << name << ": (" << d.base << ", " << d.dice << ", "
-		<< d.sides << ")\n";
+	std::cout << name << ": " << d.base << "+" << d.dice << "d" << d.sides
+		<< '\n';
 }
 
-void
+static void
 print_npcs()
 {
 	for (auto const &n: npcs_parsed) {
@@ -161,7 +255,7 @@ print_npcs()
 			<< "colors: ";
 
 		for(auto const &c : n.colors) {
-			std::cout << c << ", ";
+			std::cout << color_map_r[c] << ", ";
 		}
 
 		std::cout << '\n';
@@ -169,7 +263,7 @@ print_npcs()
 		print_dice("speed", n.speed);
 
 		for(auto const &a: n.abils) {
-			std::cout << a << ", ";
+			std::cout << ability_map_r[a] << ", ";
 		}
 
 		std::cout << '\n';
@@ -182,16 +276,16 @@ print_npcs()
 	}
 }
 
-void
+static void
 print_objs()
 {
 	for (auto const &o: objs_parsed) {
 		std::cout << "name: " << o.name << '\n'
-			<< "type: " << o.obj_type << '\n'
+			<< "type: " << type_map_r[o.obj_type] << '\n'
 			<< "colors: ";
 
 		for (auto const &c : o.colors) {
-			std::cout << c << ", ";
+			std::cout << color_map_r[c] << ", ";
 		}
 
 		std::cout << '\n';

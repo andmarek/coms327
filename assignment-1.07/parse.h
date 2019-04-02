@@ -102,10 +102,6 @@ enum ability	parse_ability(char const *const);
 enum type	parse_type(char const *const);
 bool		parse_boolean(char const *const);
 
-void	print_dice(std::string const &, struct dice const &);
-void	print_npcs();
-void	print_objs();
-
-extern FILE	*yyin;
+bool	parse();
 
 #endif /* PARSE_H */

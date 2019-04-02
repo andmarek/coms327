@@ -56,7 +56,7 @@ npc_keyword
 	| RRTY STR	{
 				c_npc.rrty = atoi($2);
 				if (c_npc.rrty < 1 || c_npc.rrty > 100) {
-					cerrx(2, "rrty '%d' invalid: out of "
+					cerrx(1, "rrty '%d' invalid: out of "
 						"bounds [1, 100]", c_npc.rrty);
 				}
 			}
@@ -96,7 +96,7 @@ obj_keyword
 	| RRTY STR	{
 				c_obj.rrty = atoi($2);
 				if (c_obj.rrty < 1 || c_obj.rrty > 100) {
-					cerrx(2, "rrty '%d' invalid: out of "
+					cerrx(1, "rrty '%d' invalid: out of "
 						"bounds [1, 100]", c_obj.rrty);
 				}
 			}

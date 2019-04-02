@@ -12,8 +12,6 @@
 #include "npc.h"
 #include "parse.h"
 
-extern int	yyparse();
-
 static void	usage(int const, std::string const &);
 
 static void	print_deathscreen(WINDOW *const);
@@ -35,43 +33,6 @@ static struct option const long_opts[] = {
 int
 main(int const argc, char *const argv[])
 {
-	int ret;
-
-	yyin = fopen("monster_desc.txt", "r");
-
-	if (yyin == NULL) {
-		return 3;
-	}
-
-	ret = yyparse();
-
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (npc) {
-		print_npcs();
-	}
-
-	fclose(yyin);
-
-	yyin = fopen("object_desc.txt", "r");
-
-	if (yyin == NULL) {
-		return 3;
-	}
-
-	ret = yyparse();
-
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (obj) {
-		print_objs();
-	}
-
-	return 0;
 	WINDOW *win;
 	char *end;
 	int ch;
@@ -79,6 +40,12 @@ main(int const argc, char *const argv[])
 	bool save = false;
 	unsigned int nummon = std::numeric_limits<unsigned int>::max();
 	std::string const name = (argc == 0) ? PROGRAM_NAME : argv[0];
+
+	if (!parse()) {
+		cerrx(1, "parse NPCs and OBJs");
+	}
+
+	return 0;
 
 	while ((ch = getopt_long(argc, argv, "hln:sz:", long_opts, NULL)) != -1) {
 		switch(ch) {
