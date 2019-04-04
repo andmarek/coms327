@@ -221,30 +221,6 @@ parse_dice(struct dice *const d, char *const s)
 	d->sides = std::atoi(p);
 }
 
-void
-read_desc(std::string &desc)
-{
-	char *line = NULL;
-	size_t len = 0;
-	ssize_t read;
-
-	while ((read = getline(&line, &len, yyin)) != -1) {
-		std::string ln = line;
-
-		if (ln == ".\n") {
-			break;
-		} else if (ln.length() > line_max + 1) {
-			cerrx(1, "desc line too long (%d)", ln.length());
-		}
-
-		desc += ln;
-	}
-
-	free(line);
-
-	desc.pop_back();
-}
-
 enum color
 parse_color(char const *const s)
 {
@@ -281,7 +257,7 @@ print_npcs()
 {
 	for (auto const &n: npcs_parsed) {
 		std::cout << "name: " << n.name << '\n'
-			<< "desc:\n" << n.desc << '\n'
+			<< "desc:\n" << n.desc
 			<< "colors: ";
 
 		for(auto const &c : n.colors) {
@@ -330,7 +306,7 @@ print_objs()
 		print_dice("def", o.def);
 		print_dice("speed", o.speed);
 
-		std::cout << "desc:\n" << o.desc << '\n'
+		std::cout << "desc:\n" << o.desc
 			<< "rrty: " << o.rrty << '\n'
 			<< "art: " << (o.art ? "true" : "false") << "\n\n";
 	}

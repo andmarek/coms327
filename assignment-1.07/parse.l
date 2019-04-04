@@ -1,20 +1,6 @@
 %{
 #include "parse.h"
 #include "y.tab.h"
-
-#undef YY_INPUT
-#define YY_INPUT(b, r, s) do { \
-		int c = '*'; \
-		int n; \
-		for (n = 0; n < s && (c = getc(yyin)) != EOF && c != '\n'; ++n)\
-			b[n] = (char)c; \
-		if (c == '\n') \
-			b[n++] = (char)c; \
-		if (c == EOF && ferror(yyin)) \
-			YY_FATAL_ERROR("scanner failed"); \
-		r = n; \
-	} while(0)
-
 %}
 
 %option nounput
@@ -32,6 +18,7 @@ TYPES	{TYPES_1}|{TYPES_2}
 
 BOOLEAN	TRUE|FALSE
 
+%Start desc
 %%
 
 ^"RLG327 MONSTER DESCRIPTION 1"$	{
@@ -56,7 +43,7 @@ BOOLEAN	TRUE|FALSE
 
 ^COLOR	return COLOR;
 ^DAM	return DAM;
-^DESC	return DESC;
+^DESC\n	{ BEGIN desc; return DESC; }
 ^NAME	return NAME;
 ^RRTY	return RRTY;
 ^SPEED	return SPEED;
@@ -80,6 +67,9 @@ BOOLEAN	TRUE|FALSE
 {TYPES}		{ yylval.str = yytext; return TYPES; }
 
 {S}+	{ yylval.str = yytext; return STR; }
+
+<desc>^\.$	{ BEGIN 0; return DESC_END; }
+<desc>.+\n|\n	{ yylval.str = yytext; return DESC_INNER; }
 
 .|\n	;
 

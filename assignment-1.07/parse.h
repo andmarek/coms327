@@ -95,7 +95,6 @@ extern std::vector<parser_obj> objs_parsed;
 extern parser_obj c_obj;
 
 void	parse_dice(struct dice *const, char *const);
-void	read_desc(std::string &);
 
 enum color	parse_color(char const *const);
 enum ability	parse_ability(char const *const);

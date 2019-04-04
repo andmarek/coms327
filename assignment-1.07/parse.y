@@ -21,11 +21,15 @@ extern void	yyerror(char const *const);
 %token <str> STR
 %token <str> TYPES
 
+%token <str> DESC_INNER
+%token DESC_END
+
 %%
 
 files
 	: file
 	| files file
+	;
 
 file
 	: BEGIN_MONSTER_FILE npcs
@@ -50,7 +54,7 @@ npc_keyword
 	: ABIL abil
 	| COLOR color
 	| DAM STR	{ parse_dice(&c_npc.dam, $2); }
-	| DESC		{ read_desc(c_npc.desc); }
+	| DESC desc DESC_END
 	| HP STR	{ parse_dice(&c_npc.hp, $2); }
 	| NAME name
 	| RRTY STR	{
@@ -89,7 +93,7 @@ obj_keyword
 	| COLOR color
 	| DAM STR	{ parse_dice(&c_obj.dam, $2); }
 	| DEF STR	{ parse_dice(&c_obj.def, $2); }
-	| DESC		{ read_desc(c_obj.desc); }
+	| DESC desc DESC_END
 	| DODGE STR	{ parse_dice(&c_obj.dodge, $2); }
 	| HIT STR	{ parse_dice(&c_obj.hit, $2); }
 	| NAME name
@@ -126,6 +130,17 @@ color
 				if (npc) c_npc.colors.push_back(parse_color($2));
 				if (obj) c_obj.colors.push_back(parse_color($2));
 			}
+	;
+
+desc
+	: DESC_INNER		{
+					if (npc) c_npc.desc += $1;
+					if (obj) c_obj.desc += $1;
+				}
+	| desc DESC_INNER	{
+					if (npc) c_npc.desc += $2;
+					if (obj) c_obj.desc += $2;
+				}
 	;
 
 %%
