@@ -25,9 +25,9 @@ static void	move_straight(WINDOW *const, npc &);
 static void	move_dijk_nontunneling(WINDOW *const, npc &);
 static void	move_dijk_tunneling(WINDOW *const, npc &);
 
-static void	gen_monster(npc &);
+static void	gen_npc(npc &);
 
-static void	monster_list(WINDOW *const, std::vector<npc *> const &);
+static void	npc_list(WINDOW *const, std::vector<npc *> const &);
 
 static void	defog(WINDOW *const, std::vector<npc *> const &);
 
@@ -39,7 +39,7 @@ static void	pc_viewbox(WINDOW *const, int const);
 
 enum pc_action {
 	PC_DEFOG,
-	PC_MONSTER_LIST,
+	PC_NPC_LIST,
 	PC_NEXT,
 	PC_NONE,
 	PC_QUIT,
@@ -84,16 +84,16 @@ enum turn_exit
 turn_engine(WINDOW *const win, unsigned int const nummon)
 {
 	std::priority_queue<npc, std::vector<std::reference_wrapper<npc>>, compare_npc> heap;
-	std::vector<npc *> monsters;
+	std::vector<npc *> npcs;
 
-	/* monster list, defogged windows */
-	WINDOW *mwin, *fwin;
+	/* npc list, defogged windows */
+	WINDOW *nwin, *fwin;
 
 	int32_t turn;
 	int alive = nummon;
 	enum turn_exit ret = TURN_NONE;
 
-	monsters.resize(nummon);
+	npcs.resize(nummon);
 
 	player.speed = 10;
 	player.type = PLAYER_TYPE;
@@ -105,9 +105,9 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	heap.push(player);
 
-	for (auto &n: monsters) {
+	for (auto &n: npcs) {
 		n = new npc();
-		gen_monster(*n);
+		gen_npc(*n);
 		tiles[n->y][n->x].n = n;
 
 		heap.push(*n);
@@ -115,13 +115,13 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	dijkstra();
 
-	if ((mwin = newwin(HEIGHT, WIDTH, 0, 0)) == NULL
+	if ((nwin = newwin(HEIGHT, WIDTH, 0, 0)) == NULL
 		|| (fwin = newwin(HEIGHT, WIDTH, 0, 0)) == NULL) {
-		cerrx(1, "turn_engine newwin mwin, fwin");
+		cerrx(1, "turn_engine newwin nwin, fwin");
 	}
 
-	if (keypad(mwin, true) == ERR) {
-		cerrx(1, "keypad mwin");
+	if (keypad(nwin, true) == ERR) {
+		cerrx(1, "keypad nwin");
 	}
 
 	(void)box(fwin, 0, 0);
@@ -136,7 +136,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 			cerrx(1, "turn_engine wrefresh");
 		}
 
-		monsters.erase(std::remove_if(monsters.begin(), monsters.end(),
+		npcs.erase(std::remove_if(npcs.begin(), npcs.end(),
 			[&alive](auto o)
 			{
 				if (o->dead) {
@@ -145,7 +145,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 				} else {
 					return false;
 				}
-			}), monsters.end());
+			}), npcs.end());
 
 		if (alive <= 0) {
 			if (n.type & PLAYER_TYPE) {
@@ -172,18 +172,18 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		retry:
 		switch(turn_npc(win, n)) {
 		case PC_DEFOG:
-			defog(fwin, monsters);
+			defog(fwin, npcs);
 
 			if (touchwin(win) == ERR) {
 				cerrx(1, "touchwin fwin");
 			}
 
 			goto retry;
-		case PC_MONSTER_LIST:
-			monster_list(mwin, monsters);
+		case PC_NPC_LIST:
+			npc_list(nwin, npcs);
 
 			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin mwin");
+				cerrx(1, "touchwin nwin");
 			}
 
 			goto retry;
@@ -214,8 +214,8 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	exit:
 
-	if (delwin(mwin) == ERR) {
-		cerrx(1, "turn_engine delwin mwin");
+	if (delwin(nwin) == ERR) {
+		cerrx(1, "turn_engine delwin nwin");
 	}
 
 	if (delwin(fwin) == ERR) {
@@ -433,7 +433,7 @@ move_dijk_tunneling(WINDOW *const win, npc &n)
 }
 
 static void
-gen_monster(npc &n)
+gen_npc(npc &n)
 {
 	uint8_t x, y;
 
@@ -538,7 +538,7 @@ turn_npc(WINDOW *const win, npc &n)
 		}
 		break;
 	default:
-		cerrx(1, "gen_monster invalid monster type %d", n.type);
+		cerrx(1, "gen_npc invalid npc type %d", n.type);
 	}
 
 	return PC_NONE;
@@ -636,7 +636,7 @@ turn_pc(WINDOW *const win, npc &n)
 			}
 			break;
 		case 'm':
-			return PC_MONSTER_LIST;
+			return PC_NPC_LIST;
 		case 'Q':
 		case 'q':
 			/* quit game */
@@ -661,52 +661,52 @@ turn_pc(WINDOW *const win, npc &n)
 }
 
 static void
-monster_list(WINDOW *const mwin, std::vector<npc *> const &monsters)
+npc_list(WINDOW *const nwin, std::vector<npc *> const &npcs)
 {
 	std::vector<npc>::size_type cpos = 0;
 
 	while(1) {
-		if (wclear(mwin) == ERR) {
-			cerrx(1, "monster_list clear");
+		if (wclear(nwin) == ERR) {
+			cerrx(1, "npc_list clear");
 		}
 
-		(void)box(mwin, 0, 0);
+		(void)box(nwin, 0, 0);
 
-		(void)mvwprintw(mwin, HEIGHT - 1, 2,
+		(void)mvwprintw(nwin, HEIGHT - 1, 2,
 			"[ arrow keys to scroll; ESC to exit ]");
 
 		std::size_t i;
-		for (i = 0; i < HEIGHT - 2 && i + cpos < monsters.size(); ++i) {
-			npc n = *monsters[i + cpos];
+		for (i = 0; i < HEIGHT - 2 && i + cpos < npcs.size(); ++i) {
+			npc n = *npcs[i + cpos];
 			int dx = player.x - n.x;
 			int dy = player.y - n.y;
 
-			(void)mvwprintw(mwin, static_cast<int>(i + 1U), 2,
+			(void)mvwprintw(nwin, static_cast<int>(i + 1U), 2,
 				"%u.\t%c, %d %s and %d %s", i + cpos, n.type_ch,
 				abs(dy), dy > 0 ? "north" : "south",
 				abs(dx), dx > 0 ? "west" : "east");
 		}
 
 		for (; i < HEIGHT - 2; ++i) {
-			(void)mvwaddch(mwin, static_cast<int>(i + 1U), 2, '~');
+			(void)mvwaddch(nwin, static_cast<int>(i + 1U), 2, '~');
 		}
 
-		if (wrefresh(mwin) == ERR) {
-			cerrx(1, "monster_list wrefresh");
+		if (wrefresh(nwin) == ERR) {
+			cerrx(1, "npc_list wrefresh");
 		}
 
-		switch(wgetch(mwin)) {
+		switch(wgetch(nwin)) {
 		case ERR:
-			cerrx(1, "monster_list wgetch ERR");
+			cerrx(1, "npc_list wgetch ERR");
 			return;
 		case KEY_UP:
-			if (--cpos > monsters.size()) {
+			if (--cpos > npcs.size()) {
 				cpos = 0;
 			}
 			break;
 		case KEY_DOWN:
-			if (++cpos > monsters.size() - 1) {
-				cpos = monsters.size() - 1;
+			if (++cpos > npcs.size() - 1) {
+				cpos = npcs.size() - 1;
 			}
 			break;
 		case KEY_ESC:
@@ -718,7 +718,7 @@ monster_list(WINDOW *const mwin, std::vector<npc *> const &monsters)
 }
 
 static void
-defog(WINDOW *const fwin, std::vector<npc *> const &monsters)
+defog(WINDOW *const fwin, std::vector<npc *> const &npcs)
 {
 	for (int x = 1; x < WIDTH - 1; ++x) {
 		for (int y = 1; y < HEIGHT - 1; ++y) {
@@ -726,7 +726,7 @@ defog(WINDOW *const fwin, std::vector<npc *> const &monsters)
 		}
 	}
 
-	for (auto const &n : monsters) {
+	for (auto const &n : npcs) {
 		(void)mvwaddch(fwin, n->y, n->x, n->type_ch);
 	}
 

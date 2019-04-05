@@ -8,8 +8,7 @@ extern npc_description c_npc;
 extern obj_description c_obj;
 %}
 
-%option nounput
-%option noyywrap
+%option nounput noyywrap
 
 S	[[:graph:]]
 
