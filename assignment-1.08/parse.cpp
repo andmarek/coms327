@@ -55,10 +55,6 @@ static char const *const type_map_r[] = {
 	"WEAPON"
 };
 
-static void	print_dice(std::string const &, dice const &);
-static void	print_npcs();
-static void	print_objs();
-
 extern int	yyparse();
 extern FILE	*yyin;
 
@@ -95,9 +91,6 @@ parse_npc_file()
 	if (fclose(yyin) == EOF) {
 		cerr(1, "monster fclose");
 	}
-
-	std::cout << "<===== NPCs =====>\n\n";
-	print_npcs();
 }
 
 void
@@ -127,75 +120,5 @@ parse_obj_file()
 
 	if (fclose(yyin) == EOF) {
 		cerr(1, "object fclose");
-	}
-
-	std::cout << "<===== OBJs =====>\n\n";
-	print_objs();
-}
-
-static void
-print_dice(std::string const &name, struct dice const &d)
-{
-	std::cout << name << ": " << d.base << "+" << d.dice << "d" << d.sides
-		<< '\n';
-}
-
-static void
-print_npcs()
-{
-	for (auto const &n: npcs_parsed) {
-		std::cout << "name: " << n.name << '\n'
-			<< "desc:\n" << n.desc
-			<< "colors: ";
-
-		for(auto const &c : n.colors) {
-			std::cout << color_map_r[c] << ", ";
-		}
-
-		std::cout << '\n';
-
-		print_dice("speed", n.speed);
-
-		std::cout << "abil: ";
-
-		for(auto const &a: n.abils) {
-			std::cout << ability_map_r[a] << ", ";
-		}
-
-		std::cout << '\n';
-
-		print_dice("hp", n.hp);
-		print_dice("dam", n.dam);
-
-		std::cout << "symb: " << n.symb << '\n'
-			<< "rrty: " << n.rrty << "\n\n";
-	}
-}
-
-static void
-print_objs()
-{
-	for (auto const &o: objs_parsed) {
-		std::cout << "name: " << o.name << '\n'
-			<< "type: " << type_map_r[o.obj_type] << '\n'
-			<< "colors: ";
-
-		for (auto const &c : o.colors) {
-			std::cout << color_map_r[c] << ", ";
-		}
-
-		std::cout << '\n';
-
-		print_dice("weight", o.weight);
-		print_dice("dam", o.dam);
-		print_dice("attr", o.attr);
-		print_dice("val", o.val);
-		print_dice("dodge", o.dodge);
-		print_dice("def", o.def);
-		print_dice("speed", o.speed);
-
-		std::cout << "desc:\n" << o.desc
-			<< "rrty: " << o.rrty << '\n'
-			<< "art: " << (o.art ? "true" : "false") << "\n\n";
 	}
 }

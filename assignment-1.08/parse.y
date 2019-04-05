@@ -199,7 +199,7 @@ desc
 
 %%
 
-static void 
+static void
 yyerror(char const *const s)
 {
 	cerrx(1, "%s", s);
