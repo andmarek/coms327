@@ -9,8 +9,8 @@
 #include "cerr.h"
 #include "gen.h"
 #include "globs.h"
-#include "npc.h"
 #include "parse.h"
+#include "turn.h"
 
 static void	usage(int const, std::string const &);
 

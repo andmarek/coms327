@@ -1,11 +1,11 @@
 %{
-#include "parse.h"
+#include "globs.h"
 #include "y.tab.h"
 
-extern bool npc;
-extern bool obj;
-extern npc_description c_npc;
-extern obj_description c_obj;
+extern bool in_n;
+extern bool in_o;
+extern npc c_npc;
+extern obj c_obj;
 %}
 
 %option nounput noyywrap
@@ -26,13 +26,13 @@ BOOLEAN	TRUE|FALSE
 %%
 
 ^"RLG327 MONSTER DESCRIPTION 1"$	{
-						npc = true;
-						obj = false;
+						in_n = true;
+						in_o = false;
 						return BEGIN_NPC_FILE;
 					}
 ^"RLG327 OBJECT DESCRIPTION 1"$		{
-						obj = true;
-						npc = false;
+						in_o = true;
+						in_n = false;
 						return BEGIN_OBJ_FILE;
 					}
 
@@ -40,8 +40,8 @@ BOOLEAN	TRUE|FALSE
 ^"BEGIN OBJECT"$	{ c_obj = {}; return BEGIN_OBJ; }
 
 ^"END"$	{
-		if (npc) npcs_parsed.push_back(c_npc);
-		if (obj) objs_parsed.push_back(c_obj);
+		if (in_n) npcs_parsed.push_back(c_npc);
+		if (in_o) objs_parsed.push_back(c_obj);
 		return END;
 	}
 

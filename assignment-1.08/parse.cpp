@@ -4,7 +4,7 @@
 
 #include "cerr.h"
 #include "gen.h"
-#include "parse.h"
+#include "globs.h"
 #include "y.tab.h"
 
 static char const *const NPC_FILE = "/monster_desc.txt";
@@ -58,8 +58,8 @@ static char const *const type_map_r[] = {
 extern int	yyparse();
 extern FILE	*yyin;
 
-std::vector<npc_description> npcs_parsed;
-std::vector<obj_description> objs_parsed;
+std::vector<npc> npcs_parsed;
+std::vector<obj> objs_parsed;
 
 constexpr static int const line_max = 77;
 

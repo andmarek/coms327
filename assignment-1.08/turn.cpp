@@ -7,7 +7,7 @@
 #include "cerr.h"
 #include "dijk.h"
 #include "globs.h"
-#include "npc.h"
+#include "turn.h"
 
 static bool	valid_npc(uint8_t const, uint8_t const);
 
@@ -16,7 +16,7 @@ static unsigned int	subu32(unsigned int const, unsigned int const);
 
 static bool	pc_visible(int const, int const);
 
-static unsigned int constexpr	limited_int_to_char(uint8_t const);
+static unsigned int constexpr	limited_int_to_char(uint16_t const);
 
 static void	move_redraw(WINDOW *const, npc &, uint8_t const, uint8_t const);
 static void	move_tunnel(WINDOW *const, npc &, uint8_t const, uint8_t const);
@@ -49,20 +49,13 @@ enum pc_action {
 static enum pc_action	turn_npc(WINDOW *const, npc &);
 static enum pc_action	turn_pc(WINDOW *const, npc &);
 
-class compare_npc {
-public:
+struct compare_npc {
 	bool constexpr
 	operator() (npc const &x, npc const &y) const
 	{
 		return x.turn > y.turn;
 	}
 };
-
-static int constexpr PLAYER_TYPE = 0x80;
-static int constexpr INTELLIGENT = 0x1;
-static int constexpr TELEPATHIC = 0x2;
-static int constexpr TUNNELING = 0x4;
-static int constexpr ERRATIC = 0x8;
 
 /* minimum distance from the PC an NPC can be placed */
 static double constexpr CUTOFF = 4.0;
@@ -98,10 +91,10 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	player.speed = 10;
 	player.type = PLAYER_TYPE;
 	player.turn = 0;
-	player.type_ch = PLAYER;
+	player.symb = PLAYER;
 	tiles[player.y][player.x].n = &player;
 
-	(void)mvwaddch(win, player.y, player.x, player.type_ch);
+	(void)mvwaddch(win, player.y, player.x, player.symb);
 
 	heap.push(player);
 
@@ -214,6 +207,10 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	exit:
 
+	for (auto &n: npcs) {
+		delete n;
+	}
+
 	if (delwin(nwin) == ERR) {
 		cerrx(1, "turn_engine delwin nwin");
 	}
@@ -295,7 +292,7 @@ pc_visible(int const x1, int const y1)
 }
 
 static unsigned int constexpr
-limited_int_to_char(uint8_t const i)
+limited_int_to_char(uint16_t const i)
 {
 	return (unsigned int)((i < 0xA) ? i + '0' : i + 'a' - 0xA);
 }
@@ -319,7 +316,7 @@ move_redraw(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 	}
 
 	if (tiles[y][x].v) {
-		(void)mvwaddch(win, y, x, n.type_ch);
+		(void)mvwaddch(win, y, x, n.symb);
 	}
 
 	n.y = y;
@@ -360,7 +357,7 @@ move_straight(WINDOW *const win, npc &n)
 			uint8_t x = (uint8_t)(n.x + i);
 			uint8_t y = (uint8_t)(n.y + j);
 
-			if (!(n.type & TUNNELING) && tiles[y][x].h != 0) {
+			if (!(n.type & TUNNEL) && tiles[y][x].h != 0) {
 				continue;
 			}
 
@@ -374,7 +371,7 @@ move_straight(WINDOW *const win, npc &n)
 		}
 	}
 
-	if (n.type & TUNNELING) {
+	if (n.type & TUNNEL) {
 		move_tunnel(win, n, miny, minx);
 	} else {
 		move_redraw(win, n, miny, minx);
@@ -452,7 +449,7 @@ gen_npc(npc &n)
 	n.p_count = 0;
 	n.dead = false;
 
-	n.type_ch = limited_int_to_char(n.type);
+	n.symb = limited_int_to_char(n.type);
 }
 
 static enum pc_action
@@ -469,9 +466,9 @@ turn_npc(WINDOW *const win, npc &n)
 		do {
 			y = (uint8_t)(n.y + rr.rrand<int>(-1, 1));
 			x = (uint8_t)(n.x + rr.rrand<int>(-1, 1));
-		} while (!(n.type & TUNNELING) && tiles[y][x].h != 0);
+		} while (!(n.type & TUNNEL) && tiles[y][x].h != 0);
 
-		if (n.type & TUNNELING) {
+		if (n.type & TUNNEL) {
 			move_tunnel(win, n, y, x);
 		} else {
 			move_redraw(win, n, y, x);
@@ -511,7 +508,7 @@ turn_npc(WINDOW *const win, npc &n)
 		 * use nontunneling dijk, remembered location
 		 * or use nontunneling dijk, telepathic towards player
 		 */
-		if (n.type & TELEPATHIC || pc_visible(n.x, n.y)) {
+		if (n.type & TELE || pc_visible(n.x, n.y)) {
 			n.p_count = PERSISTANCE;
 		}
 
@@ -528,7 +525,7 @@ turn_npc(WINDOW *const win, npc &n)
 		 * tunnel: use tunneling dijk, remembered location
 		 * or tunnel: use tunneling dijk, telepathic towards player
 		 */
-		if (n.type & TELEPATHIC || pc_visible(n.x, n.y)) {
+		if (n.type & TELE || pc_visible(n.x, n.y)) {
 			n.p_count = PERSISTANCE;
 		}
 
@@ -682,7 +679,7 @@ npc_list(WINDOW *const nwin, std::vector<npc *> const &npcs)
 			int dy = player.y - n.y;
 
 			(void)mvwprintw(nwin, static_cast<int>(i + 1U), 2,
-				"%u.\t%c, %d %s and %d %s", i + cpos, n.type_ch,
+				"%u.\t%c, %d %s and %d %s", i + cpos, n.symb,
 				abs(dy), dy > 0 ? "north" : "south",
 				abs(dx), dx > 0 ? "west" : "east");
 		}
@@ -727,10 +724,10 @@ defog(WINDOW *const fwin, std::vector<npc *> const &npcs)
 	}
 
 	for (auto const &n : npcs) {
-		(void)mvwaddch(fwin, n->y, n->x, n->type_ch);
+		(void)mvwaddch(fwin, n->y, n->x, n->symb);
 	}
 
-	(void)mvwaddch(fwin, player.y, player.x, player.type_ch);
+	(void)mvwaddch(fwin, player.y, player.x, player.symb);
 
 	(void)mvwprintw(fwin, HEIGHT - 1, 2, "[ press any key to exit ]");
 
@@ -929,7 +926,7 @@ pc_viewbox(WINDOW *const win, int const lum)
 			if (viewable(j, i)) {
 				chtype const ch = (tiles[j][i].n == NULL)
 					? tiles[j][i].c
-					: tiles[j][i].n->type_ch;
+					: tiles[j][i].n->symb;
 				tiles[j][i].v = true;
 				(void)mvwaddch(win, j, i, ch);
 			}

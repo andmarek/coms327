@@ -19,8 +19,8 @@ CFLAGS_END := -lncurses
 DIRTY := *.gcda *.gcno *.gcov *.out error vgcore.*
 DIRTY += *.tab.c *.tab.h lex.yy.c y.dot y.output
 
-src := dijk.cpp cerr.cpp floor.cpp gen.cpp npc.cpp rand.cpp opal.cpp parse.cpp
-hdr = dijk.h cerr.h floor.h gen.h globs.h npc.h parse.h rand.h
+src := dijk.cpp cerr.cpp floor.cpp gen.cpp rand.cpp opal.cpp parse.cpp turn.cpp
+hdr = dijk.h cerr.h floor.h gen.h globs.h parse.h rand.h turn.h
 hdr += parse.l parse.y
 
 src_nodep := lex.yy.c y.tab.c
@@ -44,4 +44,4 @@ clean:
 	rm -f $(DIRTY)
 
 val:
-	valgrind -v --track-origins=yes --log-file=error ./opal.out
+	valgrind -v --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=error ./opal.out -z 3656437442

@@ -1,5 +1,5 @@
-#ifndef NPC_H
-#define NPC_H
+#ifndef TURN_H
+#define TURN_H
 
 #include <ncurses.h>
 
@@ -13,4 +13,4 @@ enum turn_exit {
 
 enum turn_exit	turn_engine(WINDOW *const, unsigned int const);
 
-#endif /* NPC_H */
+#endif /* TURN_H */
