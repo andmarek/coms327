@@ -1,8 +1,8 @@
 #ifndef GLOBS_H
 #define GLOBS_H
 
-#include <ncurses.h>
 #include <cstdint>
+#include <ncurses.h>
 #include <vector>
 
 #include "rand.h"
@@ -49,22 +49,24 @@ struct dice {
 	uint8_t	sides;
 };
 
-struct npc {
-	uint8_t		x;
-	uint8_t		y;
-	uint8_t		speed;
-	uint16_t	type;
+struct dungeon_thing {
+	std::vector<color>	colors;
+	std::string		desc;
+	std::string		name;
+	dice			dam;
+	unsigned int		symb;
+	uint8_t			rrty;
+	uint8_t			speed;
+	uint8_t			x;
+	uint8_t 		y;
+};
+
+struct npc : dungeon_thing {
 	int32_t		turn;
+	uint16_t	type;
+	uint8_t		hp;
 	uint8_t 	p_count;
 	bool		dead;
-
-	std::vector<color>	colors;
-	dice			dam;
-	std::string		desc;
-	uint8_t			hp;
-	std::string		name;
-	int			rrty;
-	unsigned int		symb;
 };
 
 enum type {
@@ -86,24 +88,17 @@ enum type {
 	ring,
 	scroll_type, /* avoid conflict with ncurses */
 	wand,
-	weapon,
+	weapon
 };
 
-struct obj {
-	uint8_t 		attr;
-	std::vector<color>	colors;
-	dice			dam;
+struct obj : dungeon_thing {
 	uint8_t			def;
-	std::string		desc;
 	uint8_t			dodge;
 	uint8_t			hit;
-	std::string		name;
-	uint8_t			rrty;
-	uint8_t			speed;
-	type			obj_type;
 	uint8_t			val;
 	uint8_t			weight;
-
+	uint8_t 		attr;
+	type			obj_type;
 	bool			art;
 };
 
