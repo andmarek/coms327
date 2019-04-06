@@ -14,6 +14,8 @@
 
 static void	usage(int const, std::string const &);
 
+static bool	colors();
+
 static void	print_deathscreen(WINDOW *const);
 static void	print_winscreen(WINDOW *const);
 
@@ -81,16 +83,21 @@ main(int const argc, char *const argv[])
 		}
 	}
 
-	if (!no_descs) {
-		parse_npc_file();
-		parse_obj_file();
-	}
-
 	if (nummon == std::numeric_limits<unsigned int>::max()) {
 		nummon = rr.rrand<unsigned int>(3, 5);
 	}
 
 	(void)initscr();
+
+	if (!colors()) {
+		cerrx(1, "color init");
+	}
+
+	/* requires colors initialized */
+	if (!no_descs) {
+		parse_npc_file();
+		parse_obj_file();
+	}
 
 	if (refresh() == ERR) {
 		cerrx(1, "refresh from initscr");
@@ -205,6 +212,44 @@ usage(int const status, std::string const &name)
 	}
 
 	exit(status);
+}
+
+static bool
+colors()
+{
+	if (start_color() == ERR) {
+		return false;
+	}
+
+	if (init_pair(COLOR_BLUE, COLOR_BLUE, COLOR_BLACK) == ERR) {
+		return false;
+	}
+
+	if (init_pair(COLOR_CYAN, COLOR_CYAN, COLOR_BLACK) == ERR) {
+		return false;
+	}
+
+	if (init_pair(COLOR_GREEN, COLOR_GREEN, COLOR_BLACK) == ERR) {
+		return false;
+	}
+
+	if (init_pair(COLOR_MAGENTA, COLOR_MAGENTA, COLOR_BLACK) == ERR) {
+		return false;
+	}
+
+	if (init_pair(COLOR_RED, COLOR_RED, COLOR_BLACK) == ERR) {
+		return false;
+	}
+
+	if (init_pair(COLOR_WHITE, COLOR_WHITE, COLOR_BLACK) == ERR) {
+		return false;
+	}
+
+	if (init_pair(COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK) == ERR) {
+		return false;
+	}
+
+	return true;
 }
 
 static void

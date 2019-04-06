@@ -50,7 +50,7 @@ struct dice {
 };
 
 struct dungeon_thing {
-	std::vector<color>	colors;
+	std::vector<int>	colors; /* ncurses COLOR_PAIR(COLOR_*) value */
 	std::string		desc;
 	std::string		name;
 	dice			dam;

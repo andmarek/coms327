@@ -19,15 +19,15 @@ bool in_o;
 npc c_npc;
 obj c_obj;
 
-static std::unordered_map<std::string, color> const color_map = {
-	{"BLACK", black},
-	{"BLUE", blue},
-	{"CYAN", cyan},
-	{"GREEN", green},
-	{"MAGENTA", magenta},
-	{"RED", red},
-	{"WHITE", white},
-	{"YELLOW", yellow}
+static std::unordered_map<std::string, int> const color_map = {
+	{"BLACK", COLOR_PAIR(COLOR_BLACK)},
+	{"BLUE", COLOR_PAIR(COLOR_BLUE)},
+	{"CYAN", COLOR_PAIR(COLOR_CYAN)},
+	{"GREEN", COLOR_PAIR(COLOR_GREEN)},
+	{"MAGENTA", COLOR_PAIR(COLOR_MAGENTA)},
+	{"RED", COLOR_PAIR(COLOR_RED)},
+	{"WHITE", COLOR_PAIR(COLOR_WHITE)},
+	{"YELLOW", COLOR_PAIR(COLOR_YELLOW)}
 };
 
 static std::unordered_map<std::string, uint16_t> const ability_map = {
