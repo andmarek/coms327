@@ -191,13 +191,10 @@ name
 
 color
 	: COLORS	{
-				if (in_n) c_npc.colors.push_back(color_map.at($1));
-				if (in_o) c_obj.colors.push_back(color_map.at($1));
+				if (in_n) c_npc.color = color_map.at($1);
+				if (in_o) c_obj.color = color_map.at($1);
 			}
-	| color COLORS	{
-				if (in_n) c_npc.colors.push_back(color_map.at($2));
-				if (in_o) c_obj.colors.push_back(color_map.at($2));
-			}
+	| color COLORS
 	;
 
 desc

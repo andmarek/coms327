@@ -50,15 +50,32 @@ struct dice {
 };
 
 struct dungeon_thing {
-	std::vector<int>	colors; /* ncurses COLOR_PAIR(COLOR_*) value */
-	std::string		desc;
-	std::string		name;
-	dice			dam;
-	unsigned int		symb;
-	uint8_t			rrty;
-	uint8_t			speed;
-	uint8_t			x;
-	uint8_t			y;
+	std::string	desc;
+	std::string	name;
+	dice		dam;
+	int		color; /* first color as ncurses COLOR_PAIR(COLOR_*) value */
+	unsigned int	symb;
+	uint8_t		rrty;
+	uint8_t		speed;
+	uint8_t		x;
+	uint8_t		y;
+	bool		done;
+
+	dungeon_thing() = default;
+
+	dungeon_thing(dungeon_thing const &t)
+	{
+		color = t.color;
+		desc = t.desc;
+		name = t.name;
+		dam = t.dam;
+		symb = t.symb;
+		rrty = t.rrty;
+		speed = t.speed;
+		x = 0;
+		y = 0;
+		done = false;
+	}
 };
 
 struct npc : dungeon_thing {
@@ -67,6 +84,17 @@ struct npc : dungeon_thing {
 	uint8_t		hp;
 	uint8_t		p_count;
 	bool		dead;
+
+	npc() = default;
+
+	npc(npc const &n) : dungeon_thing(n)
+	{
+		type = n.type;
+		hp = n.hp;
+		turn = 0;
+		p_count = 0;
+		dead = false;
+	}
 };
 
 enum type {
@@ -100,6 +128,20 @@ struct obj : dungeon_thing {
 	uint8_t	attr;
 	type	obj_type;
 	bool	art;
+
+	obj() = default;
+
+	obj(obj const &o) : dungeon_thing(o)
+	{
+		def = o.def;
+		dodge = o.dodge;
+		hit = o.hit;
+		val = o.val;
+		weight = o.weight;
+		attr = o.attr;
+		obj_type = o.obj_type;
+		art = o.art;
+	}
 };
 
 struct room {

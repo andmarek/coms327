@@ -16,8 +16,6 @@ static unsigned int	subu32(unsigned int const, unsigned int const);
 
 static bool	pc_visible(int const, int const);
 
-static unsigned int constexpr	limited_int_to_char(uint16_t const);
-
 static void	move_redraw(WINDOW *const, npc &, uint8_t const, uint8_t const);
 static void	move_tunnel(WINDOW *const, npc &, uint8_t const, uint8_t const);
 
@@ -62,11 +60,6 @@ static double constexpr CUTOFF = 4.0;
 
 static int constexpr PERSISTANCE = 5;
 
-static int constexpr TYPE_MIN = 0x0;
-static int constexpr TYPE_MAX = 0xF;
-static int constexpr SPEED_MIN = 5;
-static int constexpr SPEED_MAX = 20;
-
 static int constexpr KEY_ESC = 27;
 
 static int constexpr DEFAULT_LUMINANCE = 5;
@@ -93,14 +86,27 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	player.turn = 0;
 	player.symb = PLAYER;
 	tiles[player.y][player.x].n = &player;
+	player.color = COLOR_PAIR(COLOR_YELLOW);
 
 	(void)mvwaddch(win, player.y, player.x, player.symb);
 
 	heap.push(player);
 
 	for (auto &n: npcs) {
-		n = new npc();
+		size_t i;
+		do {
+			i = rr.rrand<size_t>(0, npcs_parsed.size() - 1);
+		} while(npcs_parsed[i].done);
+
+		n = new npc(npcs_parsed[i]);
+
+		if (n->type & UNIQ) {
+			n->done = true;
+			npcs_parsed[i].done = true;
+		}
+
 		gen_npc(*n);
+
 		tiles[n->y][n->x].n = n;
 
 		heap.push(*n);
@@ -130,10 +136,11 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		}
 
 		npcs.erase(std::remove_if(npcs.begin(), npcs.end(),
-			[&alive](auto o)
+			[&alive](auto const o)
 			{
 				if (o->dead) {
 					alive--;
+					o->~npc();
 					return true;
 				} else {
 					return false;
@@ -208,7 +215,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	exit:
 
 	for (auto &n: npcs) {
-		delete n;
+		n->~npc();
 	}
 
 	if (delwin(nwin) == ERR) {
@@ -289,12 +296,6 @@ pc_visible(int const x1, int const y1)
 	}
 
 	return true;
-}
-
-static unsigned int constexpr
-limited_int_to_char(uint16_t const i)
-{
-	return (unsigned int)((i < 0xA) ? i + '0' : i + 'a' - 0xA);
 }
 
 static void
@@ -441,15 +442,6 @@ gen_npc(npc &n)
 
 	n.x = x;
 	n.y = y;
-
-	n.type = rr.rrand<uint8_t>(TYPE_MIN, TYPE_MAX);
-	n.speed = rr.rrand<uint8_t>(SPEED_MIN, SPEED_MAX);
-
-	n.turn = 0;
-	n.p_count = 0;
-	n.dead = false;
-
-	n.symb = limited_int_to_char(n.type);
 }
 
 static enum pc_action
@@ -676,12 +668,12 @@ npc_list(WINDOW *const nwin, std::vector<npc *> const &npcs)
 
 		std::size_t i;
 		for (i = 0; i < HEIGHT - 2 && i + cpos < npcs.size(); ++i) {
-			npc n = *npcs[i + cpos];
-			int dx = player.x - n.x;
-			int dy = player.y - n.y;
+			npc *n = npcs[i + cpos];
+			int dx = player.x - n->x;
+			int dy = player.y - n->y;
 
 			(void)mvwprintw(nwin, static_cast<int>(i + 1U), 2,
-				"%u.\t%c, %d %s and %d %s", i + cpos, n.symb,
+				"%u.\t%c, %d %s and %d %s", i + cpos, n->symb,
 				abs(dy), dy > 0 ? "north" : "south",
 				abs(dx), dx > 0 ? "west" : "east");
 		}
