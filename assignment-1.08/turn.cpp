@@ -57,12 +57,10 @@ struct compare_npc {
 
 /* minimum distance from the PC an NPC can be placed */
 static double constexpr CUTOFF = 4.0;
-
 static int constexpr PERSISTANCE = 5;
-
 static int constexpr KEY_ESC = 27;
-
 static int constexpr DEFAULT_LUMINANCE = 5;
+static unsigned int constexpr NPC_RETRIES = 150;
 
 npc player;
 
@@ -71,6 +69,8 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 {
 	std::priority_queue<npc, std::vector<std::reference_wrapper<npc>>, compare_npc> heap;
 	std::vector<npc *> npcs;
+	unsigned int real_nummon = 0;
+	unsigned int retries = 0;
 
 	/* npc list, defogged windows */
 	WINDOW *nwin, *fwin;
@@ -88,7 +88,9 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 	tiles[player.y][player.x].n = &player;
 	player.color = COLOR_PAIR(COLOR_YELLOW);
 
+	wattron(win, player.color);
 	(void)mvwaddch(win, player.y, player.x, player.symb);
+	wattroff(win, player.color);
 
 	heap.push(player);
 
@@ -96,7 +98,14 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		size_t i;
 		do {
 			i = rr.rrand<size_t>(0, npcs_parsed.size() - 1);
-		} while(npcs_parsed[i].done);
+			retries++;
+		} while(npcs_parsed[i].done && retries < NPC_RETRIES);
+
+		if (retries == NPC_RETRIES) {
+			break;
+		}
+
+		real_nummon++;
 
 		n = new npc(npcs_parsed[i]);
 
@@ -110,6 +119,11 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		tiles[n->y][n->x].n = n;
 
 		heap.push(*n);
+	}
+
+	if (retries == NPC_RETRIES) {
+		npcs.resize(real_nummon);
+		alive = real_nummon;
 	}
 
 	dijkstra();
@@ -160,6 +174,9 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		if (n.dead) {
 			if (n.type & PLAYER_TYPE) {
 				ret = TURN_DEATH;
+				goto exit;
+			} else if (n.type & BOSS) {
+				ret = TURN_WIN;
 				goto exit;
 			}
 
@@ -317,7 +334,9 @@ move_redraw(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 	}
 
 	if (tiles[y][x].v) {
+		wattron(win, n.color);
 		(void)mvwaddch(win, y, x, n.symb);
+		wattroff(win, n.color);
 	}
 
 	n.y = y;
@@ -718,10 +737,14 @@ defog(WINDOW *const fwin, std::vector<npc *> const &npcs)
 	}
 
 	for (auto const &n : npcs) {
+		wattron(fwin, n->color);
 		(void)mvwaddch(fwin, n->y, n->x, n->symb);
+		wattroff(fwin, n->color);
 	}
 
+	wattron(fwin, player.color);
 	(void)mvwaddch(fwin, player.y, player.x, player.symb);
+	wattroff(fwin, player.color);
 
 	(void)mvwprintw(fwin, HEIGHT - 1, 2, "[ press any key to exit ]");
 
@@ -922,7 +945,13 @@ pc_viewbox(WINDOW *const win, int const lum)
 					? tiles[j][i].c
 					: tiles[j][i].n->symb;
 				tiles[j][i].v = true;
+				if (tiles[j][i].n != NULL) {
+					wattron(win, tiles[j][i].n->color);
+				}
 				(void)mvwaddch(win, j, i, ch);
+				if (tiles[j][i].n != NULL) {
+					wattroff(win, tiles[j][i].n->color);
+				}
 			}
 		}
 	}
