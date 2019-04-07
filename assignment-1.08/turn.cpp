@@ -477,7 +477,9 @@ turn_npc(WINDOW *const win, npc &n)
 		return PC_NONE;
 	}
 
-	switch(n.type) {
+	uint16_t const basic_type = n.type & 0xF;
+
+	switch(basic_type) {
 	case 0x0:
 	case 0x8:
 	case 0x4:

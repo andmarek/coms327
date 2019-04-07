@@ -58,14 +58,14 @@ struct dungeon_thing {
 	uint8_t			rrty;
 	uint8_t			speed;
 	uint8_t			x;
-	uint8_t 		y;
+	uint8_t			y;
 };
 
 struct npc : dungeon_thing {
 	int32_t		turn;
 	uint16_t	type;
 	uint8_t		hp;
-	uint8_t 	p_count;
+	uint8_t		p_count;
 	bool		dead;
 };
 
@@ -92,14 +92,14 @@ enum type {
 };
 
 struct obj : dungeon_thing {
-	uint8_t			def;
-	uint8_t			dodge;
-	uint8_t			hit;
-	uint8_t			val;
-	uint8_t			weight;
-	uint8_t 		attr;
-	type			obj_type;
-	bool			art;
+	uint8_t	def;
+	uint8_t	dodge;
+	uint8_t	hit;
+	uint8_t	val;
+	uint8_t	weight;
+	uint8_t	attr;
+	type	obj_type;
+	bool	art;
 };
 
 struct room {

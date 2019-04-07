@@ -263,7 +263,7 @@ parse_dice_value(char *const s)
 static uint8_t
 parse_rrty(char *const s)
 {
-	uint8_t const rrty = std::atoi(s);
+	uint8_t const rrty = (uint8_t)std::atoi(s);
 
 	if (rrty == 0 || rrty > 100) {
 		cerrx(1, "rrty '%d' out of bounds [1, 100]", rrty);

@@ -1,13 +1,13 @@
 #include <cerrno>
+#include <cstdarg>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
 /*
 Becase err.h is platform dependent, here's a reproduced err and errx.
 Almost identical to OpenBSD's err(3) and errx(3).
 */
-
-#include <cstdlib>
-#include <cstring>
-#include <cstdarg>
 
 static void	vcerr(int, char const *, va_list);
 static void	vcerrx(int, char const *, va_list);

@@ -21,18 +21,6 @@ static char const *const color_map_r[] = {
 	"YELLOW"
 };
 
-static char const *const ability_map_r[] = {
-	"BOSS",
-	"DESTROY",
-	"ERRATIC",
-	"PASS",
-	"PICKUP",
-	"SMART",
-	"TELE",
-	"TUNNEL",
-	"UNIQ"
-};
-
 static char const *const type_map_r[] = {
 	"AMMUNITION",
 	"AMULET",
@@ -71,17 +59,17 @@ parse_npc_file()
 
 	if (stat(path.c_str(), &st) == -1) {
 		if (errno == ENOENT) {
-			cerr(1, "no monster file, run with '-m' to skip "
-				"monster file parsing");
+			cerr(1, "no npc file, run with '-m' to skip "
+				"npc file parsing");
 		} else {
-			cerr(1, "stat monster file");
+			cerr(1, "stat npc file");
 		}
 	}
 
 	yyin = fopen(path.c_str(), "r");
 
 	if (yyin == NULL) {
-		cerr(1, "monster file fopen");
+		cerr(1, "npc file fopen");
 	}
 
 	if (yyparse() != 0) {
@@ -89,7 +77,7 @@ parse_npc_file()
 	}
 
 	if (fclose(yyin) == EOF) {
-		cerr(1, "monster fclose");
+		cerr(1, "npc fclose");
 	}
 }
 

@@ -206,7 +206,7 @@ usage(int const status, std::string const &name)
   -d, --nodescs         don't parse description files\n\
   -h, --help            display this help text and exit\n\
   -l, --load            load dungeon file\n\
-  -n, --nummon=[NUM]    number of monsters per floor\n\
+  -n, --nummon=[NUM]    number of npcs per floor\n\
   -s, --save            save dungeon file\n\
   -z, --seed=[SEED]     set rand seed, takes integer or string\n";
 	}
