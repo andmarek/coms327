@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
+#include <new>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -82,9 +83,12 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 	int alive = numnpcs;
 	enum turn_exit ret = TURN_NONE;
 
-	npcs.resize(numnpcs);
-	objs.resize(numobjs);
-
+	try {
+		npcs.resize(numnpcs);
+		objs.resize(numobjs);
+	} catch (std::bad_alloc const &) {
+		cerr(1, "resize npcs and objs");
+	}
 	player.speed = 10;
 	player.type = PLAYER_TYPE;
 	player.turn = 0;
