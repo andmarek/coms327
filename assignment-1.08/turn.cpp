@@ -109,7 +109,7 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 			i = rr.rrand<size_t>(0, npcs_parsed.size() - 1);
 			retries++;
 		} while (retries < RETRIES && (npcs_parsed[i].done
-			|| npcs_parsed[i].rrty <= rr.rrand<uint8_t>(1, 100)));
+			|| npcs_parsed[i].rrty <= rr.rrand<uint8_t>(0, 99)));
 
 		if (retries == RETRIES) {
 			break;
@@ -145,7 +145,7 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 			i = rr.rrand<size_t>(0, objs_parsed.size() - 1);
 			retries++;
 		} while (retries < RETRIES && (objs_parsed[i].done
-			|| objs_parsed[i].rrty <= rr.rrand<uint8_t>(1, 100)));
+			|| objs_parsed[i].rrty <= rr.rrand<uint8_t>(0, 99)));
 
 		if (retries == RETRIES) {
 			break;
