@@ -1,0 +1,6 @@
+OPAL's Playable Almost Indefectibly. Get flag info using ./opal.out -h.
+
+The monster and object parsing is implemented in Yacc and (F)Lex, so compilation
+requires them.
+
+Requires support for C++17 and POSIX threads.
