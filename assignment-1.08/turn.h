@@ -11,6 +11,6 @@ enum turn_exit {
 	TURN_WIN
 };
 
-enum turn_exit	turn_engine(WINDOW *const, unsigned int const);
+enum turn_exit	turn_engine(WINDOW *const, unsigned int const, unsigned int const);
 
 #endif /* TURN_H */

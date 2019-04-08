@@ -27,7 +27,8 @@ static struct option const long_opts[] = {
 	{"nodescs", no_argument, NULL, 'd'},
 	{"help", no_argument, NULL, 'h'},
 	{"load", no_argument, NULL, 'l'},
-	{"nummon", required_argument, NULL, 'n'},
+	{"numnpcs", required_argument, NULL, 'n'},
+	{"numobjs", required_argument, NULL, 'o'},
 	{"save", no_argument, NULL, 's'},
 	{"seed", required_argument, NULL, 'z'},
 	{NULL, 0, NULL, 0}
@@ -42,10 +43,11 @@ main(int const argc, char *const argv[])
 	bool load = false;
 	bool save = false;
 	bool no_descs = false;
-	unsigned int nummon = std::numeric_limits<unsigned int>::max();
+	unsigned int numnpcs = std::numeric_limits<unsigned int>::max();
+	unsigned int numobjs = std::numeric_limits<unsigned int>::max();
 	std::string const name = (argc == 0) ? PROGRAM_NAME : argv[0];
 
-	while ((ch = getopt_long(argc, argv, "dhln:sz:", long_opts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "dhln:o:sz:", long_opts, NULL)) != -1) {
 		switch(ch) {
 		case 'd':
 			no_descs = true;
@@ -57,10 +59,17 @@ main(int const argc, char *const argv[])
 			load = true;
 			break;
 		case 'n':
-			nummon = (unsigned int)strtoul(optarg, &end, 10);
+			numnpcs = (unsigned int)strtoul(optarg, &end, 10);
 
 			if (optarg == end || errno == EINVAL || errno == ERANGE) {
-				cerr(1, "nummon invalid");
+				cerr(1, "numnpcs invalid");
+			}
+			break;
+		case 'o':
+			numobjs = (unsigned int)strtoul(optarg, &end, 10);
+
+			if (optarg == end || errno == EINVAL || errno == ERANGE) {
+				cerr(1, "numobjs invalid");
 			}
 			break;
 		case 's':
@@ -83,8 +92,12 @@ main(int const argc, char *const argv[])
 		}
 	}
 
-	if (nummon == std::numeric_limits<unsigned int>::max()) {
-		nummon = rr.rrand<unsigned int>(3, 5);
+	if (numnpcs == std::numeric_limits<unsigned int>::max()) {
+		numnpcs = rr.rrand<unsigned int>(3, 5);
+	}
+
+	if (numobjs == std::numeric_limits<unsigned int>::max()) {
+		numobjs = rr.rrand<unsigned int>(10, 15);
 	}
 
 	(void)initscr();
@@ -138,7 +151,7 @@ main(int const argc, char *const argv[])
 	}
 
 	retry:
-	switch(turn_engine(win, nummon)) {
+	switch(turn_engine(win, numnpcs, numobjs)) {
 	case TURN_DEATH:
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -206,7 +219,8 @@ usage(int const status, std::string const &name)
   -d, --nodescs         don't parse description files\n\
   -h, --help            display this help text and exit\n\
   -l, --load            load dungeon file\n\
-  -n, --nummon=[NUM]    number of npcs per floor\n\
+  -n, --numnpcs=[NUM]   number of npcs per floor\n\
+  -o, --numobjs=[NUM]   number of objs per floor\n\
   -s, --save            save dungeon file\n\
   -z, --seed=[SEED]     set rand seed, takes integer or string\n";
 	}

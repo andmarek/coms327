@@ -2,6 +2,7 @@
 #include <functional>
 #include <limits>
 #include <queue>
+#include <utility>
 #include <vector>
 
 #include "cerr.h"
@@ -9,7 +10,7 @@
 #include "globs.h"
 #include "turn.h"
 
-static bool	valid_npc(uint8_t const, uint8_t const);
+static bool	valid_thing(uint8_t const, uint8_t const);
 
 static double		distance(uint8_t const, uint8_t const, uint8_t const, uint8_t const);
 static unsigned int	subu32(unsigned int const, unsigned int const);
@@ -24,10 +25,11 @@ static void	move_dijk_nontunneling(WINDOW *const, npc &);
 static void	move_dijk_tunneling(WINDOW *const, npc &);
 
 static void	gen_npc(npc &);
+static std::optional<std::pair<uint8_t, uint8_t>>	gen_obj();
 
 static void	npc_list(WINDOW *const, std::vector<npc *> const &);
 
-static void	defog(WINDOW *const, std::vector<npc *> const &);
+static void	defog(WINDOW *const, std::vector<npc *> const &, std::vector<obj *> const &);
 
 static void	crosshair(WINDOW *const, uint8_t const, uint8_t const);
 static bool	teleport(WINDOW *const);
@@ -60,26 +62,28 @@ static double constexpr CUTOFF = 4.0;
 static int constexpr PERSISTANCE = 5;
 static int constexpr KEY_ESC = 27;
 static int constexpr DEFAULT_LUMINANCE = 5;
-static unsigned int constexpr NPC_RETRIES = 150;
+static unsigned int constexpr RETRIES = 150;
 
 npc player;
 
 enum turn_exit
-turn_engine(WINDOW *const win, unsigned int const nummon)
+turn_engine(WINDOW *const win, unsigned int const numnpcs,
+	unsigned int const numobjs)
 {
 	std::priority_queue<npc, std::vector<std::reference_wrapper<npc>>, compare_npc> heap;
 	std::vector<npc *> npcs;
-	unsigned int real_nummon = 0;
-	unsigned int retries = 0;
+	std::vector<obj *> objs;
+	unsigned int real_num = 0;
 
 	/* npc list, defogged windows */
 	WINDOW *nwin, *fwin;
 
 	int32_t turn;
-	int alive = nummon;
+	int alive = numnpcs;
 	enum turn_exit ret = TURN_NONE;
 
-	npcs.resize(nummon);
+	npcs.resize(numnpcs);
+	objs.resize(numobjs);
 
 	player.speed = 10;
 	player.type = PLAYER_TYPE;
@@ -94,18 +98,20 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	heap.push(player);
 
-	for (auto &n: npcs) {
+	for (auto &n : npcs) {
 		size_t i;
+		unsigned int retries = 0;
 		do {
 			i = rr.rrand<size_t>(0, npcs_parsed.size() - 1);
 			retries++;
-		} while(npcs_parsed[i].done && retries < NPC_RETRIES);
+		} while (retries < RETRIES && (npcs_parsed[i].done
+			|| npcs_parsed[i].rrty <= rr.rrand<uint8_t>(1, 100)));
 
-		if (retries == NPC_RETRIES) {
+		if (retries == RETRIES) {
 			break;
 		}
 
-		real_nummon++;
+		real_num++;
 
 		n = new npc(npcs_parsed[i]);
 
@@ -121,9 +127,49 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		heap.push(*n);
 	}
 
-	if (retries == NPC_RETRIES) {
-		npcs.resize(real_nummon);
-		alive = real_nummon;
+	if (real_num != numnpcs) {
+		npcs.resize(real_num);
+		alive = real_num;
+	}
+
+	real_num = 0;
+
+	for (auto &o : objs) {
+		size_t i = 0;
+		unsigned int retries = 0;
+		do {
+			i = rr.rrand<size_t>(0, objs_parsed.size() - 1);
+			retries++;
+		} while (retries < RETRIES && (objs_parsed[i].done
+			|| objs_parsed[i].rrty <= rr.rrand<uint8_t>(1, 100)));
+
+		if (retries == RETRIES) {
+			break;
+		}
+
+		std::optional<std::pair<uint8_t, uint8_t>> coords = gen_obj();
+
+		if (!coords.has_value()) {
+			break;
+		}
+
+		real_num++;
+
+		o = new obj(objs_parsed[i]);
+
+		if (o->art) {
+			o->done = true;
+			objs_parsed[i].done = true;
+		}
+
+		o->x = (*coords).first;
+		o->y = (*coords).second;
+
+		tiles[o->y][o->x].o = o;
+	}
+
+	if (real_num != numobjs) {
+		objs.resize(real_num);
 	}
 
 	dijkstra();
@@ -189,7 +235,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 		retry:
 		switch(turn_npc(win, n)) {
 		case PC_DEFOG:
-			defog(fwin, npcs);
+			defog(fwin, npcs, objs);
 
 			if (touchwin(win) == ERR) {
 				cerrx(1, "touchwin fwin");
@@ -231,10 +277,6 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 
 	exit:
 
-	for (auto &n: npcs) {
-		n->~npc();
-	}
-
 	if (delwin(nwin) == ERR) {
 		cerrx(1, "turn_engine delwin nwin");
 	}
@@ -247,7 +289,7 @@ turn_engine(WINDOW *const win, unsigned int const nummon)
 }
 
 static bool
-valid_npc(uint8_t const y, uint8_t const x)
+valid_thing(uint8_t const y, uint8_t const x)
 {
 	if (tiles[y][x].h != 0) {
 		return false;
@@ -329,8 +371,14 @@ move_redraw(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 	tiles[n.y][n.x].n = NULL;
 	tiles[y][x].n = &n;
 
-	if (tiles[n.y][n.x].v) {
-		(void)mvwaddch(win, n.y, n.x, tiles[n.y][n.x].c);
+	if (tiles[n.y][n.x].v || n.type & PLAYER_TYPE) {
+		if (tiles[n.y][n.x].o != NULL) {
+			wattron(win, tiles[n.y][n.x].o->color);
+			(void)mvwaddch(win, n.y, n.x, tiles[n.y][n.x].o->symb);
+			wattroff(win, tiles[n.y][n.x].o->color);
+		} else {
+			(void)mvwaddch(win, n.y, n.x, tiles[n.y][n.x].c);
+		}
 	}
 
 	if (tiles[y][x].v) {
@@ -457,10 +505,30 @@ gen_npc(npc &n)
 	do {
 		x = rr.rrand<uint8_t>(1, WIDTH - 2);
 		y = rr.rrand<uint8_t>(1, HEIGHT - 2);
-	} while (!valid_npc(y, x));
+	} while (!valid_thing(y, x));
 
 	n.x = x;
 	n.y = y;
+}
+
+static std::optional<std::pair<uint8_t, uint8_t>>
+gen_obj()
+{
+	uint8_t x, y;
+	size_t retries = 0;
+
+	do {
+		x = rr.rrand<uint8_t>(1, WIDTH - 2);
+		y = rr.rrand<uint8_t>(1, HEIGHT - 2);
+		retries++;
+	} while (retries < RETRIES && (!valid_thing(y, x)
+		|| tiles[y][x].o != NULL));
+
+	if (retries == RETRIES) {
+		return {};
+	}
+
+	return std::make_pair(x, y);
 }
 
 static enum pc_action
@@ -548,7 +616,7 @@ turn_npc(WINDOW *const win, npc &n)
 		}
 		break;
 	default:
-		cerrx(1, "gen_npc invalid npc type %d", n.type);
+		cerrx(1, "turn_npc invalid npc type %d", n.type);
 	}
 
 	return PC_NONE;
@@ -728,12 +796,19 @@ npc_list(WINDOW *const nwin, std::vector<npc *> const &npcs)
 }
 
 static void
-defog(WINDOW *const fwin, std::vector<npc *> const &npcs)
+defog(WINDOW *const fwin, std::vector<npc *> const &npcs,
+	std::vector<obj *> const &objs)
 {
 	for (int x = 1; x < WIDTH - 1; ++x) {
 		for (int y = 1; y < HEIGHT - 1; ++y) {
 			(void)mvwaddch(fwin, y, x, tiles[y][x].c);
 		}
+	}
+
+	for (auto const &o : objs) {
+		wattron(fwin, o->color);
+		(void)mvwaddch(fwin, o->y, o->x, o->symb);
+		wattroff(fwin, o->color);
 	}
 
 	for (auto const &n : npcs) {
@@ -940,18 +1015,20 @@ pc_viewbox(WINDOW *const win, int const lum)
 
 	for (int i = start_x; i <= end_x && i < WIDTH - 1; ++i) {
 		for (int j = start_y; j <= end_y && j < HEIGHT - 1; ++j) {
-			if (viewable(j, i)) {
-				chtype const ch = (tiles[j][i].n == NULL)
-					? tiles[j][i].c
-					: tiles[j][i].n->symb;
-				tiles[j][i].v = true;
-				if (tiles[j][i].n != NULL) {
-					wattron(win, tiles[j][i].n->color);
-				}
-				(void)mvwaddch(win, j, i, ch);
-				if (tiles[j][i].n != NULL) {
-					wattroff(win, tiles[j][i].n->color);
-				}
+			if (!viewable(j, i)) {
+				continue;
+			}
+
+			if (tiles[j][i].n != NULL) {
+				wattron(win, tiles[j][i].n->color);
+				(void)mvwaddch(win, j, i, tiles[j][i].n->symb);
+				wattroff(win, tiles[j][i].n->color);
+			} else if (tiles[j][i].o != NULL) {
+				wattron(win, tiles[j][i].o->color);
+				(void)mvwaddch(win, j, i, tiles[j][i].o->symb);
+				wattroff(win, tiles[j][i].o->color);
+			} else {
+				(void)mvwaddch(win, j, i, tiles[j][i].c);
 			}
 		}
 	}
