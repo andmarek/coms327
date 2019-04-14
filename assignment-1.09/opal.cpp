@@ -159,8 +159,8 @@ main(int const argc, char *const argv[])
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		break;
 	case TURN_NEXT:
-		if (wclear(win) == ERR) {
-			cerrx(1, "arrange_renew clear");
+		if (werase(win) == ERR) {
+			cerrx(1, "arrange_renew erase");
 		}
 
 		(void)box(win, 0, 0);
@@ -269,8 +269,8 @@ colors()
 static void
 print_bossscreen(WINDOW *const win)
 {
-	if (wclear(win) == ERR) {
-		cerrx(1, "clear on bossscreen");
+	if (werase(win) == ERR) {
+		cerrx(1, "erase on bossscreen");
 	}
 
 	(void)box(win, 0, 0);
@@ -292,8 +292,8 @@ print_bossscreen(WINDOW *const win)
 static void
 print_deathscreen(WINDOW *const win)
 {
-	if (wclear(win) == ERR) {
-		cerrx(1, "clear on deathscreen");
+	if (werase(win) == ERR) {
+		cerrx(1, "erase on deathscreen");
 	}
 
 	(void)box(win, 0, 0);
@@ -314,8 +314,8 @@ print_deathscreen(WINDOW *const win)
 static void
 print_winscreen(WINDOW *const win)
 {
-	if (wclear(win) == ERR) {
-		cerrx(1, "clear on winscreen");
+	if (werase(win) == ERR) {
+		cerrx(1, "erase on winscreen");
 	}
 
 	(void)box(win, 0, 0);

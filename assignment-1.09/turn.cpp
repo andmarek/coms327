@@ -3,6 +3,7 @@
 #include <limits>
 #include <new>
 #include <queue>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -39,7 +40,6 @@ static bool	viewable(int const, int const);
 static void	pc_viewbox(WINDOW *const, int const);
 
 static void	try_carry(uint8_t const, uint8_t const);
-static void	carry_list(WINDOW *const, bool const);
 
 static void	equip_list(WINDOW *const, bool const);
 
@@ -49,15 +49,29 @@ static void	equip_to_carry(int const, std::optional<std::string> &);
 enum pc_action {
 	PC_CARRY_LIST,
 	PC_DEFOG,
+	PC_DROP,
 	PC_EQUIP_LIST,
 	PC_NEXT,
 	PC_NONE,
 	PC_NPC_LIST,
 	PC_QUIT,
+	PC_REMOVE,
 	PC_TAKE,
 	PC_TELE,
 	PC_WEAR
 };
+
+static enum pc_action	turn_npc(WINDOW *const, npc &);
+static enum pc_action	turn_pc(WINDOW *const, npc &);
+
+enum carry_action {
+	CARRY_DROP,
+	CARRY_REMOVE,
+	CARRY_LIST,
+	CARRY_WEAR,
+};
+
+static void	carry_list(WINDOW *const, carry_action const);
 
 struct equip {
 	std::optional<obj>	amulet;
@@ -96,7 +110,7 @@ static char const *const type_map_name[] = {
 	"weapon"
 };
 
-static bool type_map_equipable[] = {
+static bool type_map_equip[] = {
 	false,
 	true,
 	true,
@@ -117,9 +131,6 @@ static bool type_map_equipable[] = {
 	false,
 	true
 };
-
-static enum pc_action	turn_npc(WINDOW *const, npc &);
-static enum pc_action	turn_pc(WINDOW *const, npc &);
 
 struct compare_npc {
 	bool constexpr
@@ -316,30 +327,19 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 		n.turn = turn + 1000/n.speed;
 
 		retry:
+		if (touchwin(win) == ERR) {
+			cerrx(1, "touchwin");
+		}
+
 		switch(turn_npc(win, n)) {
 		case PC_CARRY_LIST:
-			carry_list(obj_list_win, false);
-
-			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin obj_list_win");
-			}
-
+			carry_list(obj_list_win, CARRY_LIST);
 			goto retry;
 		case PC_DEFOG:
 			defog(defog_win, npcs);
-
-			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin defog_win");
-			}
-
 			goto retry;
 		case PC_EQUIP_LIST:
 			equip_list(obj_list_win, false);
-
-			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin obj_list_win");
-			}
-
 			goto retry;
 		case PC_NEXT:
 			ret = TURN_NEXT;
@@ -348,43 +348,28 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 			break;
 		case PC_NPC_LIST:
 			npc_list(npc_list_win, npcs);
-
-			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin npc_list_win");
-			}
-
 			goto retry;
 		case PC_QUIT:
 			ret = TURN_QUIT;
 			goto exit;
 		case PC_TAKE:
 			equip_list(obj_list_win, true);
-
-			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin obj_list_win");
-			}
-
 			goto retry;
 		case PC_WEAR:
-			carry_list(obj_list_win, true);
-
-			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin obj_list_win");
-			}
-
+			carry_list(obj_list_win, CARRY_WEAR);
 			goto retry;
 		case PC_TELE:
-			bool act = teleport(win);
-
-			if (touchwin(win) == ERR) {
-				cerrx(1, "touchwin twin");
-			}
-
-			if (act) {
+			if (teleport(win)) {
 				break;
 			} else {
 				goto retry;
 			}
+		case PC_DROP:
+			carry_list(obj_list_win, CARRY_DROP);
+			goto retry;
+		case PC_REMOVE:
+			carry_list(obj_list_win, CARRY_REMOVE);
+			goto retry;
 		}
 
 		heap.push(n);
@@ -487,6 +472,10 @@ pc_visible(int const x1, int const y1)
 static void
 move_redraw(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 {
+	if (n.type & PLAYER_TYPE) {
+		try_carry(y, x);
+	}
+
 	if (n.x == x && n.y == y) {
 		return;
 	}
@@ -811,7 +800,8 @@ turn_pc(WINDOW *const win, npc &n)
 		case '5':
 		case '.':
 			/* rest */
-			return PC_NONE;
+			//return PC_NONE;
+			break;
 		case '>':
 			/* go down stairs */
 			if (tiles[y][x].c == STAIR_DN) {
@@ -845,16 +835,18 @@ turn_pc(WINDOW *const win, npc &n)
 			return PC_WEAR;
 		case 't':
 			return PC_TAKE;
+		case 'd':
+			return PC_DROP;
+		case 'x':
+			return PC_REMOVE;
 		default:
 			exit = false;
 		}
 	}
 
-	if (tiles[y][x].h == 0 && (x != n.x || y != n.y)) {
+	if (tiles[y][x].h == 0) {
 		move_redraw(win, n, y, x);
 		dijkstra();
-
-		try_carry(y, x);
 	}
 
 	return PC_NONE;
@@ -866,8 +858,8 @@ npc_list(WINDOW *const nwin, std::vector<npc *> const &npcs)
 	std::vector<npc>::size_type cpos = 0;
 
 	while (1) {
-		if (wclear(nwin) == ERR) {
-			cerrx(1, "npc_list clear");
+		if (werase(nwin) == ERR) {
+			cerrx(1, "npc_list erase");
 		}
 
 		(void)box(nwin, 0, 0);
@@ -1172,21 +1164,36 @@ try_carry(uint8_t const y, uint8_t const x)
 }
 
 static void
-carry_list(WINDOW *const cwin, bool const wear)
+carry_list(WINDOW *const cwin, carry_action const action)
 {
 	std::optional<std::string> error;
 	do {
-		if (wclear(cwin) == ERR) {
-			cerrx(1, "carry_list clear");
+		if (werase(cwin) == ERR) {
+			cerrx(1, "carry_list erase");
+		}
+
+		if (action == CARRY_REMOVE) {
+			wattron(cwin, COLOR_PAIR(COLOR_RED));
 		}
 
 		(void)box(cwin, 0, 0);
 
-		if (wear) {
+		switch (action) {
+		case CARRY_DROP:
+			(void)mvwprintw(cwin, HEIGHT - 1, 2,
+				"[ 0-9 to drop, ESC to exit ]");
+			break;
+		case CARRY_REMOVE:
+			(void)mvwprintw(cwin, HEIGHT - 1, 2,
+				"[ 0-9 to REMOVE, ESC to exit ]");
+			break;
+		case CARRY_LIST:
+			(void)mvwprintw(cwin, HEIGHT - 1, 2, "[ ESC to exit ]");
+			break;
+		case CARRY_WEAR:
 			(void)mvwprintw(cwin, HEIGHT - 1, 2,
 				"[ 0-9 to equip, ESC to exit ]");
-		} else {
-			(void)mvwprintw(cwin, HEIGHT - 1, 2, "[ ESC to exit ]");
+			break;
 		}
 
 		if (error.has_value()) {
@@ -1195,13 +1202,20 @@ carry_list(WINDOW *const cwin, bool const wear)
 			error.reset();
 		}
 
+		if (action == CARRY_REMOVE) {
+			wattroff(cwin, COLOR_PAIR(COLOR_RED));
+		}
+
+
 		for (int i = 0; i < PC_CARRY_MAX; ++i) {
 			if (pc_carry[i].has_value()) {
+				wattron(cwin, pc_carry[i]->color);
 				(void)mvwprintw(cwin, i + 5, 2,
 					"%d. %s: \t'%c'\t%s", i,
 					type_map_name[pc_carry[i]->obj_type],
 					pc_carry[i]->symb,
 					pc_carry[i]->name.c_str());
+				wattroff(cwin, pc_carry[i]->color);
 			} else {
 				(void)mvwprintw(cwin, i + 5, 2, "%u.", i);
 			}
@@ -1225,38 +1239,72 @@ carry_list(WINDOW *const cwin, bool const wear)
 		case '7':
 		case '8':
 		case '9':
-			if (!wear) {
-				break;
-			}
-
 			int const i = ch - '0';
 
-			if (!pc_carry[i].has_value()) {
+			if (action != CARRY_LIST && !pc_carry[i].has_value()) {
 				error = std::string("slot ") + std::to_string(i)
 					+ " has no item";
 				break;
 			}
 
-			if (!type_map_equipable[pc_carry[i]->obj_type]) {
-				error = std::string("item in slot ")
-					+ std::to_string(i)
-					+ " cannot be eqipped";
-				break;
+			if (action == CARRY_WEAR) {
+				if (!type_map_equip[pc_carry[i]->obj_type]) {
+					error = std::string("item in slot ")
+						+ std::to_string(i)
+						+ " cannot be eqipped";
+					break;
+				}
+
+				carry_to_equip(i);
+			} else if (action == CARRY_DROP) {
+				tiles[player.y][player.x].o = &(*pc_carry[i]);
+				pc_carry[i].reset();
+			} else if (action == CARRY_REMOVE) {
+				pc_carry[i].reset();
 			}
 
-			carry_to_equip(i);
 			break;
 		}
 	} while (1);
 }
 
 static void
+print_equipped(WINDOW *const ewin, int const i, char const *const name,
+	char const ch, std::optional<obj> const &item)
+{
+	if (item.has_value()) {
+		wattron(ewin, item->color);
+		(void)mvwprintw(ewin, i, 2, "%s\t%c.\t'%c'\t%s", name, ch,
+			item->symb, item->name.c_str());
+		wattroff(ewin, item->color);
+	} else {
+		(void)mvwprintw(ewin, i, 2, "%s\t%c.", name, ch);
+	}
+}
+
+static void
 equip_list(WINDOW *const ewin, bool const take)
 {
 	std::optional<std::string> error;
+	int const length = 12;
+	std::tuple<std::optional<obj> const *const, char const *const, char> const equip[] = {
+		{ &pc_equip.amulet,	"amulet",	'a' },
+		{ &pc_equip.armor,	"armor\t",	'b' },
+		{ &pc_equip.boots,	"boots\t",	'c' },
+		{ &pc_equip.cloak,	"cloak\t",	'd' },
+		{ &pc_equip.gloves,	"gloves",	'e' },
+		{ &pc_equip.helmet,	"helmet",	'f' },
+		{ &pc_equip.light,	"light\t",	'g' },
+		{ &pc_equip.offhand,	"offhand",	'h' },
+		{ &pc_equip.ranged,	"ranged",	'i' },
+		{ &pc_equip.ring_left,	"left ring",	'j' },
+		{ &pc_equip.ring_right,	"right ring",	'k' },
+		{ &pc_equip.weapon,	"weapon",	'l' }
+	};
+
 	do {
-		if (wclear(ewin) == ERR) {
-			cerrx(1, "equip_list clear");
+		if (werase(ewin) == ERR) {
+			cerrx(1, "equip_list erase");
 		}
 
 		(void)box(ewin, 0, 0);
@@ -1274,100 +1322,9 @@ equip_list(WINDOW *const ewin, bool const take)
 			error.reset();
 		}
 
-		if (pc_equip.amulet.has_value()) {
-			(void)mvwprintw(ewin, 4, 2, "amulet\ta.\t'%c'\t%s",
-				pc_equip.amulet->symb,
-				pc_equip.amulet->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 4, 2, "amulet\ta.");
-		}
-
-		if (pc_equip.armor.has_value()) {
-			(void)mvwprintw(ewin, 5, 2, "armor\t\tb.\t'%c'\t%s",
-				pc_equip.armor->symb,
-				pc_equip.armor->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 5, 2, "armor\t\tb.");
-		}
-
-		if (pc_equip.boots.has_value()) {
-			(void)mvwprintw(ewin, 6, 2, "boots\t\tc.\t'%c'\t%s",
-				pc_equip.boots->symb,
-				pc_equip.boots->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 6, 2, "boots\t\tc.");
-		}
-
-		if (pc_equip.cloak.has_value()) {
-			(void)mvwprintw(ewin, 7, 2, "cloak\t\td.\t'%c'\t%s",
-				pc_equip.cloak->symb,
-				pc_equip.cloak->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 7, 2, "cloak\t\td.");
-		}
-
-		if (pc_equip.gloves.has_value()) {
-			(void)mvwprintw(ewin, 8, 2, "gloves\te.\t'%c'\t%s",
-				pc_equip.gloves->symb,
-				pc_equip.gloves->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 8, 2, "gloves\te.");
-		}
-
-		if (pc_equip.helmet.has_value()) {
-			(void)mvwprintw(ewin, 9, 2, "helmet\tf.\t'%c'\t%s",
-				pc_equip.helmet->symb,
-				pc_equip.helmet->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 9, 2, "helmet\tf.");
-		}
-
-		if (pc_equip.light.has_value()) {
-			(void)mvwprintw(ewin, 10, 2, "light\t\tg.\t'%c'\t%s",
-				pc_equip.light->symb,
-				pc_equip.light->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 10, 2, "light\t\tg.");
-		}
-
-		if (pc_equip.offhand.has_value()) {
-			(void)mvwprintw(ewin, 11, 2, "offhand\th.\t'%c'\t%s",
-				pc_equip.offhand->symb,
-				pc_equip.offhand->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 11, 2, "offhand\th.");
-		}
-
-		if (pc_equip.ranged.has_value()) {
-			(void)mvwprintw(ewin, 12, 2, "ranged\ti.\t'%c'\t%s",
-				pc_equip.ranged->symb,
-				pc_equip.ranged->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 12, 2, "ranged\ti.");
-		}
-
-		if (pc_equip.ring_left.has_value()) {
-			(void)mvwprintw(ewin, 13, 2, "left ring\tj.\t'%c'\t%s",
-				pc_equip.ring_left->symb,
-				pc_equip.ring_left->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 13, 2, "left ring\tj.");
-		}
-
-		if (pc_equip.ring_right.has_value()) {
-			(void)mvwprintw(ewin, 14, 2, "right ring\tk.\t'%c'\t%s",
-				pc_equip.ring_right->symb,
-				pc_equip.ring_right->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 14, 2, "right ring\tk.");
-		}
-
-		if (pc_equip.weapon.has_value()) {
-			(void)mvwprintw(ewin, 15, 2, "weapon\tl.\t'%c'\t%s",
-				pc_equip.weapon->symb,
-				pc_equip.weapon->name.c_str());
-		} else {
-			(void)mvwprintw(ewin, 15, 2, "weapon\tl.");
+		for (int i = 0; i < length; ++i) {
+			print_equipped(ewin, i + 4, std::get<1>(equip[i]),
+				std::get<2>(equip[i]), *std::get<0>(equip[i]));
 		}
 
 		int const ch = wgetch(ewin);
