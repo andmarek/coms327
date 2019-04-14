@@ -1188,7 +1188,8 @@ carry_list(WINDOW *const cwin, carry_action const action)
 				"[ 0-9 to REMOVE, ESC to exit ]");
 			break;
 		case CARRY_LIST:
-			(void)mvwprintw(cwin, HEIGHT - 1, 2, "[ ESC to exit ]");
+			(void)mvwprintw(cwin, HEIGHT - 1, 2,
+				"[ press any key to exit ]");
 			break;
 		case CARRY_WEAR:
 			(void)mvwprintw(cwin, HEIGHT - 1, 2,
@@ -1223,6 +1224,10 @@ carry_list(WINDOW *const cwin, carry_action const action)
 
 		int const ch = wgetch(cwin);
 
+		if (action == CARRY_LIST) {
+			return;
+		}
+
 		switch(ch) {
 		case ERR:
 			cerrx(1, "carry_list wgetch ERR");
@@ -1241,7 +1246,7 @@ carry_list(WINDOW *const cwin, carry_action const action)
 		case '9':
 			int const i = ch - '0';
 
-			if (action != CARRY_LIST && !pc_carry[i].has_value()) {
+			if (!pc_carry[i].has_value()) {
 				error = std::string("slot ") + std::to_string(i)
 					+ " has no item";
 				break;
@@ -1313,7 +1318,8 @@ equip_list(WINDOW *const ewin, bool const take)
 			(void)mvwprintw(ewin, HEIGHT - 1, 2,
 				"[ a-l to take off, ESC to exit ]");
 		} else {
-			(void)mvwprintw(ewin, HEIGHT - 1, 2, "[ ESC to exit ]");
+			(void)mvwprintw(ewin, HEIGHT - 1, 2,
+				"[ press any key to exit ]");
 		}
 
 		if (error.has_value()) {
@@ -1328,6 +1334,10 @@ equip_list(WINDOW *const ewin, bool const take)
 		}
 
 		int const ch = wgetch(ewin);
+
+		if (!take) {
+			return;
+		}
 
 		switch(ch) {
 		case ERR:
