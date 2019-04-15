@@ -3,6 +3,7 @@
 #include <limits>
 #include <new>
 #include <queue>
+#include <sstream>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -34,7 +35,7 @@ static void	npc_list(WINDOW *const, std::vector<npc *> const &);
 static void	defog(WINDOW *const, std::vector<npc *> const &);
 
 static void	crosshair(WINDOW *const, uint8_t const, uint8_t const);
-static bool	teleport(WINDOW *const);
+static bool	inspect(WINDOW *const, bool const);
 
 static bool	viewable(int const, int const);
 static void	pc_viewbox(WINDOW *const, int const);
@@ -46,11 +47,14 @@ static void	equip_list(WINDOW *const, bool const);
 static void	carry_to_equip(int const);
 static void	equip_to_carry(int const, std::optional<std::string> &);
 
+static void	npc_details(WINDOW *const, npc const &);
+
 enum pc_action {
 	PC_CARRY_LIST,
 	PC_DEFOG,
 	PC_DROP,
 	PC_EQUIP_LIST,
+	PC_INSPECT_NPC,
 	PC_NEXT,
 	PC_NONE,
 	PC_NPC_LIST,
@@ -359,7 +363,7 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 			carry_list(obj_list_win, CARRY_WEAR);
 			goto retry;
 		case PC_TELE:
-			if (teleport(win)) {
+			if (inspect(win, true)) {
 				break;
 			} else {
 				goto retry;
@@ -369,6 +373,9 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 			goto retry;
 		case PC_REMOVE:
 			carry_list(obj_list_win, CARRY_REMOVE);
+			goto retry;
+		case PC_INSPECT_NPC:
+			inspect(win, false);
 			goto retry;
 		}
 
@@ -839,6 +846,8 @@ turn_pc(WINDOW *const win, npc &n)
 			return PC_DROP;
 		case 'x':
 			return PC_REMOVE;
+		case 'L':
+			return PC_INSPECT_NPC;
 		default:
 			exit = false;
 		}
@@ -946,38 +955,38 @@ defog(WINDOW *const fwin, std::vector<npc *> const &npcs)
 }
 
 static void
-crosshair(WINDOW *const twin, uint8_t const y, uint8_t const x)
+crosshair(WINDOW *const win, uint8_t const y, uint8_t const x)
 {
 	for (int i = 1; i < HEIGHT - 1; ++i) {
 		if (i != y) {
-			(void)mvwaddch(twin, i, x, ACS_VLINE);
+			(void)mvwaddch(win, i, x, ACS_VLINE);
 		}
 	}
 
 	for (int i = 1; i < WIDTH - 1; ++i) {
 		if (i != x) {
-			(void)mvwaddch(twin, y, i, ACS_HLINE);
+			(void)mvwaddch(win, y, i, ACS_HLINE);
 		}
 	}
 
-	(void)mvwaddch(twin, y, 0, ACS_LTEE);
-	(void)mvwaddch(twin, y, WIDTH - 1, ACS_RTEE);
-	(void)mvwaddch(twin, 0, x, ACS_TTEE);
-	(void)mvwaddch(twin, HEIGHT - 1, x, ACS_BTEE);
+	(void)mvwaddch(win, y, 0, ACS_LTEE);
+	(void)mvwaddch(win, y, WIDTH - 1, ACS_RTEE);
+	(void)mvwaddch(win, 0, x, ACS_TTEE);
+	(void)mvwaddch(win, HEIGHT - 1, x, ACS_BTEE);
 
-	(void)mvwaddch(twin, y + 1, x + 0, ACS_TTEE);
-	(void)mvwaddch(twin, y - 1, x + 0, ACS_BTEE);
-	(void)mvwaddch(twin, y + 0, x - 1, ACS_RTEE);
-	(void)mvwaddch(twin, y + 0, x + 1, ACS_LTEE);
+	(void)mvwaddch(win, y + 1, x + 0, ACS_TTEE);
+	(void)mvwaddch(win, y - 1, x + 0, ACS_BTEE);
+	(void)mvwaddch(win, y + 0, x - 1, ACS_RTEE);
+	(void)mvwaddch(win, y + 0, x + 1, ACS_LTEE);
 
-	(void)mvwaddch(twin, y - 1, x - 1, ACS_ULCORNER);
-	(void)mvwaddch(twin, y - 1, x + 1, ACS_URCORNER);
-	(void)mvwaddch(twin, y + 1, x - 1, ACS_LLCORNER);
-	(void)mvwaddch(twin, y + 1, x + 1, ACS_LRCORNER);
+	(void)mvwaddch(win, y - 1, x - 1, ACS_ULCORNER);
+	(void)mvwaddch(win, y - 1, x + 1, ACS_URCORNER);
+	(void)mvwaddch(win, y + 1, x - 1, ACS_LLCORNER);
+	(void)mvwaddch(win, y + 1, x + 1, ACS_LRCORNER);
 }
 
 static bool
-teleport(WINDOW *const win)
+inspect(WINDOW *const win, bool const teleport)
 {
 	WINDOW *twin;
 	uint8_t y = player.y;
@@ -986,27 +995,33 @@ teleport(WINDOW *const win)
 
 	while (1) {
 		if ((twin = dupwin(win)) == NULL) {
-			cerrx(1, "crosshair dupwin");
+			cerrx(1, "inspect dupwin");
 		}
 
 		if (touchwin(twin) == ERR) {
-			cerrx(1, "teleport touchwin");
+			cerrx(1, "inspect touchwin");
 		}
 
 		crosshair(twin, y, x);
 
-		(void)mvwprintw(twin, HEIGHT - 1, 2,
-			"[ PC control keys; 'r' for random location; "
-			"'g' to teleport; ESC to exit ]");
+		if (teleport) {
+			(void)mvwprintw(twin, HEIGHT - 1, 2,
+				"[ PC control keys; 'r' for random location; "
+				"'g' or 't' to teleport; ESC to exit ]");
+		} else {
+			(void)mvwprintw(twin, HEIGHT - 1, 2,
+				"[ PC control keys; 'g' or 't' to inspect; "
+				"ESC to exit ]");
+		}
 
 
 		if (wrefresh(twin) == ERR) {
-			cerrx(1, "teleport wrefresh");
+			cerrx(1, "inspect wrefresh");
 		}
 
 		switch(wgetch(win)) {
 		case ERR:
-			cerrx(1, "teleport wgetch ERR");
+			cerrx(1, "inspect wgetch ERR");
 			break;
 		case KEY_HOME:
 		case KEY_A1:
@@ -1065,15 +1080,26 @@ teleport(WINDOW *const win)
 			x--;
 			break;
 		case 'r':
-			/* random teleport location */
-			x = rr.rrand<uint8_t>(2, WIDTH - 1);
-			y = rr.rrand<uint8_t>(2, HEIGHT - 1);
+			if (teleport) {
+				/* random teleport location */
+				x = rr.rrand<uint8_t>(2, WIDTH - 1);
+				y = rr.rrand<uint8_t>(2, HEIGHT - 1);
+			}
+
 			break;
+		case 't':
 		case 'g':
-			/* complete teleport */
-			tiles[y][x].v = true;
-			move_redraw(win, player, y, x);
-			goto exit;
+			if (teleport) {
+				/* complete teleport */
+				tiles[y][x].v = true;
+				move_redraw(win, player, y, x);
+				goto exit;
+			}
+
+			if (tiles[y][x].n != NULL) {
+				npc_details(twin, *tiles[y][x].n);
+			}
+			break;
 		case KEY_ESC:
 			ret = false;
 			goto exit;
@@ -1097,7 +1123,7 @@ teleport(WINDOW *const win)
 	exit:
 
 	if (delwin(twin) == ERR) {
-		cerrx(1, "teleport delwin");
+		cerrx(1, "inspect delwin");
 	}
 
 	return ret;
@@ -1460,4 +1486,67 @@ equip_to_carry(int const i, std::optional<std::string> &error)
 	}
 
 	error = "no open slots in carry bag";
+}
+
+static void
+npc_details(WINDOW *const win, npc const &n)
+{
+	std::stringstream ss(n.desc);
+	std::string tmp;
+
+	std::vector<std::string> lines;
+	std::vector<std::string>::size_type cpos = 0;
+
+	lines.push_back(std::string("Symbol: '") + (char)n.symb + "'\tName: "
+		+ n.name);
+	lines.push_back("");
+
+	while (std::getline(ss, tmp, '\n')) {
+		lines.push_back(tmp);
+	}
+
+	while (1) {
+		if (werase(win) == ERR) {
+			cerrx(1, "npc_details erase");
+		}
+
+		(void)box(win, 0, 0);
+
+		(void)mvwprintw(win, HEIGHT - 1, 2,
+			"[ arrow keys to scroll; ESC to exit ]");
+
+		std::size_t i;
+		for(i = 0; i < HEIGHT - 2 && i + cpos < lines.size(); ++i) {
+			(void)mvwprintw(win, static_cast<int>(i + 1U), 2,
+				lines[i + cpos].c_str());
+		}
+
+		for (; i < HEIGHT - 2; ++i) {
+			(void)mvwaddch(win, static_cast<int>(i + 1U), 2, '~');
+		}
+
+		if (wrefresh(win) == ERR) {
+			cerrx(1, "npc_details wrefresh");
+		}
+
+		switch(wgetch(win)) {
+		case ERR:
+			cerrx(1, "npc_details wgetch ERR");
+			return;
+		case KEY_UP:
+			if (--cpos > lines.size()) {
+				cpos = 0;
+			}
+			break;
+		case KEY_DOWN:
+			if (++cpos > lines.size() - 1) {
+				cpos = lines.size() - 1;
+			}
+			break;
+		case KEY_ESC:
+			return;
+		default:
+			break;
+		}
+	}
 }
