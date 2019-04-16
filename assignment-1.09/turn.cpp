@@ -47,22 +47,16 @@ static void	equip_list(WINDOW *const, bool const);
 static void	carry_to_equip(int const);
 static void	equip_to_carry(int const, std::optional<std::string> &);
 
-static void	npc_details(WINDOW *const, npc const &);
+static void	thing_details(WINDOW *const, dungeon_thing const &);
 
 enum pc_action {
-	PC_CARRY_LIST,
 	PC_DEFOG,
-	PC_DROP,
-	PC_EQUIP_LIST,
-	PC_INSPECT_NPC,
 	PC_NEXT,
 	PC_NONE,
 	PC_NPC_LIST,
 	PC_QUIT,
-	PC_REMOVE,
-	PC_TAKE,
-	PC_TELE,
-	PC_WEAR
+	PC_RETRY,
+	PC_TELE
 };
 
 static enum pc_action	turn_npc(WINDOW *const, npc &);
@@ -70,9 +64,10 @@ static enum pc_action	turn_pc(WINDOW *const, npc &);
 
 enum carry_action {
 	CARRY_DROP,
-	CARRY_REMOVE,
+	CARRY_INSPECT,
 	CARRY_LIST,
-	CARRY_WEAR,
+	CARRY_REMOVE,
+	CARRY_WEAR
 };
 
 static void	carry_list(WINDOW *const, carry_action const);
@@ -156,6 +151,10 @@ npc player;
 static std::optional<obj> pc_carry[PC_CARRY_MAX];
 static equip pc_equip;
 
+static WINDOW *defog_win;
+static WINDOW *npc_list_win;
+static WINDOW *obj_list_win;
+
 enum turn_exit
 turn_engine(WINDOW *const win, unsigned int const numnpcs,
 	unsigned int const numobjs)
@@ -164,9 +163,6 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 	std::vector<npc *> npcs;
 	std::vector<obj *> objs;
 	unsigned int real_num = 0;
-
-	/* defog, npc list, and obj list (carried, equipped, etc.) windows */
-	WINDOW *defog_win, *npc_list_win, *obj_list_win;
 
 	int32_t turn;
 	int alive = numnpcs;
@@ -336,14 +332,8 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 		}
 
 		switch(turn_npc(win, n)) {
-		case PC_CARRY_LIST:
-			carry_list(obj_list_win, CARRY_LIST);
-			goto retry;
 		case PC_DEFOG:
 			defog(defog_win, npcs);
-			goto retry;
-		case PC_EQUIP_LIST:
-			equip_list(obj_list_win, false);
 			goto retry;
 		case PC_NEXT:
 			ret = TURN_NEXT;
@@ -356,11 +346,7 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 		case PC_QUIT:
 			ret = TURN_QUIT;
 			goto exit;
-		case PC_TAKE:
-			equip_list(obj_list_win, true);
-			goto retry;
-		case PC_WEAR:
-			carry_list(obj_list_win, CARRY_WEAR);
+		case PC_RETRY:
 			goto retry;
 		case PC_TELE:
 			if (inspect(win, true)) {
@@ -368,15 +354,6 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 			} else {
 				goto retry;
 			}
-		case PC_DROP:
-			carry_list(obj_list_win, CARRY_DROP);
-			goto retry;
-		case PC_REMOVE:
-			carry_list(obj_list_win, CARRY_REMOVE);
-			goto retry;
-		case PC_INSPECT_NPC:
-			inspect(win, false);
-			goto retry;
 		}
 
 		heap.push(n);
@@ -835,19 +812,29 @@ turn_pc(WINDOW *const win, npc &n)
 		case 'g':
 			return PC_TELE;
 		case 'i':
-			return PC_CARRY_LIST;
+			carry_list(obj_list_win, CARRY_LIST);
+			return PC_RETRY;
 		case 'e':
-			return PC_EQUIP_LIST;
+			equip_list(obj_list_win, false);
+			return PC_RETRY;
 		case 'w':
-			return PC_WEAR;
+			carry_list(obj_list_win, CARRY_WEAR);
+			return PC_RETRY;
 		case 't':
-			return PC_TAKE;
+			equip_list(obj_list_win, true);
+			return PC_RETRY;
 		case 'd':
-			return PC_DROP;
+			carry_list(obj_list_win, CARRY_DROP);
+			return PC_RETRY;
 		case 'x':
-			return PC_REMOVE;
+			carry_list(obj_list_win, CARRY_REMOVE);
+			return PC_RETRY;
 		case 'L':
-			return PC_INSPECT_NPC;
+			inspect(win, false);
+			return PC_RETRY;
+		case 'I':
+			carry_list(obj_list_win, CARRY_INSPECT);
+			return PC_RETRY;
 		default:
 			exit = false;
 		}
@@ -1097,7 +1084,7 @@ inspect(WINDOW *const win, bool const teleport)
 			}
 
 			if (tiles[y][x].n != NULL) {
-				npc_details(twin, *tiles[y][x].n);
+				thing_details(twin, *tiles[y][x].n);
 			}
 			break;
 		case KEY_ESC:
@@ -1209,6 +1196,10 @@ carry_list(WINDOW *const cwin, carry_action const action)
 			(void)mvwprintw(cwin, HEIGHT - 1, 2,
 				"[ 0-9 to drop, ESC to exit ]");
 			break;
+		case CARRY_INSPECT:
+			(void)mvwprintw(cwin, HEIGHT - 1, 2,
+				"[ 0-9 to inspect, ESC to exit ]");
+			break;
 		case CARRY_REMOVE:
 			(void)mvwprintw(cwin, HEIGHT - 1, 2,
 				"[ 0-9 to REMOVE, ESC to exit ]");
@@ -1292,6 +1283,8 @@ carry_list(WINDOW *const cwin, carry_action const action)
 				pc_carry[i].reset();
 			} else if (action == CARRY_REMOVE) {
 				pc_carry[i].reset();
+			} else if (action == CARRY_INSPECT) {
+				thing_details(cwin, *pc_carry[i]);
 			}
 
 			break;
@@ -1489,16 +1482,16 @@ equip_to_carry(int const i, std::optional<std::string> &error)
 }
 
 static void
-npc_details(WINDOW *const win, npc const &n)
+thing_details(WINDOW *const win, dungeon_thing const &d)
 {
-	std::stringstream ss(n.desc);
+	std::stringstream ss(d.desc);
 	std::string tmp;
 
 	std::vector<std::string> lines;
 	std::vector<std::string>::size_type cpos = 0;
 
-	lines.push_back(std::string("Symbol: '") + (char)n.symb + "'\tName: "
-		+ n.name);
+	lines.push_back(std::string("Symbol: '") + (char)d.symb + "'\tName: "
+		+ d.name);
 	lines.push_back("");
 
 	while (std::getline(ss, tmp, '\n')) {
@@ -1507,7 +1500,7 @@ npc_details(WINDOW *const win, npc const &n)
 
 	while (1) {
 		if (werase(win) == ERR) {
-			cerrx(1, "npc_details erase");
+			cerrx(1, "thing_details erase");
 		}
 
 		(void)box(win, 0, 0);
@@ -1526,12 +1519,12 @@ npc_details(WINDOW *const win, npc const &n)
 		}
 
 		if (wrefresh(win) == ERR) {
-			cerrx(1, "npc_details wrefresh");
+			cerrx(1, "thing_details wrefresh");
 		}
 
 		switch(wgetch(win)) {
 		case ERR:
-			cerrx(1, "npc_details wgetch ERR");
+			cerrx(1, "thing_details wgetch ERR");
 			return;
 		case KEY_UP:
 			if (--cpos > lines.size()) {
