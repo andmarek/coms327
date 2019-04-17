@@ -297,7 +297,7 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 				ret = TURN_DEATH;
 				goto exit;
 			} else if (n.type & BOSS) {
-				ret = TURN_WIN_BOSS;
+				ret = TURN_WIN;
 				goto exit;
 			} else {
 				continue;
@@ -535,7 +535,7 @@ move_logic(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 
 	/* npc-pc combat */
 	if (n.type & PLAYER_TYPE || tiles[y][x].n->type & PLAYER_TYPE) {
-		uint64_t dam = combat(*tiles[y][x].n, n);
+		uint64_t dam = combat(n, *tiles[y][x].n);
 
 		if (n.type & PLAYER_TYPE) {
 			(void)box(win, 0, 0);

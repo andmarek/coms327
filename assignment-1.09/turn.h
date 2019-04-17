@@ -9,7 +9,6 @@ enum turn_exit {
 	TURN_NONE,
 	TURN_QUIT,
 	TURN_WIN,
-	TURN_WIN_BOSS,
 };
 
 enum turn_exit	turn_engine(WINDOW *const, unsigned int const, unsigned int const);

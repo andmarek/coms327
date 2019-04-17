@@ -16,9 +16,9 @@ static void	usage(int const, std::string const &);
 
 static bool	colors();
 
-static void	print_bossscreen(WINDOW *const);
 static void	print_deathscreen(WINDOW *const);
-static void	print_winscreen(WINDOW *const);
+static void	print_winscreen1(WINDOW *const);
+static void	print_winscreen2(WINDOW *const);
 
 static bool	is_number(std::string const &);
 
@@ -191,12 +191,11 @@ main(int const argc, char *const argv[])
 		break;
 	case TURN_WIN:
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-		print_winscreen(win);
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		break;
-	case TURN_WIN_BOSS:
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		print_bossscreen(win);
+		if (rr.rrand<int>(0, 1) == 0) {
+			print_winscreen1(win);
+		} else {
+			print_winscreen2(win);
+		}
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 		break;
 	}
@@ -281,29 +280,6 @@ colors()
 }
 
 static void
-print_bossscreen(WINDOW *const win)
-{
-	if (werase(win) == ERR) {
-		cerrx(1, "erase on bossscreen");
-	}
-
-	(void)box(win, 0, 0);
-	(void)mvwprintw(win, HEIGHT / 2 - 1, WIDTH / 4,
-		"You're still half savage. But there is hope.");
-	(void)mvwprintw(win, HEIGHT / 2 + 0, WIDTH / 4,
-		"\t\t-- Metron, stardate 3046.2");
-	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 4,
-		"The boss has been defeated. Game over.");
-	(void)mvwprintw(win, HEIGHT - 1, 2, "[ press any key to exit ]");
-
-	if (wrefresh(win) == ERR) {
-		cerrx(1, "wrefresh on bossscreen");
-	}
-
-	(void)wgetch(win);
-}
-
-static void
 print_deathscreen(WINDOW *const win)
 {
 	if (werase(win) == ERR) {
@@ -326,10 +302,10 @@ print_deathscreen(WINDOW *const win)
 }
 
 static void
-print_winscreen(WINDOW *const win)
+print_winscreen1(WINDOW *const win)
 {
 	if (werase(win) == ERR) {
-		cerrx(1, "erase on winscreen");
+		cerrx(1, "erase on winscreen1");
 	}
 
 	(void)box(win, 0, 0);
@@ -344,17 +320,42 @@ print_winscreen(WINDOW *const win)
 	(void)mvwprintw(win, HEIGHT / 2 + 1, WIDTH / 12, "kill today!");
 	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 12,
 		"\t\t-- Kirk, \"A Taste of Armageddon\", stardate 3193.0");
-	(void)mvwprintw(win, HEIGHT / 2 + 4, WIDTH / 12, "You've won. Game over.");
+	(void)mvwprintw(win, HEIGHT / 2 + 4, WIDTH / 12,
+		"The boss has been defeated. Game over.");
 	(void)mvwprintw(win, HEIGHT - 1, 2, "[ press any key to exit ]");
 
 	if (wrefresh(win) == ERR) {
-		cerrx(1, "wrefresh on winscreen");
+		cerrx(1, "wrefresh on winscreen1");
 	}
 
 	(void)wgetch(win);
 }
 
-bool
+static void
+print_winscreen2(WINDOW *const win)
+{
+	if (werase(win) == ERR) {
+		cerrx(1, "erase on winscreen2");
+	}
+
+	(void)box(win, 0, 0);
+	(void)mvwprintw(win, HEIGHT / 2 - 1, WIDTH / 4,
+		"You're still half savage. But there is hope.");
+	(void)mvwprintw(win, HEIGHT / 2 + 0, WIDTH / 4,
+		"\t\t-- Metron, stardate 3046.2");
+	(void)mvwprintw(win, HEIGHT / 2 + 2, WIDTH / 4,
+		"The boss has been defeated. Game over.");
+	(void)mvwprintw(win, HEIGHT - 1, 2, "[ press any key to exit ]");
+
+	if (wrefresh(win) == ERR) {
+		cerrx(1, "wrefresh on winscreen2");
+	}
+
+	(void)wgetch(win);
+}
+
+
+static bool
 is_number(std::string const &s)
 {
 	return !s.empty() && std::find_if(s.begin(), s.end(), [](char const c) {
