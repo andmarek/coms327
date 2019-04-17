@@ -10,7 +10,7 @@ extern int	yylex();
 static void	yyerror(char const *const);
 
 static dice	parse_dice(char *const);
-static uint8_t	parse_dice_value(char *const);
+static uint64_t	parse_dice_value(char *const);
 static uint8_t	parse_rrty(char *const);
 
 bool in_n;
@@ -130,7 +130,7 @@ npc_keywords
 npc_keyword
 	: ABIL abil
 	| COLOR color
-	| DAM STR	{ c_obj.dam = parse_dice($2); }
+	| DAM STR	{ c_npc.dam = parse_dice($2); }
 	| DESC desc DESC_END
 	| HP STR	{ c_npc.hp = parse_dice_value($2); }
 	| NAME name
@@ -229,7 +229,7 @@ parse_dice(char *const s)
 		cerrx(1, "dice formatted incorrectly");
 	}
 
-	d.base = (uint8_t)std::atoi(p);
+	d.base = (uint64_t)std::atoll(p);
 
 	p = strtok_r(NULL, "d", &last);
 
@@ -237,7 +237,7 @@ parse_dice(char *const s)
 		cerrx(1, "dice formatted incorrectly");
 	}
 
-	d.dice = (uint8_t)std::atoi(p);
+	d.dice = (uint64_t)std::atoll(p);
 
 	p = strtok_r(NULL, "\0", &last);
 
@@ -245,16 +245,16 @@ parse_dice(char *const s)
 		cerrx(1, "dice format missing '+'");
 	}
 
-	d.sides = (uint8_t)std::atoi(p);
+	d.sides = (uint64_t)std::atoll(p);
 
 	return d;
 }
 
-static uint8_t
+static uint64_t
 parse_dice_value(char *const s)
 {
 	dice const d = parse_dice(s);
-	return rr.rand_dice<uint8_t>(d.base, d.dice, d.sides);
+	return rr.rand_dice<uint64_t>(d.base, d.dice, d.sides);
 }
 
 static uint8_t

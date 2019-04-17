@@ -156,7 +156,7 @@ main(int const argc, char *const argv[])
 	case TURN_DEATH:
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 		print_deathscreen(win);
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 		break;
 	case TURN_NEXT:
 		if (werase(win) == ERR) {
@@ -167,9 +167,13 @@ main(int const argc, char *const argv[])
 
 		arrange_renew();
 
-		goto retry;
+		for (auto &n : npcs_parsed) {
+			if (n.type & BOSS) {
+				n.done = false;
+			}
+		}
 
-		break;
+		goto retry;
 	case TURN_NONE:
 		cerrx(1, "turn_engine return value invalid");
 		break;
@@ -178,12 +182,12 @@ main(int const argc, char *const argv[])
 	case TURN_WIN:
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 		print_winscreen(win);
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 		break;
 	case TURN_WIN_BOSS:
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 		print_bossscreen(win);
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 		break;
 	}
 

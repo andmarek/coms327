@@ -44,19 +44,19 @@ uint16_t constexpr PICKUP = 1 << 7;
 uint16_t constexpr UNIQ = 1 << 8;
 
 struct dice {
-	uint8_t base;
-	uint8_t	dice;
-	uint8_t	sides;
+	uint64_t	base;
+	uint64_t	dice;
+	uint64_t	sides;
 };
 
 struct dungeon_thing {
 	std::string	desc;
 	std::string	name;
+	uint64_t	speed;
 	dice		dam;
 	int		color; /* first color as ncurses COLOR_PAIR(COLOR_*) value */
 	unsigned int	symb;
 	uint8_t		rrty;
-	uint8_t		speed;
 	uint8_t		x;
 	uint8_t		y;
 	bool		done;
@@ -79,11 +79,10 @@ struct dungeon_thing {
 };
 
 struct npc : dungeon_thing {
-	int32_t		turn;
+	uint64_t	hp;
+	uint64_t	p_count;
+	uint64_t	turn;
 	uint16_t	type;
-	uint8_t		hp;
-	uint8_t		p_count;
-	bool		dead;
 
 	npc() = default;
 
@@ -93,7 +92,6 @@ struct npc : dungeon_thing {
 		hp = n.hp;
 		turn = 0;
 		p_count = 0;
-		dead = false;
 	}
 };
 
@@ -120,14 +118,14 @@ enum type {
 };
 
 struct obj : dungeon_thing {
-	uint8_t	def;
-	uint8_t	dodge;
-	uint8_t	hit;
-	uint8_t	val;
-	uint8_t	weight;
-	uint8_t	attr;
-	type	obj_type;
-	bool	art;
+	uint64_t	def;
+	uint64_t	dodge;
+	uint64_t	hit;
+	uint64_t	val;
+	uint64_t	weight;
+	uint64_t	attr;
+	type		obj_type;
+	bool		art;
 
 	obj() = default;
 
@@ -145,15 +143,15 @@ struct obj : dungeon_thing {
 };
 
 struct room {
-	uint8_t x;
-	uint8_t y;
-	uint8_t size_x;
-	uint8_t size_y;
+	uint8_t	x;
+	uint8_t	y;
+	uint8_t	size_x;
+	uint8_t	size_y;
 };
 
 struct stair {
-	uint8_t x;
-	uint8_t y;
+	uint8_t	x;
+	uint8_t	y;
 };
 
 struct tile {
