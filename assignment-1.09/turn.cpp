@@ -24,6 +24,9 @@ static bool	pc_visible(int const, int const);
 
 static void	npc_obj_or_tile(WINDOW *const, uint8_t const, uint8_t const);
 
+static uint64_t	effective_dam();
+static uint64_t	combat(npc &, npc &);
+
 static void	move_redraw(WINDOW *const, npc &, uint8_t const, uint8_t const);
 static void	move_logic(WINDOW *const, npc &, uint8_t const, uint8_t const);
 static void	move_tunnel(WINDOW *const, npc &, uint8_t const, uint8_t const);
@@ -278,13 +281,12 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 
 	pc_viewbox(win, DEFAULT_LUMINANCE);
 
+	(void)mvwprintw(win, HEIGHT - 1, 2,
+		"[ hp: %" PRIu64 " ]", player.hp);
+
 	while (!heap.empty()) {
 		npc &n = heap.top();
 		heap.pop();
-
-		(void)box(win, 0, 0);
-		(void)mvwprintw(win, HEIGHT - 1, 2, "[ hp: %" PRIu64 " ]",
-			player.hp);
 
 		if (n.type & PLAYER_TYPE && wrefresh(win) == ERR) {
 			cerrx(1, "turn_engine wrefresh");
@@ -448,6 +450,56 @@ npc_obj_or_tile(WINDOW *const win, uint8_t const y, uint8_t const x)
 	}
 }
 
+static uint64_t
+effective_dam()
+{
+	int const length = 12;
+	std::optional<obj> const equip[] = {
+		pc_equip.amulet,
+		pc_equip.armor,
+		pc_equip.boots,
+		pc_equip.cloak,
+		pc_equip.gloves,
+		pc_equip.helmet,
+		pc_equip.light,
+		pc_equip.offhand,
+		pc_equip.ranged,
+		pc_equip.ring_left,
+		pc_equip.ring_right,
+		pc_equip.weapon
+	};
+
+	uint64_t dam = rr.rand_dice<uint64_t>(player.dam.base, player.dam.dice,
+		player.dam.sides);
+
+	for (int i = 0; i < length; ++i) {
+		if (equip[i].has_value()) {
+			dam += rr.rand_dice<uint64_t>(equip[i]->dam.base,
+				equip[i]->dam.dice, equip[i]->dam.sides);
+		}
+	}
+
+	return dam;
+}
+
+static uint64_t
+combat(npc &n1, npc &n2)
+{
+	uint64_t n1_dam = rr.rand_dice<uint64_t>(n1.dam.base, n1.dam.dice,
+		n1.dam.sides);
+	uint64_t n2_hp = n2.hp;
+
+	if (n1.type & PLAYER_TYPE) {
+		n1_dam = effective_dam();
+	} else {
+		n2_hp = player.hp;
+	}
+
+	n2.hp = subu64(n2_hp, n1_dam);
+
+	return n1_dam;
+}
+
 static void
 move_redraw(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 {
@@ -483,8 +535,15 @@ move_logic(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 
 	/* npc-pc combat */
 	if (n.type & PLAYER_TYPE || tiles[y][x].n->type & PLAYER_TYPE) {
-		tiles[y][x].n->hp = subu64(tiles[y][x].n->hp,
-			rr.rand_dice<uint64_t>(n.dam.base, n.dam.dice, n.dam.sides));
+		uint64_t dam = combat(*tiles[y][x].n, n);
+
+		if (n.type & PLAYER_TYPE) {
+			(void)box(win, 0, 0);
+			(void)mvwprintw(win, HEIGHT - 1, 2,
+				"[ hp: %" PRIu64 " ]", player.hp);
+			(void)mvwprintw(win, HEIGHT - 1, WIDTH / 4,
+				"[ delt %" PRIu64 " damage ]", dam);
+		}
 
 		if (tiles[y][x].n->hp == 0) {
 			tiles[y][x].n->dead = true;
