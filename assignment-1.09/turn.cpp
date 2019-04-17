@@ -152,7 +152,6 @@ static int constexpr DEFAULT_LUMINANCE = 5;
 static unsigned int constexpr RETRIES = 150;
 static int constexpr PC_CARRY_MAX = 10;
 
-npc player;
 static std::optional<obj> pc_carry[PC_CARRY_MAX];
 static equip pc_equip;
 
@@ -177,13 +176,6 @@ turn_engine(WINDOW *const win, unsigned int const numnpcs,
 		cerr(1, "resize npcs and objs");
 	}
 
-	player.color = COLOR_PAIR(COLOR_YELLOW);
-	player.dam = {0, 1, 4};
-	player.hp = rr.rand_dice<uint64_t>(50, 2, 50);
-	player.speed = 10;
-	player.symb = PLAYER;
-	player.turn = 0;
-	player.type = PLAYER_TYPE;
 	tiles[player.y][player.x].n = &player;
 
 	wattron(win, player.color);
@@ -495,6 +487,7 @@ move_logic(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 			rr.rand_dice<uint64_t>(n.dam.base, n.dam.dice, n.dam.sides));
 
 		if (tiles[y][x].n->hp == 0) {
+			tiles[y][x].n->dead = true;
 			tiles[y][x].n = NULL;
 			npc_obj_or_tile(win, y, x);
 		}
@@ -909,13 +902,22 @@ npc_list(WINDOW *const nwin, std::vector<npc *> const &npcs)
 		std::size_t i;
 		for (i = 0; i < HEIGHT - 2 && i + cpos < npcs.size(); ++i) {
 			npc *n = npcs[i + cpos];
+
+			if (n->dead) {
+				(void)mvwprintw(nwin, static_cast<int>(i + 1U),
+					2, "%u.\t'%c'\t(dead)\t\t%s", i + cpos,
+					n->symb, n->name.c_str());
+				continue;
+			}
+
 			int dx = player.x - n->x;
 			int dy = player.y - n->y;
 
 			(void)mvwprintw(nwin, static_cast<int>(i + 1U), 2,
-				"%u.\t%c, %d %s and %d %s", i + cpos, n->symb,
-				abs(dy), dy > 0 ? "north" : "south",
-				abs(dx), dx > 0 ? "west" : "east");
+				"%u.\t'%c'\t%d %s and %d %s\t%s", i + cpos,
+				n->symb, abs(dy), dy > 0 ? "north" : "south",
+				abs(dx), dx > 0 ? "west" : "east",
+				n->name.c_str());
 		}
 
 		for (; i < HEIGHT - 2; ++i) {

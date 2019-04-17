@@ -35,6 +35,8 @@ static struct option const long_opts[] = {
 	{NULL, 0, NULL, 0}
 };
 
+npc player;
+
 int
 main(int const argc, char *const argv[])
 {
@@ -150,6 +152,14 @@ main(int const argc, char *const argv[])
 	} else {
 		arrange_new();
 	}
+
+	player.color = COLOR_PAIR(COLOR_YELLOW);
+	player.dam = {0, 1, 4};
+	player.hp = rr.rand_dice<uint64_t>(50, 2, 50);
+	player.speed = 10;
+	player.symb = PLAYER;
+	player.turn = 0;
+	player.type = PLAYER_TYPE;
 
 	retry:
 	switch(turn_engine(win, numnpcs, numobjs)) {

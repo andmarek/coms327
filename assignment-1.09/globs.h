@@ -83,6 +83,7 @@ struct npc : dungeon_thing {
 	uint64_t	p_count;
 	uint64_t	turn;
 	uint16_t	type;
+	bool		dead;
 
 	npc() = default;
 
@@ -92,6 +93,7 @@ struct npc : dungeon_thing {
 		hp = n.hp;
 		turn = 0;
 		p_count = 0;
+		dead = n.dead;
 	}
 };
 
