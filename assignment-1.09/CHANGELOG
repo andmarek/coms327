@@ -1,0 +1,178 @@
+Assignment 1.09:
+
+2019-04-16 8a6070b Show received damaged (HEAD -> master, origin/master)
+2019-04-16 c821f77 Fix reversed damage, randomize win screend
+2019-04-16 5fa457a Use equipment to increase damaged
+2019-04-16 5e75715 Persist PC attributes between levelsd
+2019-04-16 94841fd Combatd
+2019-04-15 7908d3a Carry inspection, clean enumsd
+2019-04-15 4bedf12 NPC inspectiond
+2019-04-14 7c2049b Allow any key to exit view-only listsd
+2019-04-14 89dc1f3 Item drop and remove, clean up display functionsd
+2019-04-14 c94a5fe Assignment 1.09 init, PC carry and equipd
+
+Assignment 1.08:
+
+2019-04-07 c1c92ca Fix off-by-one rrty check
+2019-04-07 a0a560c Catch large numnpcs or numobjs
+2019-04-07 ea31232 Generate and show objects
+2019-04-07 a6343dd Use colors, win on boss death, limit npc placement
+2019-04-07 6f0d96b Use parsed npcs, keep only first color
+2019-04-07 d4b1142 Use only lower 4 bits for move behavior
+2019-04-06 e2673cd Color pairs
+2019-04-06 f7a0e3d Organize obj and npc, set obj symb
+2019-04-05 af1fef9 Merge npc and obj with their descriptions
+2019-04-05 2c4209e Remove description printing
+2019-04-05 81df9ef Use 'monster' term only related to reading the file
+2019-04-04 d024f7c Assignment 1.08 init, parse clean up
+
+Assignment 1.07:
+
+2019-04-02 1117fb7 Accept more printable characters
+2019-04-02 3022ff0 Clean parsing wrappers and RLG path construction
+2019-04-02 9e55396 Clean YY_INPUT
+2019-04-01 d1f0de5 Change NPC and OBJ printing
+2019-04-01 e975b2c Integrate parser with OPAL
+2019-04-01 4a1c6c6 Remove 1.06's README & CHANGELOG
+2019-04-01 00b9cc2 Define custom YY_INPUT to force interactivity
+2019-04-01 b4bcc55 Object parsing
+2019-04-01 e6bfa15 Separate code from parsing
+2019-04-01 aed786d Monster parsing clean up
+2019-03-31 024c031 Monster parsing
+2019-03-30 888d886 Assignment 1.07 init
+
+Assignment 1.06:
+
+2019-03-18 4640eb8 Teleport implementation
+2019-03-18 0888d11 Defog implementation
+2019-03-18 f59c18c Fix monster list directions, refresh before death or win
+2019-03-17 192d4c2 Fix inaccurate monster list
+2019-03-17 fbccde0 Initial defog and teleport
+2019-03-17 79bc585 Merge io with gen to remove rooms and stairs_* from global scope
+2019-03-17 dc0b1a0 Clean up and restructuring
+2019-03-16 46a264b Fog of war
+2019-03-14 02baae1 Fix benchmark compilation
+2019-03-14 775df61 Remove dead monsters from list
+2019-03-13 739f317 Move rand implemention to source file where possible
+2019-03-13 cd94e3a Fix cost of border, optimize npc priority queue
+2019-03-13 dce1b59 Use references with reference_wrapper
+2019-03-13 79a7067 Make const pointer to reference
+2019-03-12 d74d0ba Remove unambiguous superfluous keywords
+2019-03-12 0dabd9d Consistent style
+2019-03-12 c35d6d7 Multithread dual dijkstra
+2019-03-12 443994e Remove C-style min-heap
+2019-03-11 1273b7e Assignment 1.06 init
+
+Assignment 1.05:
+
+2019-03-01 f2daa2d Handle stairs, relative monster positions
+2019-03-01 b2c6844 Move variable init, etc. to separate file, arrange_renew
+2019-03-01 89e9552 Wait on B2
+2019-02-28 bb6ac56 Monster list
+2019-02-28 0a03848 Restrict getch to current window, enable keypad
+2019-02-28 bdfb735 Handle 'Q'
+2019-02-28 14360a9 Make non-explicit keys noops
+2019-02-28 7d555e8 Remove waiting, now that PC is controllable
+2019-02-28 5ef8ec0 Rudimentary PC control, remove costly indexing by window
+2019-02-27 924395c Assignment 1.05 init, combine extraneous functions
+
+Assignment 1.04:
+
+2019-02-26 45cdc10 Remove seed display during game
+2019-02-26 857e7d7 Resolve player reference in npc.c
+2019-02-26 39de672 Code refactoring and organization
+2019-02-26 fee9bd8 Win and loss screens, wait on player turn
+2019-02-25 50476e5 Establish intelligent memory
+2019-02-25 160f22b Fix compile errors, remove debug code again
+2019-02-25 b3323e7 Fix dijk pathfinding
+2019-02-24 070cc1d Remove debugging code
+2019-02-24 beed03d WIP: monsters, movement, etc.
+2019-02-24 5a926c1 Properly delete heap
+2019-02-23 0d0ad3e nummon flag
+2019-02-23 c9480fb Player movement
+2019-02-16 6d8a7b4 Assignment 1.04 init
+
+Assignment 1.03:
+
+2019-02-15 ae558cf Print unreached nodes, fix overflow
+2019-02-15 885e8ce Remove superfluous use of strncpy
+2019-02-15 aa0e591 Proper error handling and return checking
+2019-02-15 b5cc9c8 Print to ncurses window
+2019-02-15 7f975be Avoid passing whole nodes array
+2019-02-15 c8ed78a Use indexing type to avoid cast
+2019-02-15 60bc677 Move tiles xy init out of dijkstra
+2019-02-15 f088e43 Move dijkstra to separate file
+2019-02-15 b5490ca Const correctness
+2019-02-15 53174c3 Persist costs between tunneling and nontunneling
+2019-02-15 e782c5f Store tiles on stack instead of heap.
+2019-02-14 b0d4618 Remove width and height from global scope
+2019-02-14 e44cfe7 Fix tunneling dijstra, move node lits to lower scope
+2019-02-14 2e1d86e Fix memory leak determining save path
+2019-02-14 62c22e4 Heap header formatting
+2019-02-14 06496c6 Simplify comparison
+2019-02-13 30fd503 Print to stdout for now
+2019-02-13 876f97a Remove commented out functions, now tracked in git
+2019-02-13 1ed9c87 Dijstra on corridors
+2019-02-13 25c84da Fix path evaluation
+2019-02-13 b65f462 Fix off-by-one error
+2019-02-10 039d329 Merge small files, clean opal main, djb2 xor alg
+2019-02-10 6ad9db9 Assignment 1.03 init
+
+Assignment 1.02:
+
+2019-02-06 1d8305b Formatting
+2019-02-06 077fd25 Endianness, close even on error saving and loading
+2019-02-06 7edf9bd Fix indexing to match provided files
+2019-02-05 27f8be2 Free unconditionally
+2019-02-05 f1cff9d Remember error to exit with
+2019-02-05 c7437c2 Fully load dungeon file
+2019-02-05 e2c2180 Load all data, fix saved file size
+2019-02-05 c4043d8 Separate room check and draw room
+2019-02-05 851c03e Change room, stair_up, and stair_dn size to 16 bit
+2019-02-04 7723299 Seek past marker and version, print size to stderr
+2019-02-04 b9415a8 Save file size
+2019-02-04 dd46af9 Error registering tiles if player is already placed
+2019-02-04 4dd239a Calculate tile hardness, write tile hardness to file
+2019-02-04 4cfeadf Ignore standard error output file
+2019-02-04 3d2f434 Tile hardness work
+2019-02-04 22ca44d Initial load work
+2019-02-04 2100520 room_count not constant, mallocs into functions
+2019-02-04 facb123 Remove FULLSCREEN clutter
+2019-02-04 0ef7f4c Missing else
+2019-02-04 00bdaff CLI flags
+2019-02-03 ed5f68c String format
+2019-02-03 74fcaa0 String format
+2019-02-03 695637a Zero alloc'd mem at exit, fix cond. jump on uninit val
+2019-02-03 f8ac715 Save rooms
+2019-02-03 5bd918c Save room count and stair data
+2019-02-03 2568ad1 Fix use after free, ROOM_COUNT addressable
+2019-02-03 3f55ef4 Save player coords
+2019-02-03 043993f Stair struct, DOWN to DN
+2019-02-03 5f73004 Rename room.* to floor.*
+2019-02-03 e35ef89 Const correctness, formatting, y before x
+2019-02-03 49a8c8f Randomly place the player
+2019-02-03 b2cb1af Avoid useless bool
+2019-02-03 ce720a6 Formatting
+2019-02-03 41fe04f Add io.h to Makefile
+2019-02-03 0171ffa Save dungeon file marker and version
+2019-02-03 2b37b29 Use uint8_t for room data
+2019-02-01 75a466f Initial save code
+2019-02-01 17828a4 Full screen off by default
+2019-02-01 c14404f Pass by pointer to room
+2019-02-01 6fb1344 Show seed
+2019-02-01 a5b04d1 Message formatting
+2019-01-31 f38ab6d Hide cursor
+2019-01-31 530132a Move floor init to arrange_floor, warn upon resize
+2019-01-31 6aaaafc Assignment 1.02 init, full screen, q to quit
+
+Assignment 1.01:
+
+2019-01-27 2cf201c Allow stairs in rooms
+2019-01-27 b6ca186 Fix x,y ordering
+2019-01-27 c3ce939 Draw corridors and stairs
+2019-01-27 1a2673d Starting corridor work
+2019-01-27 ef09949 Split things into separate files
+2019-01-26 d6dd499 Use regular rooms instead of cellular automata for now
+2019-01-25 9f92380 Use cellular automata to generate rooms & smooth result x5
+2019-01-25 38d8a3f Formatting, print seed, fill with 15 '.' chars
+2019-01-24 869c648 Assignment 1.01
