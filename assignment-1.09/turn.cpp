@@ -537,12 +537,16 @@ move_logic(WINDOW *const win, npc &n, uint8_t const y, uint8_t const x)
 	if (n.type & PLAYER_TYPE || tiles[y][x].n->type & PLAYER_TYPE) {
 		uint64_t dam = combat(n, *tiles[y][x].n);
 
+		(void)box(win, 0, 0);
+		(void)mvwprintw(win, HEIGHT - 1, 2,
+			"[ hp: %" PRIu64 " ]", player.hp);
+
 		if (n.type & PLAYER_TYPE) {
-			(void)box(win, 0, 0);
-			(void)mvwprintw(win, HEIGHT - 1, 2,
-				"[ hp: %" PRIu64 " ]", player.hp);
 			(void)mvwprintw(win, HEIGHT - 1, WIDTH / 4,
 				"[ delt %" PRIu64 " damage ]", dam);
+		} else {
+			(void)mvwprintw(win, HEIGHT - 1, WIDTH / 4,
+				"[ received %" PRIu64 " damage ]", dam);
 		}
 
 		if (tiles[y][x].n->hp == 0) {
