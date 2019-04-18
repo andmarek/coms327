@@ -2,18 +2,14 @@ NAME
 	pong - digital tennis game
 
 SYNOPSIS
-	pong
-
-	Or, with 'pong99' (see NOTES):
-
-	pong [delay]
+	pong [-d delay]
 
 DESCRIPTION
 	pong is a display-based game. The object of the game is to use your
 	paddle to reflect the ball into your opponent's goal (their side of the
 	wall).
 
-	You control the left paddle. Controls:
+	You control the left paddle:
 
 	w	move paddle up
 	s	move paddle down
@@ -21,17 +17,10 @@ DESCRIPTION
 
 	The right paddle, your opponent, is automatically guided.
 
-	The game window can, at any time, be resized. This automatically adjusts
-	the paddles to an appropriate size.
-
 NOTES
-	pong requires ncurses. To specify a custom delay (game speed) build with
-	C99 using the 'pong99' build target in Makefile.
+	pong requires ncurses. The game window can, at any time, be resized.
+	This automatically adjusts the paddles to an appropriate size.
 
 FILES
 	$HOME/.pong.scores
 		List of personal bests
-
-TODO
-	- Implement personal bests file
-	- Additional control keys

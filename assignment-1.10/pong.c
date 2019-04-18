@@ -1,16 +1,17 @@
-#if __STDC_VERSION__ >= 199901L || __ISOC99_SOURCE || _BSD_SOURCE \
-	|| _SVID_SOURCE
-#define C99
-#endif
-
+#include <curses.h>
 #include <err.h>
-#include <ncurses.h>
+#include <errno.h>
+#include <getopt.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define B_S	'o'
 #define P_S	ACS_CKBOARD
+
+#define DEFAULT_DELAY	50
+#define PATH_MAX	4096
 
 struct ball {
 	size_t x;
@@ -33,9 +34,10 @@ static void	update_r(size_t const, size_t const, struct ball const *const,
 			struct paddle *const);
 static int	update_l(WINDOW *const, size_t const, size_t const,
 			struct paddle *const);
-static int	render(WINDOW *const, size_t const, size_t const, size_t const,
+static char *	render(WINDOW *const, size_t const, size_t const, size_t const,
 			struct ball const *const, struct paddle const *const,
 			struct paddle const *const);
+static void	save_score(void);
 
 static size_t score_l;
 static size_t score_r;
@@ -52,21 +54,25 @@ main(int argc, char *argv[])
 	size_t height;
 	size_t width;
 	int delay;
+	int opt;
 
-	delay = 50;
+	delay = DEFAULT_DELAY;
 
-#ifdef C99
-	if (argc == 2) {
-		delay = atoi(argv[1]);
-	} else if (argc > 2) {
-		errx(1, "usage: pong [delay]");
+	while ((opt = getopt(argc, argv, "d:")) != -1) {
+		switch (opt) {
+			case 'd':
+				delay = atoi(optarg);
+				break;
+			default:
+				errx(1, "usage: pong [-d delay]");
+		}
 	}
-#else
-	(void)argv;
-	if (argc > 1) {
-		errx(1, "usage: pong");
+
+	if (optind < argc) {
+		fprintf(stderr, "%s: invalid option -- '%s'\n", argv[0],
+			argv[optind]);
+		errx(1, "usage: pong [-d delay]");
 	}
-#endif
 
 	msg = NULL;
 	srand(time(NULL));
@@ -98,16 +104,22 @@ main(int argc, char *argv[])
 
 	p_h = height >> 2;
 
-	b.x = width >> 1;
-	b.y = height >> 1;
-	b.dx = 1;
-	b.dy = -1;
+	b = (struct ball) {
+		.x = width >> 1,
+		.y = height >> 1,
+		.dx = 1,
+		.dy = -1
+	};
 
-	l.x = 4;
-	l.y = height >> 1;
+	l = (struct paddle) {
+		.x = 4,
+		.y = height >> 1
+	};
 
-	r.x = width - 5;
-	r.y = height >> 1;
+	r = (struct paddle) {
+		.x = width - 5,
+		.y = height >> 1
+	};
 
 	while(getmaxyx(win, height, width), update_l(win, height, p_h, &l)) {
 		if (width < 32 || height < 8) {
@@ -121,7 +133,6 @@ main(int argc, char *argv[])
 			b.y = height >> 1;
 		}
 
-		l.x = 4;
 		r.x = width - 5;
 		p_h = height >> 2;
 
@@ -136,11 +147,14 @@ main(int argc, char *argv[])
 		update_b(height, width, p_h, &b, &l, &r);
 		update_r(height, p_h, &b, &r);
 
-		if (render(win, height, width, p_h, &b, &l, &r)) {
-			msg = "game over max score reached";
+		msg = render(win, height, width, p_h, &b, &l, &r);
+
+		if (msg != NULL) {
 			break;
 		}
 	}
+
+	save_score();
 
 	if (delwin(win) == ERR) {
 		errx(1, "delwin");
@@ -230,43 +244,40 @@ update_l(WINDOW *const win, size_t const h, size_t const p_h,
 	struct paddle *const l)
 {
 	switch(wgetch(win)) {
-		case 'w':
-			if (l->y - 1 != 0) {
-				l->y--;
-			}
-			break;
-		case 's':
-			if (l->y + p_h < h - 1) {
-				l->y++;
-			}
-			break;
-		case 'q':
-			return 0;
+	case 'w':
+		if (l->y - 1 != 0) {
+			l->y--;
+		}
+		break;
+	case 's':
+		if (l->y + p_h < h - 1) {
+			l->y++;
+		}
+		break;
+	case 'q':
+		return 0;
 	}
 
 	return 1;
 }
 
-static int
+static char *
 render(WINDOW *const win, size_t const h, size_t const w, size_t const p_h,
 	struct ball const *const b, struct paddle const *const l,
 	struct paddle const *const r)
 {
 	size_t i;
 
-#ifndef SIZE_MAX
-#error SIZE_MAX required to avoid overflow
-#endif
-
 	if (score_l == SIZE_MAX || score_r == SIZE_MAX) {
-		return 1;
+		return "game over max score reached";
 	}
 
 	if (werase(win)) {
-		errx(1, "werase");
+		return "werase";
 	}
 
-	(void)wborder(win, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD);
+	(void)wborder(win, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD,
+		ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD, ACS_CKBOARD);
 
 	(void)mvwaddch(win, b->y, b->x, B_S);
 
@@ -279,21 +290,65 @@ render(WINDOW *const win, size_t const h, size_t const w, size_t const p_h,
 		(void)mvwaddch(win, r->y + i, r->x, P_S);
 	}
 
-#ifdef C99
-	(void)mvwprintw(win, 0, 2, "[left: %zd; right: %zd]", score_l, score_r);
-#else
-	(void)mvwprintw(win, 0, 2, "[left: %lu; right: %lu]", score_l, score_r);
-#endif
+	(void)mvwprintw(win, 1, 6, "[left: %zu]", score_l);
+	(void)mvwprintw(win, 1, (w >> 1) + 2, "[right: %zu]", score_r);
 
 	if (score_l == 47988) {
 		(void)mvwprintw(win, 0, 2, "[416c6c20476f6f64205468696e6773]");
 	}
 
-	(void)mvwprintw(win, h - 1, 2, "[quit q; up/down w/s]");
+	(void)mvwprintw(win, h - 2, 6, "[quit q; up/down w/s]");
 
 	if (wrefresh(win) == ERR) {
-		errx(1, "wrefresh");
+		return "wrefresh";
 	}
 
-	return 0;
+	return NULL;
+}
+
+static void
+save_score(void)
+{
+	FILE *scores;
+	char const *home;
+	char *pretty_now;
+	char path[PATH_MAX];
+	time_t now;
+	int ret;
+
+#ifdef _GNU_SOURCE
+	home = secure_getenv("HOME");
+#else
+	home = getenv("HOME");
+#endif
+
+	if (home == NULL || *home == '\0') {
+		err(1, "getenv (scores: %zu, %zu)", score_l, score_r);
+	}
+
+	ret = snprintf(path, sizeof(path), "%s/%s", home, ".pong.scores");
+
+	if (ret < 0 || ret >= PATH_MAX) {
+		errno = ENAMETOOLONG;
+		err(1, "%s/%s (scores: %zu, %zu)", home, ".pong.scores", score_l,
+			score_r);
+	}
+
+	scores = fopen(path, "a");
+
+	if (scores == NULL) {
+		err(1, "fopen %s (scores: %zu, %zu)", path, score_l, score_r);
+	}
+
+	now = time(NULL);
+	pretty_now = asctime(localtime(&now));
+
+	if (fprintf(scores, "left: %zu, right: %zu (time: %s)\n",
+		score_l, score_r, strtok(pretty_now, "\n")) < 0) {
+		errx(1, "fprintf (scores: %zu, %zu)", score_l, score_r);
+	}
+
+	if (fclose(scores) == EOF) {
+		err(1, "fclose");
+	}
 }
