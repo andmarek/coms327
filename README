@@ -1,0 +1,58 @@
+Assignments from Com S 327.
+
+assignment-0 is a simple sobel filter for PGM images.
+
+assignment-1.01 through assignment-1.09 are a rogue-like dungeon crawler,
+growing in functionality as assignments progress.
+
+assignment-2 is Pong.
+
+LICENSING
+	See LICENSE file for the AGPL v3 license.
+
+	All code is licensed under the AGPL v3 license, with the following
+	exceptions:
+
+	assignment-0:
+		The write_pgm and read_pgm functions are in the public domain.
+
+	assignment-1.03, through assignment-1.05:
+		The heap.c and heap.h files are in the public domain.
+
+	assignment-1.03, through assignment-1.09:
+		The cerr.c and cerr.h files are Copyright (c) 1993 The Regents
+		of the University of California under the BSD 3-clause license.
+
+GUIDE
+	assignment-0:
+		Apply 3x3 sobel operator to 1024x1024 PGM image.
+
+	assignment-1.01:
+		Display rooms, stairs, and corridors using ncurses.
+
+	assignment-1.02:
+		Load and save dungeon floor. Specify seed.
+
+	assignment-1.03:
+		Calculate weighted and non-weighted distance maps.
+
+	assignment-1.04:
+		Turn engine and different types of NPCs.
+
+	assignment-1.05:
+		PC controls and functional stairs.
+
+	assignment-1.06:
+		Convert to C++, "fog of war," and teleportation.
+
+	assignment-1.07:
+		NPC and object parsing using Yacc and (F)lex.
+
+	assignment-1.08:
+		Functional NPCs, objects appear in the dungeon.
+
+	assignment-1.09:
+		PC carry bag and equipment slots, functional objects and combat.
+
+	assignment-2:
+		Pong in ncurses.
