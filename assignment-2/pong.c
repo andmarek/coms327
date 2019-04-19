@@ -30,10 +30,10 @@ static int	collision(size_t const, struct paddle const *const,
 static void	update_b(size_t const, size_t const, size_t const,
 			struct ball *const, struct paddle const *const,
 			struct paddle const *const);
-static void	update_r(size_t const, size_t const, struct ball const *const,
-			struct paddle *const);
-static int	update_l(WINDOW *const, size_t const, size_t const,
-			struct paddle *const);
+static void	update_auto_r(size_t const, size_t const,
+			struct ball const *const, struct paddle *const);
+static int	update_controlled(WINDOW *const, size_t const, size_t const,
+			int const, struct paddle *const, struct paddle *const);
 static char *	render(WINDOW *const, size_t const, size_t const, size_t const,
 			struct ball const *const, struct paddle const *const,
 			struct paddle const *const);
@@ -51,27 +51,36 @@ main(int argc, char *argv[])
 	struct paddle l;
 	struct paddle r;
 	size_t p_h;
-	size_t height;
-	size_t width;
+	size_t h;
+	size_t w;
 	int delay;
+	int manual_r;
 	int opt;
 
 	delay = DEFAULT_DELAY;
+	manual_r = 0;
 
-	while ((opt = getopt(argc, argv, "d:")) != -1) {
+	while ((opt = getopt(argc, argv, "d:r")) != -1) {
 		switch (opt) {
-			case 'd':
-				delay = atoi(optarg);
-				break;
-			default:
-				errx(1, "usage: pong [-d delay]");
+		case 'd':
+			delay = atoi(optarg);
+			break;
+		case 'r':
+			manual_r = 1;
+			break;
+		default:
+			errx(1, "usage: pong [-r] [-d delay]");
 		}
 	}
 
 	if (optind < argc) {
 		fprintf(stderr, "%s: invalid option -- '%s'\n", argv[0],
 			argv[optind]);
-		errx(1, "usage: pong [-d delay]");
+		errx(1, "usage: pong [-r] [-d delay]");
+	}
+
+	if (delay < 0) {
+		errx(1, "invalid delay '%d'", delay);
 	}
 
 	msg = NULL;
@@ -100,59 +109,61 @@ main(int argc, char *argv[])
 	}
 
 	wtimeout(win, delay);
-	getmaxyx(win, height, width);
+	getmaxyx(win, h, w);
 
-	p_h = height >> 2;
+	p_h = h >> 2;
 
 	b = (struct ball) {
-		.x = width >> 1,
-		.y = height >> 1,
+		.x = w >> 1,
+		.y = h >> 1,
 		.dx = 1,
 		.dy = -1
 	};
 
 	l = (struct paddle) {
 		.x = 4,
-		.y = height >> 1
+		.y = h >> 1
 	};
 
 	r = (struct paddle) {
-		.x = width - 5,
-		.y = height >> 1
+		.x = w - 5,
+		.y = h >> 1
 	};
 
-	while(getmaxyx(win, height, width), update_l(win, height, p_h, &l)) {
-		if (width < 32 || height < 8) {
+	do {
+		getmaxyx(win, h, w);
+
+		if (w < 32 || h < 8) {
 			msg = "dimensions too small";
 			break;
 		}
 
-		if (b.y == 0 || b.y > height - 1 || b.x == 0
-			|| b.x > width - 1) {
-			b.x = width >> 1;
-			b.y = height >> 1;
+		if (b.y == 0 || b.y > h - 1 || b.x == 0 || b.x > w - 1) {
+			b.x = w >> 1;
+			b.y = h >> 1;
 		}
 
-		r.x = width - 5;
-		p_h = height >> 2;
+		r.x = w - 5;
+		p_h = h >> 2;
 
-		if (l.y + p_h >= height) {
-			l.y = height - p_h - 1;
+		if (l.y + p_h >= h) {
+			l.y = h - p_h - 1;
 		}
 
-		if (r.y + p_h >= height) {
-			r.y = height - p_h - 1;
+		if (r.y + p_h >= h) {
+			r.y = h - p_h - 1;
 		}
 
-		update_b(height, width, p_h, &b, &l, &r);
-		update_r(height, p_h, &b, &r);
-
-		msg = render(win, height, width, p_h, &b, &l, &r);
-
-		if (msg != NULL) {
+		if (!update_controlled(win, h, p_h, manual_r, &l, &r)) {
 			break;
 		}
-	}
+
+		update_b(h, w, p_h, &b, &l, &r);
+
+		if (!manual_r) {
+			update_auto_r(h, p_h, &b, &r);
+		}
+	} while ((msg = render(win, h, w, p_h, &b, &l, &r)) == NULL);
 
 	save_score();
 
@@ -211,7 +222,7 @@ update_b(size_t const h, size_t const w, size_t const p_h,
 }
 
 static void
-update_r(size_t const h, size_t const p_h, struct ball const *const b,
+update_auto_r(size_t const h, size_t const p_h, struct ball const *const b,
 	struct paddle *const r)
 {
 	size_t f_by;
@@ -240,10 +251,10 @@ update_r(size_t const h, size_t const p_h, struct ball const *const b,
 }
 
 static int
-update_l(WINDOW *const win, size_t const h, size_t const p_h,
-	struct paddle *const l)
+update_controlled(WINDOW *const win, size_t const h, size_t const p_h,
+	int const manual, struct paddle *const l, struct paddle *const r)
 {
-	switch(wgetch(win)) {
+	switch (wgetch(win)) {
 	case 'w':
 		if (l->y - 1 != 0) {
 			l->y--;
@@ -252,6 +263,16 @@ update_l(WINDOW *const win, size_t const h, size_t const p_h,
 	case 's':
 		if (l->y + p_h < h - 1) {
 			l->y++;
+		}
+		break;
+	case 'o':
+		if (manual && r->y - 1 != 0) {
+			r->y--;
+		}
+		break;
+	case 'l':
+		if (manual && r->y + p_h < h - 1) {
+			r->y++;
 		}
 		break;
 	case 'q':

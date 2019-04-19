@@ -11,11 +11,17 @@ DESCRIPTION
 
 	You control the left paddle:
 
-	w	move paddle up
-	s	move paddle down
+	w	left paddle up
+	s	left paddle down
 	q	quit game
 
 	The right paddle, your opponent, is automatically guided.
+
+	The -r option disables automatic right paddle guiding and the right
+	paddle can be controlled:
+
+	o	right paddle up
+	l	right paddle down
 
 NOTES
 	pong requires ncurses. The game window can, at any time, be resized.
