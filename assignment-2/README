@@ -2,7 +2,7 @@ NAME
 	pong - digital tennis game
 
 SYNOPSIS
-	pong [-d delay]
+	pong [-r] [-d delay]
 
 DESCRIPTION
 	pong is a display-based game. The object of the game is to use your
